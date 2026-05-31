@@ -1,6 +1,6 @@
 ﻿namespace WebApi.Controllers
 {
-    public class PaymentController
+    public class PaymentsController
     {
     }
 }

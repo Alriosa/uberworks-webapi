@@ -11,10 +11,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\" />
     <Folder Include="DTOs\Chat\" />
+    <Folder Include="DTOs\WorkType\" />
+    <Folder Include="DTOs\Reward\" />
+    <Folder Include="DTOs\Professional_Service\" />
+    <Folder Include="DTOs\Professional\" />
+    <Folder Include="DTOs\Penalty\" />
     <Folder Include="DTOs\Payment\" />
-    <Folder Include="DTOs\Users\" />
+    <Folder Include="Exceptions\" />
   </ItemGroup>
 
 </Project>

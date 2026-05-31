@@ -1,6 +1,6 @@
 ﻿namespace WebApi.Controllers
 {
-    public class WorkTypeController
+    public class WorkTypesController
     {
     }
 }

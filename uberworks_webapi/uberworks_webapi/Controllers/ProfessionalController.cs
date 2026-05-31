@@ -1,6 +1,6 @@
 ﻿namespace WebApi.Controllers
 {
-    public class Professional
+    public class ProfessionalController
     {
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace WebApi.Models
 {
-    public class WorkTypes
+    public class WorkType
     {
     }
 }

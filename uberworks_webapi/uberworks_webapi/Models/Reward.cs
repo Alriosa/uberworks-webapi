@@ -1,6 +1,6 @@
 ﻿namespace WebApi.Models
 {
-    public class Rewards
+    public class Reward
     {
     }
 }
