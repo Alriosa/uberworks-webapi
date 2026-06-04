@@ -1,6 +1,0 @@
-<Solution>
-  <Project Path="../../../../../../Documents/Alriosa Code/uberworks/uberworks_webapi/Application/Application.csproj" />
-  <Project Path="../../../../../../Documents/Alriosa Code/uberworks/uberworks_webapi/Domain/Domain.csproj" />
-  <Project Path="../../../../../../Documents/Alriosa Code/uberworks/uberworks_webapi/Infrastructure/Infrastructure.csproj" />
-  <Project Path="../../../../../../Documents/Alriosa Code/uberworks/uberworks_webapi/uberworks_webapi/WebApi.csproj" />
-</Solution>
