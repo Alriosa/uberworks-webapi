@@ -1,6 +1,1 @@
 @uberworks_webapi_HostAddress = http://localhost:5293
-
-GET {{uberworks_webapi_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

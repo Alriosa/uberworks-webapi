@@ -1,0 +1,30 @@
+# =====================================================================================
+# .gitignore para soluciones .NET / Visual Studio
+# =====================================================================================
+
+# Carpeta de caché interna de Visual Studio (índices, .suo, layout de ventanas).
+# Es local a cada máquina, se regenera sola, y VS la bloquea mientras está abierto
+# (por eso "git add" fallaba con Permission Denied).
+.vs/
+
+# Salidas de compilación (se regeneran con "dotnet build" / "dotnet restore").
+bin/
+obj/
+
+# Archivos de configuración de usuario/máquina (rutas locales, no se comparten).
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Logs y temporales varios de Visual Studio / MSBuild.
+*.log
+*.tmp
+*.cache
+
+# Backups de drawio (el .drawio real sí se versiona; el .bkp es temporal del editor).
+*.bkp
+
+# Secretos locales (si alguna vez se usa un .env en vez de user-secrets).
+.env
+.env.local
