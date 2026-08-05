@@ -1,15 +1,16 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Define en qué etapa está un "Work Post" (Service): recién creado (Pending),
-//           con un profesional ya aceptado (Accepted), cancelado, o cerrado (Completed,
-//           que solo se alcanza cuando cliente y profesional confirman ambos por separado).
-// Entidades relacionadas: Service.cs (la propiedad Service.Status es de este tipo)
-// Tablas relacionadas: TBL_SERVICES.CL_STATUS
+// FILE SUMMARY
+// What it does: Defines what stage a "Work Post" (Service) is in: just created (Pending),
+//               with a professional already accepted (Accepted), cancelled, or closed
+//               (Completed, which is only reached once both client and professional confirm
+//               separately).
+// Entities connected: Service.cs (the Service.Status property is of this type)
+// Tables related: TBL_SERVICES.CL_STATUS
 // =====================================================================================
 namespace uberworks_webapi.Common.Enums;
 
 /// <summary>
-/// Mapea a los valores usados en TBL_SERVICES.CL_STATUS.
+/// Maps to the values used in TBL_SERVICES.CL_STATUS.
 /// </summary>
 public enum ServiceStatus
 {

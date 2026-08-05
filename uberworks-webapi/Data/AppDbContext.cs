@@ -1,14 +1,14 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Es el "puente" entre C# y SQL Server — la clase central de Entity Framework
-//           Core. Expone un DbSet<T> por cada tabla (ej. Users, Services), que se comporta
-//           como una colección en memoria pero en realidad, cuando se hace la consulta,
-//           EF la traduce a SQL y la ejecuta contra la base de datos real. En
-//           OnModelCreating() carga automáticamente TODAS las clases de
-//           Data/Configurations (una por entidad) sin tener que listarlas a mano.
-// Entidades relacionadas: TODAS (User, Professional, WorkType, Service, ServiceProfessional,
-//                          Review, Payment, Chat, Penalty, Reward)
-// Tablas relacionadas: TODAS las TBL_* de la base de datos
+// FILE SUMMARY
+// What it does: This is the "bridge" between C# and SQL Server — the central Entity
+//               Framework Core class. Exposes a DbSet<T> per table (e.g. Users, Services),
+//               which behaves like an in-memory collection but, when queried, EF translates
+//               it into SQL and runs it against the real database. OnModelCreating()
+//               automatically loads ALL the classes in Data/Configurations (one per entity)
+//               without having to list them by hand.
+// Entities connected: ALL (User, Professional, WorkType, Service, ServiceProfessional,
+//                      Review, Payment, Chat, Penalty, Reward)
+// Tables related: ALL the TBL_* tables in the database
 // =====================================================================================
 using Microsoft.EntityFrameworkCore;
 using uberworks_webapi.Models.Entities;

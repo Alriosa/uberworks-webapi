@@ -1,10 +1,10 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Expone los endpoints HTTP de registro, login, consulta y actualización de
-//           usuarios. El Controller solo recibe/valida forma y delega toda la lógica real
-//           a IUserService — nunca decide reglas de negocio ni toca la base de datos.
-// Entidades relacionadas: User.cs (indirectamente, vía IUserService)
-// Tablas relacionadas: TBL_USERS (indirectamente, a través de todas las capas)
+// FILE SUMMARY
+// What it does: Exposes the HTTP endpoints for registration, login, lookup, and update of
+//               users. The Controller only receives/validates shape and delegates all real
+//               logic to IUserService — it never decides business rules or touches the database.
+// Entities connected: User.cs (indirectly, via IUserService)
+// Tables related: TBL_USERS (indirectly, through all the layers)
 // =====================================================================================
 using Microsoft.AspNetCore.Mvc;
 using uberworks_webapi.Models.DTOs.Requests;

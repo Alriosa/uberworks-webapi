@@ -1,13 +1,13 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Implementación real de IServiceProfessionalRepository.cs. Query() incluye
-//           Professional y, dentro de este, su User (".ThenInclude(p => p.User)") porque
-//           casi siempre que se lee una propuesta también se necesita el nombre del
-//           profesional o su UserId (para comparar contra quién está haciendo la petición).
-//           GetAcceptedForServiceAsync() es clave para la regla de "dirección exacta"
-//           (ver Services/ServiceService.cs).
-// Entidades relacionadas: ServiceProfessional.cs, Professional.cs, User.cs (vía Include)
-// Tablas relacionadas: TBL_SERVICE_PROFESSIONALS, TBL_PROFESSIONALS, TBL_USERS
+// FILE SUMMARY
+// What it does: The real implementation of IServiceProfessionalRepository.cs. Query()
+//               includes Professional and, within it, its User (".ThenInclude(p => p.User)")
+//               because almost every time a proposal is read, the professional's name or
+//               UserId is also needed (to compare against who's making the request).
+//               GetAcceptedForServiceAsync() is key for the "exact address" rule (see
+//               Services/ServiceService.cs).
+// Entities connected: ServiceProfessional.cs, Professional.cs, User.cs (via Include)
+// Tables related: TBL_SERVICE_PROFESSIONALS, TBL_PROFESSIONALS, TBL_USERS
 // =====================================================================================
 using Microsoft.EntityFrameworkCore;
 using uberworks_webapi.Common.Enums;

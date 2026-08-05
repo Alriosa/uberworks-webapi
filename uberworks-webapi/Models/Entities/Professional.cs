@@ -1,25 +1,24 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Representa el "perfil profesional" que un User con Role=Professional puede
-//           crear (relación 1 a 1: cada Professional le pertenece a exactamente un User).
-//           Guarda su descripción, experiencia, disponibilidad, ubicación y calificación
-//           promedio (que se calculará a partir de Review.cs más adelante).
-// Entidades relacionadas: User.cs (1:1, dueño del perfil), ServiceProfessional.cs (1:N,
-//                          sus propuestas a distintos Services), Review.cs (1:N),
-//                          Chat.cs (1:N)
-// Tablas relacionadas: TBL_PROFESSIONALS (mapeo en Data/Configurations/ProfessionalConfiguration.cs)
+// FILE SUMMARY
+// What it does: Represents the "professional profile" that a User with Role=Professional
+//               can create (1:1 relationship — each Professional belongs to exactly one
+//               User). Stores description, experience, availability, location, and average
+//               rating (which will be computed from Review.cs later on).
+// Entities connected: User.cs (1:1, profile owner), ServiceProfessional.cs (1:N, its
+//                      proposals to different Services), Review.cs (1:N), Chat.cs (1:N)
+// Tables related: TBL_PROFESSIONALS (mapping in Data/Configurations/ProfessionalConfiguration.cs)
 // =====================================================================================
 namespace uberworks_webapi.Models.Entities;
 
 /// <summary>
-/// Mapea a TBL_PROFESSIONALS. Extiende a User en relación 1:1.
+/// Maps to TBL_PROFESSIONALS. Extends User in a 1:1 relationship.
 /// </summary>
 public class Professional
 {
     public int Id { get; set; }
 
     /// <summary>
-    /// FK 1:1 hacia User (PK_USER_ID en el diagrama).
+    /// 1:1 FK to User (PK_USER_ID in the diagram).
     /// </summary>
     public int UserId { get; set; }
 
@@ -29,7 +28,7 @@ public class Professional
     public string? Location { get; set; }
     public decimal AverageRating { get; set; }
 
-    // Navegaciones
+    // Navigation properties
     public User User { get; set; } = null!;
     public ICollection<ServiceProfessional> ServiceProfessionals { get; set; } = new List<ServiceProfessional>();
     public ICollection<Review> Reviews { get; set; } = new List<Review>();

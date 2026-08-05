@@ -1,10 +1,10 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Contrato de acceso a datos para WorkType — CRUD completo (crear, listar todos,
-//           obtener por id, verificar nombre duplicado, verificar si tiene Services
-//           asociados antes de dejar borrarlo, actualizar, eliminar).
-// Entidades relacionadas: WorkType.cs
-// Tablas relacionadas: TBL_WORKTYPES (indirectamente, vía WorkTypeRepository.cs)
+// FILE SUMMARY
+// What it does: Data-access contract for WorkType — full CRUD (create, list all, get by
+//               id, check for a duplicate name, check if it has Services attached before
+//               allowing deletion, update, delete).
+// Entities connected: WorkType.cs
+// Tables related: TBL_WORKTYPES (indirectly, via WorkTypeRepository.cs)
 // =====================================================================================
 using uberworks_webapi.Models.Entities;
 

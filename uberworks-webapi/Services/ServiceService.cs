@@ -1,14 +1,15 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Aquí vive la regla de seguridad más importante del negocio: "solo el cliente
-//           dueño o el profesional aceptado ven la dirección exacta" (método privado
-//           CanSeeExactLocationAsync). Cada método público arma un ServiceResponse
-//           llamando a MapToResponse() con includeExactLocation en true/false según el
-//           caso: GetOpenAsync() siempre en false (listado público), GetMyServicesAsync()
-//           siempre en true (el dueño ve todo lo suyo), GetByIdAsync() lo decide dinámicamente.
-// Entidades relacionadas: Service.cs, WorkType.cs, ServiceProfessional.cs (para saber quién
-//                          es el profesional aceptado)
-// Tablas relacionadas: TBL_SERVICES, TBL_WORKTYPES, TBL_SERVICE_PROFESSIONALS
+// FILE SUMMARY
+// What it does: This is where the most important security rule of the business lives:
+//               "only the owning client or the accepted professional can see the exact
+//               address" (private method CanSeeExactLocationAsync). Every public method
+//               builds a ServiceResponse by calling MapToResponse() with includeExactLocation
+//               set to true/false as appropriate: GetOpenAsync() always false (public
+//               listing), GetMyServicesAsync() always true (the owner sees everything of
+//               theirs), GetByIdAsync() decides dynamically.
+// Entities connected: Service.cs, WorkType.cs, ServiceProfessional.cs (to know who the
+//                      accepted professional is)
+// Tables related: TBL_SERVICES, TBL_WORKTYPES, TBL_SERVICE_PROFESSIONALS
 // =====================================================================================
 using uberworks_webapi.Common.Exceptions;
 using uberworks_webapi.Models.DTOs.Requests;
@@ -38,7 +39,7 @@ public class ServiceService : IServiceService
     public async Task<ServiceResponse> CreateAsync(int clientId, CreateServiceRequest request)
     {
         _ = await _workTypeRepository.GetByIdAsync(request.WorkTypeId)
-            ?? throw new NotFoundException($"No se encontró el tipo de trabajo con id {request.WorkTypeId}.");
+            ?? throw new NotFoundException($"Work type with id {request.WorkTypeId} was not found.");
 
         var service = new Service
         {
@@ -56,7 +57,7 @@ public class ServiceService : IServiceService
         await _serviceRepository.AddAsync(service);
         var created = await _serviceRepository.GetByIdAsync(service.Id) ?? service;
 
-        // El cliente que acaba de crearlo es el dueño: siempre ve el detalle completo.
+        // The client who just created it is the owner: they always see the full detail.
         return MapToResponse(created, includeExactLocation: true);
     }
 
@@ -64,7 +65,7 @@ public class ServiceService : IServiceService
     {
         var services = await _serviceRepository.GetOpenAsync();
 
-        // Listado público para profesionales: la dirección exacta nunca se incluye aquí.
+        // Public listing for professionals: the exact address is never included here.
         return services.Select(s => MapToResponse(s, includeExactLocation: false)).ToList();
     }
 
@@ -77,7 +78,7 @@ public class ServiceService : IServiceService
     public async Task<ServiceResponse> GetByIdAsync(int serviceId, int? callerUserId)
     {
         var service = await _serviceRepository.GetByIdAsync(serviceId)
-            ?? throw new NotFoundException($"No se encontró el servicio con id {serviceId}.");
+            ?? throw new NotFoundException($"Service with id {serviceId} was not found.");
 
         var includeExactLocation = await CanSeeExactLocationAsync(service, callerUserId);
         return MapToResponse(service, includeExactLocation);

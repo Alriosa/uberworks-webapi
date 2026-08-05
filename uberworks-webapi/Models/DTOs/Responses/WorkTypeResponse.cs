@@ -1,10 +1,9 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Describe lo que la API devuelve al consultar un WorkType. Forma casi idéntica
-//           a WorkType.cs porque es una entidad simple sin datos sensibles que ocultar.
-// Entidades relacionadas: WorkType.cs (WorkTypeService.cs mapea de una a la otra)
-// Tablas relacionadas: Ninguna directamente — es la "forma pública" de una fila de
-//                       TBL_WORKTYPES
+// FILE SUMMARY
+// What it does: Describes what the API returns when querying a WorkType. Almost identical
+//               shape to WorkType.cs since it's a simple entity with no sensitive data to hide.
+// Entities connected: WorkType.cs (WorkTypeService.cs maps from one to the other)
+// Tables related: None directly — it's the "public shape" of a TBL_WORKTYPES row
 // =====================================================================================
 namespace uberworks_webapi.Models.DTOs.Responses;
 

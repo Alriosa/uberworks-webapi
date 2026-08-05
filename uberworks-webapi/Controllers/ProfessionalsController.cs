@@ -1,11 +1,12 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Expone los endpoints HTTP de Professional. Recibe la petición, la valida a
-//           nivel de forma ([Authorize] revisa el rol antes de que el código entre al
-//           método), y delega TODA la lógica real a IProfessionalService — el Controller
-//           nunca decide reglas de negocio, solo traduce HTTP ↔ llamadas a Services.
-// Entidades relacionadas: Professional.cs (indirectamente, vía IProfessionalService)
-// Tablas relacionadas: TBL_PROFESSIONALS (indirectamente, a través de todas las capas)
+// FILE SUMMARY
+// What it does: Exposes the HTTP endpoints for Professional. It receives the request,
+//               validates it at a shape level ([Authorize] checks the role before the code
+//               enters the method), and delegates ALL the real logic to IProfessionalService
+//               — the Controller never decides business rules, it just translates
+//               HTTP <-> calls to Services.
+// Entities connected: Professional.cs (indirectly, via IProfessionalService)
+// Tables related: TBL_PROFESSIONALS (indirectly, through all the layers)
 // =====================================================================================
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

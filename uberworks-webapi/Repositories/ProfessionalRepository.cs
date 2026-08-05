@@ -1,11 +1,11 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Implementación real de IProfessionalRepository.cs. Nota el .Include(p => p.User)
-//           en las consultas: le dice a EF Core "cuando traigas el Professional, trae
-//           también su User relacionado en la misma consulta" (evita tener que hacer una
-//           segunda consulta separada para leer el nombre/email del usuario).
-// Entidades relacionadas: Professional.cs, User.cs (vía Include)
-// Tablas relacionadas: TBL_PROFESSIONALS, TBL_USERS
+// FILE SUMMARY
+// What it does: The real implementation of IProfessionalRepository.cs. Note the
+//               .Include(p => p.User) in the queries: it tells EF Core "when you fetch the
+//               Professional, also fetch its related User in the same query" (avoids a
+//               separate second query just to read the user's name/email).
+// Entities connected: Professional.cs, User.cs (via Include)
+// Tables related: TBL_PROFESSIONALS, TBL_USERS
 // =====================================================================================
 using Microsoft.EntityFrameworkCore;
 using uberworks_webapi.Data;

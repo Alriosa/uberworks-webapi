@@ -1,10 +1,10 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Le dice a EF Core cómo guardar Penalty.cs en TBL_PENALTIES: nombres de columna
-//           reales y su conversión manual de enum nullable (PenaltyType?).
-// Entidades relacionadas: Penalty.cs (esta clase es la que configura; aún sin
-//                          Repository/Service/Controller construidos)
-// Tablas relacionadas: TBL_PENALTIES
+// FILE SUMMARY
+// What it does: Tells EF Core how to store Penalty.cs in TBL_PENALTIES: real column names
+//               and its manual nullable enum conversion (PenaltyType?).
+// Entities connected: Penalty.cs (this class configures it; Repository/Service/Controller
+//                      not built yet)
+// Tables related: TBL_PENALTIES
 // =====================================================================================
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

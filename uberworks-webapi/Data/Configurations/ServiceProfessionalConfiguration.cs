@@ -1,11 +1,11 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Le dice a EF Core cómo guardar ServiceProfessional.cs en TBL_SERVICE_PROFESSIONALS.
-//           Incluye la traducción manual del enum de estado (ServiceProfessionalStatusToDb/
-//           FromDb) porque el diagrama original usa valores con espacios como
-//           "UNDER NEGOTIATION", que un ToUpperInvariant() normal no puede generar solo.
-// Entidades relacionadas: ServiceProfessional.cs (esta clase es la que configura)
-// Tablas relacionadas: TBL_SERVICE_PROFESSIONALS
+// FILE SUMMARY
+// What it does: Tells EF Core how to store ServiceProfessional.cs in TBL_SERVICE_PROFESSIONALS.
+//               Includes a manual translation of the status enum (ServiceProfessionalStatusToDb/
+//               FromDb) because the original diagram uses values with spaces like
+//               "UNDER NEGOTIATION", which a plain ToUpperInvariant() can't produce on its own.
+// Entities connected: ServiceProfessional.cs (this class configures it)
+// Tables related: TBL_SERVICE_PROFESSIONALS
 // =====================================================================================
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -62,8 +62,8 @@ public class ServiceProfessionalConfiguration : IEntityTypeConfiguration<Service
             .OnDelete(DeleteBehavior.Restrict);
     }
 
-    // Los valores del diagrama usan espacios ("UNDER NEGOTIATION", "IN PROGRESS"),
-    // por lo que no alcanza con un ToUpperInvariant() genérico.
+    // The diagram's values use spaces ("UNDER NEGOTIATION", "IN PROGRESS"), so a generic
+    // ToUpperInvariant() isn't enough.
     private static string ServiceProfessionalStatusToDb(ServiceProfessionalStatus status) => status switch
     {
         ServiceProfessionalStatus.UnderNegotiation => "UNDER NEGOTIATION",

@@ -1,10 +1,11 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Implementación real de IUserRepository.cs — aquí sí se usa AppDbContext.cs
-//           para hablar con SQL Server (ej. _context.Users.FirstOrDefaultAsync(...)).
-//           EF Core traduce cada método de aquí a una consulta SQL real.
-// Entidades relacionadas: User.cs
-// Tablas relacionadas: TBL_USERS
+// FILE SUMMARY
+// What it does: The real implementation of IUserRepository.cs — this is where
+//               AppDbContext.cs is actually used to talk to SQL Server (e.g.
+//               _context.Users.FirstOrDefaultAsync(...)). EF Core translates each method
+//               here into a real SQL query.
+// Entities connected: User.cs
+// Tables related: TBL_USERS
 // =====================================================================================
 using Microsoft.EntityFrameworkCore;
 using uberworks_webapi.Data;

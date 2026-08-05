@@ -1,13 +1,13 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Expone todo el ciclo de vida de la negociación de un Service: proponer, ver
-//           propuestas, aceptar, confirmar llegada, subir foto de evidencia, y confirmar
-//           cierre mutuo. Todas las rutas cuelgan de /api/services/{serviceId}/... y cada
-//           una tiene el [Authorize(Roles=...)] correspondiente según quién debe poder
-//           llamarla (Client vs Professional vs cualquiera de los dos ya logueado).
-// Entidades relacionadas: ServiceProfessional.cs, Service.cs (indirectamente, vía
-//                          IServiceProfessionalService)
-// Tablas relacionadas: TBL_SERVICE_PROFESSIONALS, TBL_SERVICES (indirectamente)
+// FILE SUMMARY
+// What it does: Exposes a Service's full negotiation lifecycle: propose, view proposals,
+//               accept, confirm arrival, upload completion evidence, and confirm mutual
+//               closing. All routes hang off /api/services/{serviceId}/... and each one has
+//               the matching [Authorize(Roles=...)] depending on who should be able to call
+//               it (Client vs Professional vs either one already logged in).
+// Entities connected: ServiceProfessional.cs, Service.cs (indirectly, via
+//                      IServiceProfessionalService)
+// Tables related: TBL_SERVICE_PROFESSIONALS, TBL_SERVICES (indirectly)
 // =====================================================================================
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,8 +18,8 @@ using uberworks_webapi.Services.Interfaces;
 namespace uberworks_webapi.Controllers;
 
 /// <summary>
-/// Ciclo de vida de la negociación de un Service: propuestas, aceptación,
-/// check-in de llegada, evidencia y confirmación mutua de cierre.
+/// A Service's negotiation lifecycle: proposals, acceptance,
+/// arrival check-in, evidence, and mutual closing confirmation.
 /// </summary>
 [ApiController]
 [Route("api/services/{serviceId:int}")]
@@ -45,7 +45,7 @@ public class ServiceProfessionalsController : ControllerBase
         return CreatedAtAction(nameof(GetProposals), new { serviceId }, result);
     }
 
-    /// <summary>Solo el cliente dueño del servicio puede ver todas las propuestas recibidas.</summary>
+    /// <summary>Only the client who owns the service can see all received proposals.</summary>
     [HttpGet("proposals")]
     [Authorize(Roles = nameof(UserRole.Client))]
     public async Task<IActionResult> GetProposals(int serviceId)
@@ -64,7 +64,7 @@ public class ServiceProfessionalsController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>Botón "Estoy en el sitio". El timestamp lo pone el servidor.</summary>
+    /// <summary>"I'm on site" button. The timestamp is set by the server.</summary>
     [HttpPost("arrival")]
     [Authorize(Roles = nameof(UserRole.Professional))]
     public async Task<IActionResult> ConfirmArrival(int serviceId)
@@ -84,8 +84,8 @@ public class ServiceProfessionalsController : ControllerBase
     }
 
     /// <summary>
-    /// Pantalla "¿Trabajo terminado?" — la llama tanto el cliente como el profesional
-    /// (cada quien desde su propia sesión). Cuando ambos confirmaron, el Service se cierra.
+    /// The "Is the job done?" screen — called by both the client and the professional
+    /// (each from their own session). Once both confirm, the Service closes.
     /// </summary>
     [HttpPost("confirm-completion")]
     [Authorize]

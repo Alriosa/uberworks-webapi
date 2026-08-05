@@ -1,13 +1,13 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Contiene TODA la lógica de negocio de usuarios: registrar (rechazando roles
-//           de administrador), hacer login (verificando password y emitiendo el JWT vía
-//           IJwtTokenService), buscar por id, y actualizar datos básicos. Los Controllers
-//           (UsersController.cs) nunca hablan directo con la base de datos — siempre pasan
-//           por aquí, y este Service nunca habla directo con SQL — siempre pasa por
-//           IUserRepository. Explicación completa de JWT al final de la respuesta del chat.
-// Entidades relacionadas: User.cs
-// Tablas relacionadas: TBL_USERS (indirectamente, vía IUserRepository)
+// FILE SUMMARY
+// What it does: Holds ALL the user business logic: register (rejecting administrator
+//               roles), log in (verifying the password and issuing the JWT via
+//               IJwtTokenService), find by id, and update basic data. Controllers
+//               (UsersController.cs) never talk directly to the database — they always go
+//               through here, and this Service never talks directly to SQL — it always goes
+//               through IUserRepository.
+// Entities connected: User.cs
+// Tables related: TBL_USERS (indirectly, via IUserRepository)
 // =====================================================================================
 using uberworks_webapi.Common.Enums;
 using uberworks_webapi.Common.Exceptions;
@@ -33,17 +33,18 @@ public class UserService : IUserService
 
     public async Task<UserResponse> RegisterAsync(RegisterUserRequest request)
     {
-        // MasterAdmin y Admin nunca se crean por este endpoint público:
-        // MasterAdmin se siembra al arrancar la API (Data/Seed/MasterAdminSeeder),
-        // y Admin solo lo puede crear otro Admin/MasterAdmin ya autenticado (pendiente de endpoint dedicado).
+        // MasterAdmin and Admin are never created through this public endpoint:
+        // MasterAdmin is seeded on API startup (Data/Seed/MasterAdminSeeder),
+        // and Admin can only be created by another already-authenticated Admin/MasterAdmin
+        // (dedicated endpoint pending).
         if (request.Role is UserRole.MasterAdmin or UserRole.Admin)
         {
-            throw new ArgumentException("No es posible registrar cuentas de administrador desde este endpoint.");
+            throw new ArgumentException("Administrator accounts cannot be registered through this endpoint.");
         }
 
         if (await _userRepository.ExistsByEmailAsync(request.Email))
         {
-            throw new ConflictException($"Ya existe un usuario registrado con el email '{request.Email}'.");
+            throw new ConflictException($"A user with the email '{request.Email}' already exists.");
         }
 
         var user = new User
@@ -66,7 +67,7 @@ public class UserService : IUserService
         var user = await _userRepository.GetByEmailAsync(request.Email);
         if (user is null || !PasswordHasher.Verify(request.Password, user.PasswordHash))
         {
-            throw new InvalidCredentialsException("Email o contraseña incorrectos.");
+            throw new InvalidCredentialsException("Invalid email or password.");
         }
 
         var (token, expiresAtUtc) = _jwtTokenService.GenerateToken(user);
@@ -82,7 +83,7 @@ public class UserService : IUserService
     public async Task<UserResponse> GetByIdAsync(int id)
     {
         var user = await _userRepository.GetByIdAsync(id)
-            ?? throw new NotFoundException($"No se encontró el usuario con id {id}.");
+            ?? throw new NotFoundException($"User with id {id} was not found.");
 
         return MapToResponse(user);
     }
@@ -90,7 +91,7 @@ public class UserService : IUserService
     public async Task<UserResponse> UpdateAsync(int id, UpdateUserRequest request)
     {
         var user = await _userRepository.GetByIdAsync(id)
-            ?? throw new NotFoundException($"No se encontró el usuario con id {id}.");
+            ?? throw new NotFoundException($"User with id {id} was not found.");
 
         user.FirstName = request.FirstName;
         user.LastName = request.LastName;

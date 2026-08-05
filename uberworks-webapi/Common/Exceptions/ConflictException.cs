@@ -1,18 +1,18 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Excepción personalizada para cuando la operación pedida choca con el estado
-//           actual de los datos (ej. registrar un email que ya existe, o intentar aceptar
-//           una propuesta de un Service que ya no está pendiente). El
-//           Middleware/ExceptionHandlingMiddleware.cs la convierte en HTTP 409 Conflict.
-// Entidades relacionadas: Ninguna directamente — la lanzan varios Services
-//                          (UserService, WorkTypeService, ServiceProfessionalService, etc.)
-// Tablas relacionadas: Ninguna (es una clase de C#, no toca la base de datos)
+// FILE SUMMARY
+// What it does: Custom exception for when the requested operation clashes with the current
+//               state of the data (e.g. registering an email that already exists, or trying
+//               to accept a proposal on a Service that is no longer pending).
+//               Middleware/ExceptionHandlingMiddleware.cs converts it to HTTP 409 Conflict.
+// Entities connected: None directly — thrown by several Services
+//                      (UserService, WorkTypeService, ServiceProfessionalService, etc.)
+// Tables related: None (it's a plain C# class, doesn't touch the database)
 // =====================================================================================
 namespace uberworks_webapi.Common.Exceptions;
 
 /// <summary>
-/// Se lanza cuando la operación choca con el estado actual de los datos (ej. email duplicado).
-/// El middleware la traduce a HTTP 409.
+/// Thrown when the operation clashes with the current state of the data (e.g. duplicate email).
+/// The middleware translates it to HTTP 409.
 /// </summary>
 public class ConflictException : Exception
 {

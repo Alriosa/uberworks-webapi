@@ -1,10 +1,10 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Expone el CRUD HTTP completo del catálogo de WorkTypes. Todavía sin
-//           [Authorize] real (ver el TODO abajo) — cualquiera puede crear/editar/borrar
-//           categorías por ahora; falta restringirlo a MasterAdmin/Admin.
-// Entidades relacionadas: WorkType.cs (indirectamente, vía IWorkTypeService)
-// Tablas relacionadas: TBL_WORKTYPES (indirectamente, a través de todas las capas)
+// FILE SUMMARY
+// What it does: Exposes the full HTTP CRUD for the WorkType catalog. Still without real
+//               [Authorize] (see the TODO below) — anyone can currently create/edit/delete
+//               categories; this needs to be restricted to MasterAdmin/Admin.
+// Entities connected: WorkType.cs (indirectly, via IWorkTypeService)
+// Tables related: TBL_WORKTYPES (indirectly, through all the layers)
 // =====================================================================================
 using Microsoft.AspNetCore.Mvc;
 using uberworks_webapi.Models.DTOs.Requests;
@@ -12,8 +12,8 @@ using uberworks_webapi.Services.Interfaces;
 
 namespace uberworks_webapi.Controllers;
 
-// TODO: restringir Create/Update/Delete a [Authorize(Roles = "MasterAdmin,Admin")]
-// (el catálogo lo administra la app, no cualquier usuario autenticado).
+// TODO: restrict Create/Update/Delete to [Authorize(Roles = "MasterAdmin,Admin")]
+// (the catalog is managed by the app, not by any authenticated user).
 [ApiController]
 [Route("api/[controller]")]
 public class WorkTypesController : ControllerBase

@@ -1,10 +1,10 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Implementación real de IWorkTypeRepository.cs. HasServicesAsync() es la
-//           consulta que usa WorkTypeService.cs para bloquear el borrado de una categoría
-//           que ya está siendo usada por algún Service (evitaría dejar Services huérfanos).
-// Entidades relacionadas: WorkType.cs, Service.cs (para verificar dependencias antes de borrar)
-// Tablas relacionadas: TBL_WORKTYPES, TBL_SERVICES
+// FILE SUMMARY
+// What it does: The real implementation of IWorkTypeRepository.cs. HasServicesAsync() is
+//               the query WorkTypeService.cs uses to block deleting a category that's
+//               already used by some Service (which would leave orphaned Services).
+// Entities connected: WorkType.cs, Service.cs (to check dependencies before deleting)
+// Tables related: TBL_WORKTYPES, TBL_SERVICES
 // =====================================================================================
 using Microsoft.EntityFrameworkCore;
 using uberworks_webapi.Data;

@@ -1,11 +1,10 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Describe lo que la API devuelve al consultar un usuario. A propósito NO
-//           incluye PasswordHash — nunca se debe exponer, ni siquiera el hash, en una
-//           respuesta HTTP. UserService.cs arma este objeto a partir de un User.cs real.
-// Entidades relacionadas: User.cs (UserService.cs mapea de una a la otra)
-// Tablas relacionadas: Ninguna directamente — es la "forma pública" de una fila de
-//                       TBL_USERS
+// FILE SUMMARY
+// What it does: Describes what the API returns when querying a user. Intentionally does
+//               NOT include PasswordHash — it should never be exposed, not even the hash,
+//               in an HTTP response. UserService.cs builds this object from a real User.cs.
+// Entities connected: User.cs (UserService.cs maps from one to the other)
+// Tables related: None directly — it's the "public shape" of a TBL_USERS row
 // =====================================================================================
 using uberworks_webapi.Common.Enums;
 

@@ -1,9 +1,9 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Describe el body de POST /api/worktypes — lo que un Admin/MasterAdmin manda
-//           para crear una nueva categoría del catálogo (ej. "Plomería").
-// Entidades relacionadas: WorkType.cs (indirectamente, vía WorkTypeService.CreateAsync)
-// Tablas relacionadas: Ninguna directamente (TBL_WORKTYPES se llena desde WorkTypeService.cs)
+// FILE SUMMARY
+// What it does: Describes the body of POST /api/worktypes — what an Admin/MasterAdmin
+//               sends to create a new catalog category (e.g. "Plumbing").
+// Entities connected: WorkType.cs (indirectly, via WorkTypeService.CreateAsync)
+// Tables related: None directly (TBL_WORKTYPES is filled in from WorkTypeService.cs)
 // =====================================================================================
 namespace uberworks_webapi.Models.DTOs.Requests;
 

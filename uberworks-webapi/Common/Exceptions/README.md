@@ -1,3 +1,3 @@
 # Exceptions
 
-Excepciones custom de dominio (ej. `NotFoundException`, `ValidationException`, `UnauthorizedException`) que el `Middleware` de manejo global de errores traduce a respuestas HTTP consistentes.
+Custom domain exceptions (e.g. `NotFoundException`, `ConflictException`, `InvalidCredentialsException`) that the global error-handling `Middleware` translates into consistent HTTP responses.

@@ -1,13 +1,13 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Describe lo que la API devuelve al consultar un Service. Es EL DTO donde vive
-//           la regla de privacidad de ubicación: Latitude/Longitude/ExactAddress son
-//           nullable (?) y ServiceService.cs decide en tiempo real si llenarlos o dejarlos
-//           en null según quién esté preguntando (ver Services/ServiceService.cs). Zone
-//           siempre viaja llena, incluso en el listado público.
-// Entidades relacionadas: Service.cs, WorkType.cs (ServiceService.cs mapea de ahí)
-// Tablas relacionadas: Ninguna directamente — es la "forma pública" (con reglas de
-//                       privacidad) de una fila de TBL_SERVICES
+// FILE SUMMARY
+// What it does: Describes what the API returns when querying a Service. This is THE DTO
+//               where the location privacy rule lives: Latitude/Longitude/ExactAddress are
+//               nullable (?) and ServiceService.cs decides in real time whether to fill them
+//               in or leave them null depending on who's asking (see Services/ServiceService.cs).
+//               Zone always travels filled in, even in the public listing.
+// Entities connected: Service.cs, WorkType.cs (ServiceService.cs maps from there)
+// Tables related: None directly — it's the "public shape" (with privacy rules) of a
+//                 TBL_SERVICES row
 // =====================================================================================
 using uberworks_webapi.Common.Enums;
 
@@ -25,12 +25,12 @@ public class ServiceResponse
     public ServiceStatus Status { get; set; }
     public DateTime RequestDate { get; set; }
 
-    /// <summary>Siempre visible, incluso en el listado público de servicios abiertos.</summary>
+    /// <summary>Always visible, even in the public listing of open services.</summary>
     public string Zone { get; set; } = string.Empty;
 
     /// <summary>
-    /// Solo se llenan cuando quien pide el recurso es el cliente dueño o el profesional
-    /// cuya propuesta fue aceptada. En cualquier otro caso quedan en null.
+    /// Only filled in when the requester is the owning client or the professional whose
+    /// proposal was accepted. In any other case they stay null.
     /// </summary>
     public decimal? Latitude { get; set; }
     public decimal? Longitude { get; set; }

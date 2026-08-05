@@ -1,17 +1,17 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Guarda el cobro asociado a un Service (método de pago, monto, estado de
-//           retención/liberación). Todavía no tiene Repository/Service/Controller
-//           construidos — es de las piezas pendientes del ciclo de vida de un Service.
-// Entidades relacionadas: Service.cs (N:1)
-// Tablas relacionadas: TBL_PAYMENTS (mapeo en Data/Configurations/PaymentConfiguration.cs)
+// FILE SUMMARY
+// What it does: Stores the charge associated with a Service (payment method, amount,
+//               escrow/release status). Doesn't have a Repository/Service/Controller built
+//               yet — one of the pending pieces of a Service's lifecycle.
+// Entities connected: Service.cs (N:1)
+// Tables related: TBL_PAYMENTS (mapping in Data/Configurations/PaymentConfiguration.cs)
 // =====================================================================================
 using uberworks_webapi.Common.Enums;
 
 namespace uberworks_webapi.Models.Entities;
 
 /// <summary>
-/// Mapea a TBL_PAYMENTS.
+/// Maps to TBL_PAYMENTS.
 /// </summary>
 public class Payment
 {
@@ -23,6 +23,6 @@ public class Payment
     public PaymentStatus Status { get; set; } = PaymentStatus.Pending;
     public DateTime PaymentDate { get; set; }
 
-    // Navegaciones
+    // Navigation properties
     public Service Service { get; set; } = null!;
 }

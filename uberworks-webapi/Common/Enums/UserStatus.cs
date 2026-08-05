@@ -1,15 +1,15 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Define los estados posibles de una cuenta de usuario (activa, suspendida,
-//           penalizada). Se usa para poder bloquear el acceso de alguien sin borrar su
-//           cuenta ni su historial (ej. si un Admin lo suspende por mal comportamiento).
-// Entidades relacionadas: User.cs (la propiedad User.Status es de este tipo)
-// Tablas relacionadas: TBL_USERS.CL_STATUS
+// FILE SUMMARY
+// What it does: Defines the possible states of a user account (active, suspended,
+//               penalized). Used to block someone's access without deleting their account
+//               or history (e.g. if an Admin suspends them for misconduct).
+// Entities connected: User.cs (the User.Status property is of this type)
+// Tables related: TBL_USERS.CL_STATUS
 // =====================================================================================
 namespace uberworks_webapi.Common.Enums;
 
 /// <summary>
-/// Mapea a los valores usados en TBL_USERS.CL_STATUS.
+/// Maps to the values used in TBL_USERS.CL_STATUS.
 /// </summary>
 public enum UserStatus
 {

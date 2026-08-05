@@ -1,10 +1,10 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Le dice a EF Core cómo guardar Reward.cs en TBL_REWARDS, y fuerza (vía índice
-//           único) que cada User tenga como máximo un registro de puntos, tratándolo como
-//           un saldo que se actualiza, no un historial de eventos.
-// Entidades relacionadas: Reward.cs (esta clase es la que configura), User.cs (1:1)
-// Tablas relacionadas: TBL_REWARDS
+// FILE SUMMARY
+// What it does: Tells EF Core how to store Reward.cs in TBL_REWARDS, and enforces (via a
+//               unique index) that each User has at most one points record, treating it as
+//               a balance that gets updated, not an event history.
+// Entities connected: Reward.cs (this class configures it), User.cs (1:1)
+// Tables related: TBL_REWARDS
 // =====================================================================================
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -26,9 +26,9 @@ public class RewardConfiguration : IEntityTypeConfiguration<Reward>
         builder.Property(r => r.UserId)
             .HasColumnName("PK_USER_ID");
 
-        // NOTA: el diagrama no marca esta FK como UNIQUE (a diferencia de TBL_PROFESSIONALS),
-        // pero se modela como 1 registro de puntos por usuario (saldo que se actualiza,
-        // no un historial). Avísame si en realidad quieres permitir múltiples filas por usuario.
+        // NOTE: the diagram doesn't mark this FK as UNIQUE (unlike TBL_PROFESSIONALS), but
+        // it's modeled here as 1 points record per user (a balance that gets updated, not a
+        // history). Let me know if you actually want to allow multiple rows per user.
         builder.HasIndex(r => r.UserId).IsUnique();
 
         builder.Property(r => r.Points)

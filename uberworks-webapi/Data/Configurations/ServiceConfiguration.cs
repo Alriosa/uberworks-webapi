@@ -1,11 +1,11 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Le dice a EF Core, campo por campo, cómo guardar la clase Service.cs en la
-//           tabla TBL_SERVICES: qué nombre de columna usar (CL_..., que no coincide con
-//           los nombres de C#), qué tipo SQL (nvarchar/decimal/datetime), cuáles son
-//           obligatorios, y cómo relacionarse con WorkType y User (foreign keys).
-// Entidades relacionadas: Service.cs (esta clase es la que configura)
-// Tablas relacionadas: TBL_SERVICES
+// FILE SUMMARY
+// What it does: Tells EF Core, field by field, how to store Service.cs in TBL_SERVICES:
+//               which column name to use (CL_..., which doesn't match the C# names), which
+//               SQL type (nvarchar/decimal/datetime), which are required, and how it relates
+//               to WorkType and User (foreign keys).
+// Entities connected: Service.cs (this class configures it)
+// Tables related: TBL_SERVICES
 // =====================================================================================
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -56,8 +56,8 @@ public class ServiceConfiguration : IEntityTypeConfiguration<Service>
             .HasColumnType("datetime")
             .HasDefaultValueSql("GETDATE()");
 
-        // Ubicación: dirección exacta privada (solo dueño / profesional aceptado la ven)
-        // vs. zona pública (visible desde el listado abierto).
+        // Location: private exact address (only the owner / accepted professional see it)
+        // vs. public zone (visible from the open listing).
         builder.Property(s => s.Latitude)
             .HasColumnName("CL_LATITUDE")
             .HasColumnType("decimal(9,6)");
@@ -76,7 +76,7 @@ public class ServiceConfiguration : IEntityTypeConfiguration<Service>
             .HasMaxLength(100)
             .IsRequired();
 
-        // Cierre del trabajo: evidencia + confirmación mutua.
+        // Job closing: evidence + mutual confirmation.
         builder.Property(s => s.CompletionPhotoUrl)
             .HasColumnName("CL_COMPLETION_PHOTO_URL")
             .HasMaxLength(255);

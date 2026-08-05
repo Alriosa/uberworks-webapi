@@ -1,12 +1,12 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Le dice a EF Core cómo guardar User.cs en TBL_USERS: nombres de columna reales
-//           (CL_FIRST_NAME, CL_EMAIL, etc.), el CHECK constraint de roles válidos
-//           (MASTER_ADMIN/ADMIN/CLIENT/PROFESSIONAL), el índice único de Email, y la
-//           traducción manual de UserRole (porque "MasterAdmin" en mayúsculas normales
-//           daría "MASTERADMIN" en vez de "MASTER_ADMIN").
-// Entidades relacionadas: User.cs (esta clase es la que configura)
-// Tablas relacionadas: TBL_USERS
+// FILE SUMMARY
+// What it does: Tells EF Core how to store User.cs in TBL_USERS: the real column names
+//               (CL_FIRST_NAME, CL_EMAIL, etc.), the CHECK constraint of valid roles
+//               (MASTER_ADMIN/ADMIN/CLIENT/PROFESSIONAL), the unique index on Email, and the
+//               manual translation of UserRole (because "MasterAdmin" uppercased normally
+//               would give "MASTERADMIN" instead of "MASTER_ADMIN").
+// Entities connected: User.cs (this class configures it)
+// Tables related: TBL_USERS
 // =====================================================================================
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -75,8 +75,9 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasDefaultValueSql("GETDATE()");
     }
 
-    // "MasterAdmin" no puede uppercase-arse directo (daría "MASTERADMIN"): el valor
-    // guardado en BD usa guion bajo, igual que los estados con nombre compuesto de otras tablas.
+    // "MasterAdmin" can't just be uppercased directly (it would give "MASTERADMIN"): the
+    // value stored in the DB uses an underscore, same as the compound-name statuses in
+    // other tables.
     private static string UserRoleToDb(UserRole role) => role switch
     {
         UserRole.MasterAdmin => "MASTER_ADMIN",

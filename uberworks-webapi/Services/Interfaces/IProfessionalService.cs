@@ -1,9 +1,9 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Contrato de la lógica de negocio de Professional. ProfessionalsController.cs
-//           depende de esta interface, no de ProfessionalService.cs directamente.
-// Entidades relacionadas: Professional.cs
-// Tablas relacionadas: TBL_PROFESSIONALS (indirectamente, vía ProfessionalService.cs)
+// FILE SUMMARY
+// What it does: Contract for the Professional business logic. ProfessionalsController.cs
+//               depends on this interface, not on ProfessionalService.cs directly.
+// Entities connected: Professional.cs
+// Tables related: TBL_PROFESSIONALS (indirectly, via ProfessionalService.cs)
 // =====================================================================================
 using uberworks_webapi.Models.DTOs.Requests;
 using uberworks_webapi.Models.DTOs.Responses;

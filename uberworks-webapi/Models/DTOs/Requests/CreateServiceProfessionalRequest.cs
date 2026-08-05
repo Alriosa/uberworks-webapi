@@ -1,17 +1,17 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Describe el body de POST /api/services/{serviceId}/proposals — lo que un
-//           profesional manda al ofertar por un Service (precio negociado + minutos
-//           estimados de llegada). ServiceId sale de la ruta y ProfessionalId del JWT,
-//           ninguno de los dos va en este DTO.
-// Entidades relacionadas: ServiceProfessional.cs (indirectamente, vía
-//                          ServiceProfessionalService.CreateProposalAsync)
-// Tablas relacionadas: Ninguna directamente (TBL_SERVICE_PROFESSIONALS se llena desde
-//                       ServiceProfessionalService.cs)
+// FILE SUMMARY
+// What it does: Describes the body of POST /api/services/{serviceId}/proposals — what a
+//               professional sends when bidding on a Service (negotiated price + estimated
+//               arrival minutes). ServiceId comes from the route and ProfessionalId from
+//               the JWT — neither is in this DTO.
+// Entities connected: ServiceProfessional.cs (indirectly, via
+//                      ServiceProfessionalService.CreateProposalAsync)
+// Tables related: None directly (TBL_SERVICE_PROFESSIONALS is filled in from
+//                 ServiceProfessionalService.cs)
 // =====================================================================================
 namespace uberworks_webapi.Models.DTOs.Requests;
 
-// El ServiceId viene de la ruta y el ProfessionalId se resuelve del usuario autenticado (JWT).
+// ServiceId comes from the route, and ProfessionalId is resolved from the authenticated user (JWT).
 public class CreateServiceProfessionalRequest
 {
     public decimal? NegotiatedPrice { get; set; }

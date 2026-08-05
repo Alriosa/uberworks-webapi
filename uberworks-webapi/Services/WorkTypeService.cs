@@ -1,10 +1,10 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Lógica de negocio del catálogo de WorkTypes. Valida nombre duplicado al crear
-//           y al actualizar, y bloquea el borrado (ConflictException → HTTP 409) si el
-//           WorkType ya tiene Services asociados, para no dejar datos huérfanos.
-// Entidades relacionadas: WorkType.cs, Service.cs (solo para verificar dependencias)
-// Tablas relacionadas: TBL_WORKTYPES, TBL_SERVICES
+// FILE SUMMARY
+// What it does: Business logic for the WorkType catalog. Validates duplicate names on
+//               create and update, and blocks deletion (ConflictException → HTTP 409) if
+//               the WorkType already has Services attached, to avoid leaving orphaned data.
+// Entities connected: WorkType.cs, Service.cs (only to check dependencies)
+// Tables related: TBL_WORKTYPES, TBL_SERVICES
 // =====================================================================================
 using uberworks_webapi.Common.Exceptions;
 using uberworks_webapi.Models.DTOs.Requests;
@@ -28,7 +28,7 @@ public class WorkTypeService : IWorkTypeService
     {
         if (await _workTypeRepository.ExistsByNameAsync(request.Name))
         {
-            throw new ConflictException($"Ya existe un tipo de trabajo con el nombre '{request.Name}'.");
+            throw new ConflictException($"A work type named '{request.Name}' already exists.");
         }
 
         var workType = new WorkType
@@ -53,7 +53,7 @@ public class WorkTypeService : IWorkTypeService
     public async Task<WorkTypeResponse> GetByIdAsync(int id)
     {
         var workType = await _workTypeRepository.GetByIdAsync(id)
-            ?? throw new NotFoundException($"No se encontró el tipo de trabajo con id {id}.");
+            ?? throw new NotFoundException($"Work type with id {id} was not found.");
 
         return MapToResponse(workType);
     }
@@ -61,11 +61,11 @@ public class WorkTypeService : IWorkTypeService
     public async Task<WorkTypeResponse> UpdateAsync(int id, UpdateWorkTypeRequest request)
     {
         var workType = await _workTypeRepository.GetByIdAsync(id)
-            ?? throw new NotFoundException($"No se encontró el tipo de trabajo con id {id}.");
+            ?? throw new NotFoundException($"Work type with id {id} was not found.");
 
         if (await _workTypeRepository.ExistsByNameAsync(request.Name, excludeId: id))
         {
-            throw new ConflictException($"Ya existe un tipo de trabajo con el nombre '{request.Name}'.");
+            throw new ConflictException($"A work type named '{request.Name}' already exists.");
         }
 
         workType.Name = request.Name;
@@ -81,12 +81,12 @@ public class WorkTypeService : IWorkTypeService
     public async Task DeleteAsync(int id)
     {
         var workType = await _workTypeRepository.GetByIdAsync(id)
-            ?? throw new NotFoundException($"No se encontró el tipo de trabajo con id {id}.");
+            ?? throw new NotFoundException($"Work type with id {id} was not found.");
 
         if (await _workTypeRepository.HasServicesAsync(id))
         {
             throw new ConflictException(
-                $"No se puede eliminar el tipo de trabajo '{workType.Name}' porque tiene servicios asociados.");
+                $"Cannot delete work type '{workType.Name}' because it has services attached to it.");
         }
 
         await _workTypeRepository.DeleteAsync(workType);

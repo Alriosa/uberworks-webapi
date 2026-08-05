@@ -1,16 +1,16 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Representa una categoría de trabajo del catálogo administrable (ej.
-//           "Plomería", "Electricidad"). Un Admin/MasterAdmin puede crear, editar o borrar
-//           estas categorías desde la API sin que un desarrollador tenga que tocar código
-//           (ver Controllers/WorkTypesController.cs).
-// Entidades relacionadas: Service.cs (1:N — cada Service pertenece a un WorkType)
-// Tablas relacionadas: TBL_WORKTYPES (mapeo en Data/Configurations/WorkTypeConfiguration.cs)
+// FILE SUMMARY
+// What it does: Represents a work category in the admin-managed catalog (e.g. "Plumbing",
+//               "Electrical"). An Admin/MasterAdmin can create, edit, or delete these
+//               categories from the API without a developer having to touch code (see
+//               Controllers/WorkTypesController.cs).
+// Entities connected: Service.cs (1:N — each Service belongs to a WorkType)
+// Tables related: TBL_WORKTYPES (mapping in Data/Configurations/WorkTypeConfiguration.cs)
 // =====================================================================================
 namespace uberworks_webapi.Models.Entities;
 
 /// <summary>
-/// Mapea a TBL_WORKTYPES (categorías de trabajo).
+/// Maps to TBL_WORKTYPES (work categories).
 /// </summary>
 public class WorkType
 {
@@ -20,6 +20,6 @@ public class WorkType
     public string? Includes { get; set; }
     public string? NotIncludes { get; set; }
 
-    // Navegaciones
+    // Navigation properties
     public ICollection<Service> Services { get; set; } = new List<Service>();
 }

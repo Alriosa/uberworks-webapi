@@ -1,23 +1,21 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Convierte una contraseña en texto plano (ej. "MiClave123") en un texto
-//           irreversible ("hash") que sí se puede guardar en la base de datos de forma
-//           segura. Usa el algoritmo PBKDF2 (estándar de la industria), sin depender de
-//           ninguna librería externa — todo con clases nativas de .NET
-//           (System.Security.Cryptography). Se usa: (1) al registrar un usuario, para
-//           convertir su password antes de guardarlo, y (2) al hacer login, para comparar
-//           el password que mandan contra el hash guardado (sin nunca "des-hashear" nada).
-// Entidades relacionadas: User.cs (la propiedad User.PasswordHash se genera con esta clase)
-// Tablas relacionadas: TBL_USERS.CL_PASSWORD (ahí se guarda el resultado de Hash(), nunca
-//                       el password real)
+// FILE SUMMARY
+// What it does: Converts a plain-text password (e.g. "MyPassword123") into an irreversible
+//               "hash" that can be safely stored in the database. Uses the PBKDF2 algorithm
+//               (industry standard), with no external dependencies — everything built with
+//               native .NET classes (System.Security.Cryptography). Used: (1) at registration,
+//               to convert the password before storing it, and (2) at login, to compare the
+//               submitted password against the stored hash, without ever "un-hashing" anything.
+// Entities connected: User.cs (the User.PasswordHash property is generated with this class)
+// Tables related: TBL_USERS.CL_PASSWORD (Hash() output is stored there, never the real password)
 // =====================================================================================
 using System.Security.Cryptography;
 
 namespace uberworks_webapi.Common.Helpers;
 
 /// <summary>
-/// Hashing de contraseñas con PBKDF2 (sin dependencias externas).
-/// Formato almacenado: "{iteraciones}.{saltBase64}.{hashBase64}".
+/// Password hashing with PBKDF2 (no external dependencies).
+/// Stored format: "{iterations}.{saltBase64}.{hashBase64}".
 /// </summary>
 public static class PasswordHasher
 {

@@ -1,12 +1,13 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Implementación real de ICurrentUserService.cs. Lee los "claims" (los datos que
-//           JwtTokenService.cs metió dentro del token al hacer login) desde
-//           HttpContext.User — que ASP.NET Core llena automáticamente después de validar
-//           la firma del JWT en cada petición entrante (ver Program.cs → UseAuthentication()).
-//           Si no hay token válido, todas las propiedades devuelven null/false.
-// Entidades relacionadas: User.cs (indirectamente, vía los claims del token)
-// Tablas relacionadas: Ninguna (lee del token en memoria, no de la base de datos)
+// FILE SUMMARY
+// What it does: The real implementation of ICurrentUserService.cs. Reads the "claims" (the
+//               data JwtTokenService.cs put inside the token at login) from
+//               HttpContext.User — which ASP.NET Core fills in automatically after
+//               validating the JWT's signature on every incoming request (see Program.cs →
+//               UseAuthentication()). If there's no valid token, every property returns
+//               null/false.
+// Entities connected: User.cs (indirectly, via the token's claims)
+// Tables related: None (reads from the in-memory token, not the database)
 // =====================================================================================
 using System.Security.Claims;
 using uberworks_webapi.Common.Enums;

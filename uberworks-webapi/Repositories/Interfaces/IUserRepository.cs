@@ -1,12 +1,12 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Es el "contrato" (interface) de acceso a datos para User — define QUÉ
-//           operaciones existen (buscar por id, por email, verificar si existe, crear,
-//           actualizar) sin decir CÓMO se hacen. UserService.cs depende de esta interface,
-//           no de la clase concreta UserRepository — así se puede reemplazar la
-//           implementación (ej. para tests) sin tocar la lógica de negocio.
-// Entidades relacionadas: User.cs
-// Tablas relacionadas: TBL_USERS (indirectamente, a través de UserRepository.cs)
+// FILE SUMMARY
+// What it does: This is the data-access "contract" (interface) for User — defines WHAT
+//               operations exist (find by id, by email, check existence, create, update)
+//               without saying HOW they're done. UserService.cs depends on this interface,
+//               not on the concrete UserRepository class — so the implementation can be
+//               swapped (e.g. for tests) without touching business logic.
+// Entities connected: User.cs
+// Tables related: TBL_USERS (indirectly, through UserRepository.cs)
 // =====================================================================================
 using uberworks_webapi.Models.Entities;
 

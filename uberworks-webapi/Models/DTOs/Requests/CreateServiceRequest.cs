@@ -1,11 +1,11 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Describe el body de POST /api/services — lo que un cliente manda al crear un
-//           "Work Post". Incluye ubicación tipo "compartir ubicación de WhatsApp"
-//           (Latitude/Longitude + ExactAddress) más la Zona pública. El ClientId NO está
-//           aquí: se saca del JWT, igual que en CreateProfessionalRequest.cs.
-// Entidades relacionadas: Service.cs (indirectamente, vía ServiceService.CreateAsync)
-// Tablas relacionadas: Ninguna directamente (TBL_SERVICES se llena desde ServiceService.cs)
+// FILE SUMMARY
+// What it does: Describes the body of POST /api/services — what a client sends when
+//               creating a "Work Post". Includes a WhatsApp-style "share location"
+//               (Latitude/Longitude + ExactAddress) plus the public Zone. ClientId is NOT
+//               here: it comes from the JWT, same as in CreateProfessionalRequest.cs.
+// Entities connected: Service.cs (indirectly, via ServiceService.CreateAsync)
+// Tables related: None directly (TBL_SERVICES is filled in from ServiceService.cs)
 // =====================================================================================
 namespace uberworks_webapi.Models.DTOs.Requests;
 
@@ -16,8 +16,8 @@ public class CreateServiceRequest
     public string? ImageUrl { get; set; }
     public decimal? ProposedPrice { get; set; }
 
-    // Ubicación tipo "compartir ubicación" (GPS). ExactAddress y las coordenadas
-    // nunca se muestran públicamente — solo Zone es visible antes de aceptar una propuesta.
+    // "Share location" style GPS data. ExactAddress and the coordinates are never shown
+    // publicly — only Zone is visible before a proposal is accepted.
     public decimal Latitude { get; set; }
     public decimal Longitude { get; set; }
     public string ExactAddress { get; set; } = string.Empty;

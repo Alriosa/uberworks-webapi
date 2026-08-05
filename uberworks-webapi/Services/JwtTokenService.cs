@@ -1,14 +1,12 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Construye el token JWT real. Toma los datos del usuario que hizo login
-//           (Id, Email, Role) y los mete dentro del token como "claims" (afirmaciones
-//           firmadas), usando la SecretKey de appsettings.json/Jwt para firmar. El
-//           resultado es un texto largo que el cliente (webapp/mobile) debe mandar en cada
-//           petición futura dentro del header "Authorization: Bearer {token}".
-//           Explicación paso a paso completa de todo el mecanismo JWT al final de la
-//           respuesta del chat donde se agregó este comentario.
-// Entidades relacionadas: User.cs (de aquí saca Id, Email, Role para meterlos en el token)
-// Tablas relacionadas: Ninguna directamente (no consulta la base de datos, solo firma texto)
+// FILE SUMMARY
+// What it does: Builds the actual JWT token. Takes the logged-in user's data (Id, Email,
+//               Role) and puts them inside the token as "claims" (signed statements), using
+//               the SecretKey from appsettings.json/Jwt to sign it. The result is a long
+//               piece of text the client (webapp/mobile) must send on every future request
+//               inside the "Authorization: Bearer {token}" header.
+// Entities connected: User.cs (Id, Email, Role are pulled from here to put in the token)
+// Tables related: None directly (doesn't query the database, only signs text)
 // =====================================================================================
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -32,7 +30,7 @@ public class JwtTokenService : IJwtTokenService
     {
         var jwtSection = _configuration.GetSection("Jwt");
         var secretKey = jwtSection["SecretKey"]
-            ?? throw new InvalidOperationException("Falta configurar Jwt:SecretKey en appsettings.");
+            ?? throw new InvalidOperationException("Jwt:SecretKey is not configured in appsettings.");
         var expiryMinutes = int.Parse(jwtSection["ExpiryMinutes"] ?? "60");
 
         var claims = new[]

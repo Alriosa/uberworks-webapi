@@ -1,9 +1,10 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Describe el body de PUT /api/users/{id} — solo permite cambiar nombre,
-//           apellido y teléfono (no email, password ni rol, esos requieren flujos aparte).
-// Entidades relacionadas: User.cs (indirectamente, vía UserService.UpdateAsync)
-// Tablas relacionadas: Ninguna directamente (TBL_USERS se actualiza desde UserService.cs)
+// FILE SUMMARY
+// What it does: Describes the body of PUT /api/users/{id} — only allows changing first
+//               name, last name, and phone (not email, password, or role — those require
+//               separate flows).
+// Entities connected: User.cs (indirectly, via UserService.UpdateAsync)
+// Tables related: None directly (TBL_USERS is updated from UserService.cs)
 // =====================================================================================
 namespace uberworks_webapi.Models.DTOs.Requests;
 

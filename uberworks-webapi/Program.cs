@@ -1,15 +1,16 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Es el punto de entrada de toda la API — lo primero que se ejecuta al correr
-//           "dotnet run". Arma el "pipeline" (la tubería por la que pasa cada petición
-//           HTTP, en orden): (1) registra servicios (DB, Repos, Services, JWT), (2) siembra
-//           el MasterAdmin si no existe, (3) conecta el middleware de errores, OpenAPI,
-//           HTTPS, autenticación (lee y valida el JWT) y autorización (revisa [Authorize]),
-//           y finalmente (4) conecta los Controllers. El orden de app.Use...() SÍ importa:
-//           UseAuthentication() debe ir ANTES que UseAuthorization(), porque primero hay
-//           que saber quién eres, y después decidir si tienes permiso.
-// Entidades relacionadas: Ninguna directamente — orquesta el arranque de toda la app
-// Tablas relacionadas: Ninguna directamente (aunque dispara el seed de MasterAdmin en TBL_USERS)
+// FILE SUMMARY
+// What it does: This is the entry point of the whole API — the first thing that runs when
+//               you run "dotnet run". It builds the "pipeline" (the pipe every HTTP request
+//               flows through, in order): (1) registers services (DB, Repos, Services, JWT),
+//               (2) seeds the MasterAdmin if it doesn't exist, (3) wires up the error
+//               middleware, OpenAPI, HTTPS, authentication (reads and validates the JWT) and
+//               authorization (checks [Authorize]), and finally (4) wires up the Controllers.
+//               The order of app.Use...() calls DOES matter: UseAuthentication() must go
+//               BEFORE UseAuthorization(), because you first need to know who you are, and
+//               only then decide if you're allowed.
+// Entities connected: None directly — orchestrates the startup of the whole app
+// Tables related: None directly (though it does trigger the MasterAdmin seed into TBL_USERS)
 // =====================================================================================
 using uberworks_webapi.Data;
 using uberworks_webapi.Data.Seed;

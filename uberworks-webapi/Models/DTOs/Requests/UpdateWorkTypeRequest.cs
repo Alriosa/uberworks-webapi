@@ -1,10 +1,9 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Describe el body de PUT /api/worktypes/{id} — misma forma que
-//           CreateWorkTypeRequest.cs, para editar una categoría existente.
-// Entidades relacionadas: WorkType.cs (indirectamente, vía WorkTypeService.UpdateAsync)
-// Tablas relacionadas: Ninguna directamente (TBL_WORKTYPES se actualiza desde
-//                       WorkTypeService.cs)
+// FILE SUMMARY
+// What it does: Describes the body of PUT /api/worktypes/{id} — same shape as
+//               CreateWorkTypeRequest.cs, for editing an existing category.
+// Entities connected: WorkType.cs (indirectly, via WorkTypeService.UpdateAsync)
+// Tables related: None directly (TBL_WORKTYPES is updated from WorkTypeService.cs)
 // =====================================================================================
 namespace uberworks_webapi.Models.DTOs.Requests;
 

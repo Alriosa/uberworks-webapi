@@ -1,12 +1,11 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Contrato de acceso a datos para ServiceProfessional (las propuestas) — buscar
-//           por id, listar todas las propuestas de un Service, encontrar la propuesta
-//           Accepted de un Service (para saber quién es "el profesional aceptado"),
-//           verificar si un profesional ya propuso antes, crear/actualizar una o varias.
-// Entidades relacionadas: ServiceProfessional.cs
-// Tablas relacionadas: TBL_SERVICE_PROFESSIONALS (indirectamente, vía
-//                       ServiceProfessionalRepository.cs)
+// FILE SUMMARY
+// What it does: Data-access contract for ServiceProfessional (the proposals) — find by id,
+//               list all proposals on a Service, find the Accepted proposal for a Service
+//               (to know who "the accepted professional" is), check if a professional
+//               already proposed before, create/update one or several.
+// Entities connected: ServiceProfessional.cs
+// Tables related: TBL_SERVICE_PROFESSIONALS (indirectly, via ServiceProfessionalRepository.cs)
 // =====================================================================================
 using uberworks_webapi.Models.Entities;
 

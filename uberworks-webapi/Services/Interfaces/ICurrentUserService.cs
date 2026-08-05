@@ -1,19 +1,19 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Contrato para preguntar "¿quién está haciendo esta petición ahora mismo?"
-//           desde cualquier Controller o Service, sin tener que leer HttpContext
-//           directamente en todos lados. Se llena a partir del JWT ya validado por
-//           ASP.NET Core antes de llegar al Controller.
-// Entidades relacionadas: User.cs (UserId/Role reflejan los del User autenticado)
-// Tablas relacionadas: Ninguna (lee del token en memoria, no de la base de datos)
+// FILE SUMMARY
+// What it does: Contract for asking "who is making this request right now?" from any
+//               Controller or Service, without having to read HttpContext directly
+//               everywhere. It gets populated from the JWT already validated by ASP.NET
+//               Core before it reaches the Controller.
+// Entities connected: User.cs (UserId/Role reflect the authenticated User's)
+// Tables related: None (reads from the in-memory token, not the database)
 // =====================================================================================
 using uberworks_webapi.Common.Enums;
 
 namespace uberworks_webapi.Services.Interfaces;
 
 /// <summary>
-/// Expone la identidad del usuario autenticado (extraída del JWT) a Services/Controllers,
-/// sin acoplarlos directamente a HttpContext.
+/// Exposes the authenticated user's identity (extracted from the JWT) to
+/// Services/Controllers, without coupling them directly to HttpContext.
 /// </summary>
 public interface ICurrentUserService
 {

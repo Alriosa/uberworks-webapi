@@ -1,12 +1,12 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Describe lo que la API devuelve al consultar una propuesta (ServiceProfessional).
-//           Incluye el nombre y la calificación promedio del profesional "aplanados" aquí,
-//           para que el cliente pueda comparar propuestas sin llamadas adicionales.
-// Entidades relacionadas: ServiceProfessional.cs, Professional.cs, User.cs
-//                          (ServiceProfessionalService.cs mapea de ahí)
-// Tablas relacionadas: Ninguna directamente — es la "forma pública" combinada de
-//                       TBL_SERVICE_PROFESSIONALS + TBL_PROFESSIONALS + TBL_USERS
+// FILE SUMMARY
+// What it does: Describes what the API returns when querying a proposal
+//               (ServiceProfessional). Includes the professional's name and average rating
+//               flattened in here, so the client can compare proposals without extra calls.
+// Entities connected: ServiceProfessional.cs, Professional.cs, User.cs
+//                      (ServiceProfessionalService.cs maps from there)
+// Tables related: None directly — it's the combined "public shape" of
+//                 TBL_SERVICE_PROFESSIONALS + TBL_PROFESSIONALS + TBL_USERS
 // =====================================================================================
 using uberworks_webapi.Common.Enums;
 

@@ -1,10 +1,10 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Le dice a EF Core cómo guardar Professional.cs en TBL_PROFESSIONALS, y define
-//           la relación 1:1 con User (un User solo puede tener un Professional, forzado con
-//           un índice único sobre la columna PK_USER_ID).
-// Entidades relacionadas: Professional.cs (esta clase es la que configura), User.cs (1:1)
-// Tablas relacionadas: TBL_PROFESSIONALS
+// FILE SUMMARY
+// What it does: Tells EF Core how to store Professional.cs in TBL_PROFESSIONALS, and
+//               defines the 1:1 relationship with User (a User can only have one
+//               Professional, enforced with a unique index on the PK_USER_ID column).
+// Entities connected: Professional.cs (this class configures it), User.cs (1:1)
+// Tables related: TBL_PROFESSIONALS
 // =====================================================================================
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -48,7 +48,7 @@ public class ProfessionalConfiguration : IEntityTypeConfiguration<Professional>
             .HasColumnType("decimal(3,2)")
             .HasDefaultValue(0m);
 
-        // Relación 1:1 con User (Professional extiende a User).
+        // 1:1 relationship with User (Professional extends User).
         builder.HasOne(p => p.User)
             .WithOne(u => u.Professional)
             .HasForeignKey<Professional>(p => p.UserId)

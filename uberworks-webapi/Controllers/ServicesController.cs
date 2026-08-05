@@ -1,12 +1,12 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Expone los endpoints HTTP del "Work Post" (crear, listar abiertos, listar los
-//           míos, ver detalle). GetById es el único que se puede llamar sin estar logueado
-//           (por eso no tiene [Authorize]) — la privacidad de la dirección exacta la decide
-//           IServiceService internamente según _currentUserService.UserId (que aquí puede
-//           ser null si nadie inició sesión).
-// Entidades relacionadas: Service.cs (indirectamente, vía IServiceService)
-// Tablas relacionadas: TBL_SERVICES (indirectamente, a través de todas las capas)
+// FILE SUMMARY
+// What it does: Exposes the HTTP endpoints for the "Work Post" (create, list open ones,
+//               list mine, view detail). GetById is the only one that can be called without
+//               being logged in (that's why it has no [Authorize]) — the exact address's
+//               privacy is decided internally by IServiceService based on
+//               _currentUserService.UserId (which can be null here if no one is logged in).
+// Entities connected: Service.cs (indirectly, via IServiceService)
+// Tables related: TBL_SERVICES (indirectly, through all the layers)
 // =====================================================================================
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -38,7 +38,7 @@ public class ServicesController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
-    /// <summary>Listado público para que los profesionales exploren solicitudes abiertas (sin dirección exacta).</summary>
+    /// <summary>Public listing so professionals can browse open requests (no exact address).</summary>
     [HttpGet("open")]
     public async Task<IActionResult> GetOpen()
     {
@@ -56,8 +56,8 @@ public class ServicesController : ControllerBase
     }
 
     /// <summary>
-    /// Abierto a cualquiera (incluso anónimo) para poder ver el detalle público de un post.
-    /// La dirección exacta solo se incluye si quien llama es el dueño o el profesional aceptado.
+    /// Open to anyone (even anonymous) so the public detail of a post can be viewed.
+    /// The exact address is only included if the caller is the owner or the accepted professional.
     /// </summary>
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)

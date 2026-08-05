@@ -1,15 +1,16 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Es el corazón del flujo que describiste — negociación completa de un Service:
-//           (1) un profesional propone precio+minutos de llegada, (2) el cliente ve las
-//           propuestas y acepta una (las demás quedan Rejected automáticamente y la
-//           dirección exacta se libera al ganador), (3) el profesional presiona "Estoy en
-//           el sitio" (ConfirmArrivalAsync, timestamp del servidor), (4) sube la foto de
-//           evidencia (UploadCompletionPhotoAsync, exige que ya haya confirmado llegada),
-//           (5) tanto cliente como profesional confirman por separado (ConfirmCompletionAsync)
-//           y solo cuando AMBOS confirmaron se cierra el Service.
-// Entidades relacionadas: ServiceProfessional.cs, Service.cs, Professional.cs
-// Tablas relacionadas: TBL_SERVICE_PROFESSIONALS, TBL_SERVICES, TBL_PROFESSIONALS
+// FILE SUMMARY
+// What it does: This is the heart of the flow you described — a Service's full
+//               negotiation: (1) a professional proposes a price + arrival minutes, (2) the
+//               client sees the proposals and accepts one (the others are automatically
+//               Rejected and the exact address is released to the winner), (3) the
+//               professional presses "I'm on site" (ConfirmArrivalAsync, server timestamp),
+//               (4) they upload the completion photo (UploadCompletionPhotoAsync, requires
+//               having already confirmed arrival), (5) both the client and the professional
+//               confirm separately (ConfirmCompletionAsync), and only once BOTH have
+//               confirmed does the Service close.
+// Entities connected: ServiceProfessional.cs, Service.cs, Professional.cs
+// Tables related: TBL_SERVICE_PROFESSIONALS, TBL_SERVICES, TBL_PROFESSIONALS
 // =====================================================================================
 using uberworks_webapi.Common.Enums;
 using uberworks_webapi.Common.Exceptions;
@@ -41,19 +42,19 @@ public class ServiceProfessionalService : IServiceProfessionalService
         int professionalUserId, int serviceId, CreateServiceProfessionalRequest request)
     {
         var professional = await _professionalRepository.GetByUserIdAsync(professionalUserId)
-            ?? throw new NotFoundException("El usuario autenticado no tiene un perfil de profesional.");
+            ?? throw new NotFoundException("The authenticated user does not have a professional profile.");
 
         var service = await _serviceRepository.GetByIdAsync(serviceId)
-            ?? throw new NotFoundException($"No se encontró el servicio con id {serviceId}.");
+            ?? throw new NotFoundException($"Service with id {serviceId} was not found.");
 
         if (service.Status != ServiceStatus.Pending)
         {
-            throw new ConflictException("Este servicio ya no está aceptando nuevas propuestas.");
+            throw new ConflictException("This service is no longer accepting new proposals.");
         }
 
         if (await _serviceProfessionalRepository.ExistsProposalAsync(serviceId, professional.Id))
         {
-            throw new ConflictException("Ya enviaste una propuesta para este servicio.");
+            throw new ConflictException("You already submitted a proposal for this service.");
         }
 
         var proposal = new ServiceProfessional
@@ -73,11 +74,11 @@ public class ServiceProfessionalService : IServiceProfessionalService
     public async Task<IReadOnlyList<ServiceProfessionalResponse>> GetProposalsAsync(int clientUserId, int serviceId)
     {
         var service = await _serviceRepository.GetByIdAsync(serviceId)
-            ?? throw new NotFoundException($"No se encontró el servicio con id {serviceId}.");
+            ?? throw new NotFoundException($"Service with id {serviceId} was not found.");
 
         if (service.ClientId != clientUserId)
         {
-            throw new ConflictException("Solo el cliente dueño del servicio puede ver sus propuestas.");
+            throw new ConflictException("Only the client who owns this service can view its proposals.");
         }
 
         var proposals = await _serviceProfessionalRepository.GetByServiceIdAsync(serviceId);
@@ -87,21 +88,21 @@ public class ServiceProfessionalService : IServiceProfessionalService
     public async Task<ServiceProfessionalResponse> AcceptProposalAsync(int clientUserId, int serviceId, int proposalId)
     {
         var service = await _serviceRepository.GetByIdAsync(serviceId)
-            ?? throw new NotFoundException($"No se encontró el servicio con id {serviceId}.");
+            ?? throw new NotFoundException($"Service with id {serviceId} was not found.");
 
         if (service.ClientId != clientUserId)
         {
-            throw new ConflictException("Solo el cliente dueño del servicio puede aceptar una propuesta.");
+            throw new ConflictException("Only the client who owns this service can accept a proposal.");
         }
 
         if (service.Status != ServiceStatus.Pending)
         {
-            throw new ConflictException("Este servicio ya no está pendiente de aceptación.");
+            throw new ConflictException("This service is no longer pending acceptance.");
         }
 
         var proposals = await _serviceProfessionalRepository.GetByServiceIdAsync(serviceId);
         var chosen = proposals.FirstOrDefault(p => p.Id == proposalId)
-            ?? throw new NotFoundException($"No se encontró la propuesta {proposalId} para este servicio.");
+            ?? throw new NotFoundException($"Proposal {proposalId} was not found for this service.");
 
         chosen.Status = ServiceProfessionalStatus.Accepted;
         foreach (var other in proposals.Where(p => p.Id != proposalId))
@@ -110,7 +111,7 @@ public class ServiceProfessionalService : IServiceProfessionalService
         }
         await _serviceProfessionalRepository.UpdateRangeAsync(proposals);
 
-        // A partir de aquí, ese profesional ya puede ver la dirección exacta (ServiceService.CanSeeExactLocationAsync).
+        // From here on, that professional can see the exact address (ServiceService.CanSeeExactLocationAsync).
         service.Status = ServiceStatus.Accepted;
         await _serviceRepository.UpdateAsync(service);
 
@@ -121,7 +122,7 @@ public class ServiceProfessionalService : IServiceProfessionalService
     {
         var accepted = await GetAcceptedForProfessionalAsync(professionalUserId, serviceId);
 
-        // Timestamp del servidor, nunca del celular del profesional (no se puede manipular).
+        // Server timestamp, never the professional's phone (can't be tampered with).
         accepted.ArrivalConfirmedAt = DateTime.UtcNow;
         await _serviceProfessionalRepository.UpdateAsync(accepted);
     }
@@ -131,11 +132,11 @@ public class ServiceProfessionalService : IServiceProfessionalService
         var accepted = await GetAcceptedForProfessionalAsync(professionalUserId, serviceId);
         if (accepted.ArrivalConfirmedAt is null)
         {
-            throw new ConflictException("Debes confirmar tu llegada antes de subir evidencia de trabajo terminado.");
+            throw new ConflictException("You must confirm your arrival before uploading completion evidence.");
         }
 
         var service = await _serviceRepository.GetByIdAsync(serviceId)
-            ?? throw new NotFoundException($"No se encontró el servicio con id {serviceId}.");
+            ?? throw new NotFoundException($"Service with id {serviceId} was not found.");
 
         service.CompletionPhotoUrl = photoUrl;
         await _serviceRepository.UpdateAsync(service);
@@ -144,11 +145,11 @@ public class ServiceProfessionalService : IServiceProfessionalService
     public async Task<CompletionStatusResponse> ConfirmCompletionAsync(int callerUserId, int serviceId)
     {
         var service = await _serviceRepository.GetByIdAsync(serviceId)
-            ?? throw new NotFoundException($"No se encontró el servicio con id {serviceId}.");
+            ?? throw new NotFoundException($"Service with id {serviceId} was not found.");
 
         if (string.IsNullOrEmpty(service.CompletionPhotoUrl))
         {
-            throw new ConflictException("Aún no se ha subido evidencia de que el trabajo fue realizado.");
+            throw new ConflictException("Completion evidence has not been uploaded yet.");
         }
 
         var accepted = await _serviceProfessionalRepository.GetAcceptedForServiceAsync(serviceId);
@@ -163,11 +164,12 @@ public class ServiceProfessionalService : IServiceProfessionalService
         }
         else
         {
-            throw new ConflictException("No tienes relación con este servicio para confirmarlo.");
+            throw new ConflictException("You have no relationship with this service to confirm it.");
         }
 
-        // Solo cuando AMBAS partes confirman se cierra el servicio (ver contexto de negocio:
-        // a partir de aquí cesa la responsabilidad legal entre cliente y profesional).
+        // The service only closes once BOTH parties have confirmed (see the business
+        // context: from this point on, legal responsibility between client and
+        // professional ends).
         if (service.ClientConfirmedCompletionAt is not null && service.ProfessionalConfirmedCompletionAt is not null)
         {
             service.Status = ServiceStatus.Completed;
@@ -192,11 +194,11 @@ public class ServiceProfessionalService : IServiceProfessionalService
     private async Task<ServiceProfessional> GetAcceptedForProfessionalAsync(int professionalUserId, int serviceId)
     {
         var accepted = await _serviceProfessionalRepository.GetAcceptedForServiceAsync(serviceId)
-            ?? throw new NotFoundException("Este servicio todavía no tiene un profesional aceptado.");
+            ?? throw new NotFoundException("This service doesn't have an accepted professional yet.");
 
         if (accepted.Professional.UserId != professionalUserId)
         {
-            throw new ConflictException("No eres el profesional aceptado para este servicio.");
+            throw new ConflictException("You are not the accepted professional for this service.");
         }
 
         return accepted;

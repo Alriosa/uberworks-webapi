@@ -1,12 +1,11 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Describe exactamente qué campos debe mandar el cliente (webapp/mobile) en el
-//           body de POST /api/users/register. Es una clase "de transporte" (DTO = Data
-//           Transfer Object) — nunca se guarda directo en la base de datos; UserService.cs
-//           la lee y arma un User.cs a partir de estos datos (más el hash del password).
-// Entidades relacionadas: User.cs (UserService.RegisterAsync la convierte en un User)
-// Tablas relacionadas: Ninguna directamente — solo llega a TBL_USERS después de pasar por
-//                       UserService.cs
+// FILE SUMMARY
+// What it does: Describes exactly what fields the client (webapp/mobile) must send in the
+//               body of POST /api/users/register. It's a "transport" class (DTO = Data
+//               Transfer Object) — never saved directly to the database; UserService.cs
+//               reads it and builds a User.cs from this data (plus the hashed password).
+// Entities connected: User.cs (UserService.RegisterAsync converts this into a User)
+// Tables related: None directly — only reaches TBL_USERS after passing through UserService.cs
 // =====================================================================================
 using uberworks_webapi.Common.Enums;
 

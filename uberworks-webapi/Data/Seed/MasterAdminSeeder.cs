@@ -1,14 +1,14 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Se ejecuta UNA vez, cada vez que la API arranca (llamado desde Program.cs).
-//           Revisa si ya existe algún usuario con Role=MasterAdmin en la base de datos;
-//           si no existe ninguno, crea uno usando el email/password que estén configurados
-//           en appsettings.json (o mejor, en "dotnet user-secrets") bajo la sección
-//           "MasterAdmin". Así la única cuenta con máximo privilegio nunca pasa por el
-//           endpoint público de registro (que la rechaza explícitamente, ver
-//           Services/UserService.cs → RegisterAsync).
-// Entidades relacionadas: User.cs (crea una fila con Role = UserRole.MasterAdmin)
-// Tablas relacionadas: TBL_USERS
+// FILE SUMMARY
+// What it does: Runs ONCE every time the API starts (called from Program.cs). Checks
+//               whether a user with Role=MasterAdmin already exists in the database; if
+//               none exists, it creates one using the email/password configured in
+//               appsettings.json (or better, in "dotnet user-secrets") under the
+//               "MasterAdmin" section. This way the highest-privilege account never goes
+//               through the public registration endpoint (which explicitly rejects it, see
+//               Services/UserService.cs → RegisterAsync).
+// Entities connected: User.cs (creates a row with Role = UserRole.MasterAdmin)
+// Tables related: TBL_USERS
 // =====================================================================================
 using Microsoft.EntityFrameworkCore;
 using uberworks_webapi.Common.Enums;
@@ -18,9 +18,9 @@ using uberworks_webapi.Models.Entities;
 namespace uberworks_webapi.Data.Seed;
 
 /// <summary>
-/// Siembra la única cuenta MasterAdmin al arrancar la API, si todavía no existe ninguna.
-/// Nunca se crea vía /api/users/register — las credenciales salen de configuración
-/// (appsettings / user secrets / variables de entorno), nunca de código fuente.
+/// Seeds the single MasterAdmin account on API startup, if none exists yet.
+/// Never created via /api/users/register — credentials come from configuration
+/// (appsettings / user secrets / environment variables), never from source code.
 /// </summary>
 public static class MasterAdminSeeder
 {
@@ -38,8 +38,8 @@ public static class MasterAdminSeeder
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
         {
             logger.LogWarning(
-                "No existe ninguna cuenta MasterAdmin y no se configuró MasterAdmin:Email / " +
-                "MasterAdmin:Password. No se sembró la cuenta maestra.");
+                "No MasterAdmin account exists and MasterAdmin:Email / MasterAdmin:Password " +
+                "were not configured. The master account was not seeded.");
             return;
         }
 
@@ -56,6 +56,6 @@ public static class MasterAdminSeeder
         context.Users.Add(masterAdmin);
         await context.SaveChangesAsync();
 
-        logger.LogInformation("Cuenta MasterAdmin sembrada para {Email}.", email);
+        logger.LogInformation("MasterAdmin account seeded for {Email}.", email);
     }
 }

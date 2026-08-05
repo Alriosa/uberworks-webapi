@@ -1,11 +1,11 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Le dice a EF Core cómo guardar Payment.cs en TBL_PAYMENTS, incluyendo el CHECK
-//           constraint del método de pago (CREDITCARD/PAYPAL/ZELLE) y su conversión manual
-//           de enum nullable (PaymentMethod?) a texto y viceversa.
-// Entidades relacionadas: Payment.cs (esta clase es la que configura; aún sin
-//                          Repository/Service/Controller construidos)
-// Tablas relacionadas: TBL_PAYMENTS
+// FILE SUMMARY
+// What it does: Tells EF Core how to store Payment.cs in TBL_PAYMENTS, including the CHECK
+//               constraint on the payment method (CREDITCARD/PAYPAL/ZELLE) and its manual
+//               nullable enum conversion (PaymentMethod?) to text and back.
+// Entities connected: Payment.cs (this class configures it; Repository/Service/Controller
+//                      not built yet)
+// Tables related: TBL_PAYMENTS
 // =====================================================================================
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

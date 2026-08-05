@@ -1,10 +1,10 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Implementación real de IServiceRepository.cs. El método privado Query() centra
-//           el ".Include(s => s.WorkType)" (para poder mostrar el nombre de la categoría
-//           sin una consulta aparte) y lo reutilizan los demás métodos.
-// Entidades relacionadas: Service.cs, WorkType.cs (vía Include)
-// Tablas relacionadas: TBL_SERVICES, TBL_WORKTYPES
+// FILE SUMMARY
+// What it does: The real implementation of IServiceRepository.cs. The private Query()
+//               method centralizes ".Include(s => s.WorkType)" (so the category name can be
+//               shown without a separate query), and the other methods reuse it.
+// Entities connected: Service.cs, WorkType.cs (via Include)
+// Tables related: TBL_SERVICES, TBL_WORKTYPES
 // =====================================================================================
 using Microsoft.EntityFrameworkCore;
 using uberworks_webapi.Common.Enums;

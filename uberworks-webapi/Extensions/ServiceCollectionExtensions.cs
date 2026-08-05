@@ -1,15 +1,15 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Mantiene Program.cs limpio agrupando la configuración de arranque en dos
-//           métodos de extensión: AddJwtAuthentication() configura cómo ASP.NET Core
-//           valida los tokens JWT que llegan en cada petición (firma, emisor, audiencia,
-//           expiración); AddApplicationServices() registra en el contenedor de Inyección
-//           de Dependencias (DI) TODOS los Repository/Service de la app — es el único
-//           lugar donde se conecta "cuando alguien pida IUserRepository, dale un
-//           UserRepository nuevo". Sin este registro, la app no sabría qué clase concreta
-//           usar detrás de cada interface.
-// Entidades relacionadas: Todas (este archivo cablea Repository/Service de cada una)
-// Tablas relacionadas: Ninguna directamente (es configuración de arranque, no acceso a datos)
+// FILE SUMMARY
+// What it does: Keeps Program.cs clean by grouping startup configuration into two
+//               extension methods: AddJwtAuthentication() configures how ASP.NET Core
+//               validates the JWT tokens that arrive on every request (signature, issuer,
+//               audience, expiration); AddApplicationServices() registers EVERY
+//               Repository/Service in the Dependency Injection (DI) container — it's the
+//               only place where "when someone asks for IUserRepository, give them a new
+//               UserRepository" gets wired up. Without this registration, the app wouldn't
+//               know which concrete class to use behind each interface.
+// Entities connected: All of them (this file wires up the Repository/Service for each one)
+// Tables related: None directly (it's startup configuration, not data access)
 // =====================================================================================
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -29,7 +29,7 @@ public static class ServiceCollectionExtensions
     {
         var jwtSection = configuration.GetSection("Jwt");
         var secretKey = jwtSection["SecretKey"]
-            ?? throw new InvalidOperationException("Falta configurar Jwt:SecretKey en appsettings.");
+            ?? throw new InvalidOperationException("Jwt:SecretKey is not configured in appsettings.");
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -76,8 +76,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IServiceProfessionalRepository, ServiceProfessionalRepository>();
         services.AddScoped<IServiceProfessionalService, ServiceProfessionalService>();
 
-        // Repositories/Services de las demás entidades se registran aquí
-        // conforme se vayan implementando.
+        // Repositories/Services for the remaining entities are registered here
+        // as they get implemented.
 
         return services;
     }

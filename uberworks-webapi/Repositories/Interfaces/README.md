@@ -1,5 +1,5 @@
 # Repository Interfaces
 
-Contratos de acceso a datos (ej. `IUserRepository`, `IServiceRepository`) que las clases en `Repositories/` implementan usando el `AppDbContext`.
+Data-access contracts (e.g. `IUserRepository`, `IServiceRepository`) that the classes in `Repositories/` implement using `AppDbContext`.
 
-Los `Services/` dependen de estas interfaces, no de las implementaciones concretas (para poder mockear en tests).
+`Services/` depend on these interfaces, not on the concrete implementations (so they can be mocked in tests).

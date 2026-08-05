@@ -1,15 +1,14 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Guarda el saldo de puntos de recompensa de un usuario (1 fila por usuario,
-//           que se actualiza con el tiempo — no un historial de eventos). Todavía no
-//           tiene Repository/Service/Controller construidos.
-// Entidades relacionadas: User.cs (1:1)
-// Tablas relacionadas: TBL_REWARDS (mapeo en Data/Configurations/RewardConfiguration.cs)
+// FILE SUMMARY
+// What it does: Stores a user's reward points balance (1 row per user, updated over time —
+//               not an event history). Doesn't have a Repository/Service/Controller built yet.
+// Entities connected: User.cs (1:1)
+// Tables related: TBL_REWARDS (mapping in Data/Configurations/RewardConfiguration.cs)
 // =====================================================================================
 namespace uberworks_webapi.Models.Entities;
 
 /// <summary>
-/// Mapea a TBL_REWARDS.
+/// Maps to TBL_REWARDS.
 /// </summary>
 public class Reward
 {
@@ -19,6 +18,6 @@ public class Reward
     public int Points { get; set; }
     public DateTime LastUpdateDate { get; set; }
 
-    // Navegaciones
+    // Navigation properties
     public User User { get; set; } = null!;
 }

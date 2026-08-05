@@ -1,10 +1,10 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Le dice a EF Core cómo guardar WorkType.cs en TBL_WORKTYPES: nombres de
-//           columna reales y longitudes máximas. Es la tabla más simple (sin foreign keys
-//           propias, solo la reciben desde Service).
-// Entidades relacionadas: WorkType.cs (esta clase es la que configura)
-// Tablas relacionadas: TBL_WORKTYPES
+// FILE SUMMARY
+// What it does: Tells EF Core how to store WorkType.cs in TBL_WORKTYPES: real column names
+//               and max lengths. It's the simplest table (no foreign keys of its own, only
+//               receives one from Service).
+// Entities connected: WorkType.cs (this class configures it)
+// Tables related: TBL_WORKTYPES
 // =====================================================================================
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

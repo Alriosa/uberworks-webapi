@@ -1,11 +1,11 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Le dice a EF Core cómo guardar Review.cs en TBL_REVIEWS, incluyendo el CHECK
-//           constraint que obliga a que las calificaciones (1-5) estén en rango válido, y
-//           sus tres foreign keys (Professional, Service, User como Client).
-// Entidades relacionadas: Review.cs (esta clase es la que configura; aún sin
-//                          Repository/Service/Controller construidos)
-// Tablas relacionadas: TBL_REVIEWS
+// FILE SUMMARY
+// What it does: Tells EF Core how to store Review.cs in TBL_REVIEWS, including the CHECK
+//               constraint that forces ratings (1-5) to stay within a valid range, and its
+//               three foreign keys (Professional, Service, User as Client).
+// Entities connected: Review.cs (this class configures it; Repository/Service/Controller
+//                      not built yet)
+// Tables related: TBL_REVIEWS
 // =====================================================================================
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

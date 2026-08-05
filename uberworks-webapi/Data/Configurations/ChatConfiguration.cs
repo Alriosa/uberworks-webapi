@@ -1,10 +1,10 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Le dice a EF Core cómo guardar Chat.cs en TBL_CHATS: nombres de columna reales
-//           y las dos foreign keys (hacia Professional y hacia User como Client).
-// Entidades relacionadas: Chat.cs (esta clase es la que configura; aún sin
-//                          Repository/Service/Controller construidos)
-// Tablas relacionadas: TBL_CHATS
+// FILE SUMMARY
+// What it does: Tells EF Core how to store Chat.cs in TBL_CHATS: real column names and the
+//               two foreign keys (to Professional and to User as Client).
+// Entities connected: Chat.cs (this class configures it; Repository/Service/Controller
+//                      not built yet)
+// Tables related: TBL_CHATS
 // =====================================================================================
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

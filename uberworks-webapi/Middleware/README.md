@@ -1,3 +1,3 @@
 # Middleware
 
-Middlewares custom del pipeline de ASP.NET Core (ej. `ExceptionHandlingMiddleware` para capturar excepciones y devolver un JSON de error uniforme en toda la API).
+Custom ASP.NET Core pipeline middlewares (e.g. `ExceptionHandlingMiddleware` to catch exceptions and return a consistent error JSON across the whole API).

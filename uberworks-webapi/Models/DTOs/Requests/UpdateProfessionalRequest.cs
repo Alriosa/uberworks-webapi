@@ -1,12 +1,11 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Describe el body de PUT /api/professionals/{id} — actualiza descripción,
-//           experiencia, disponibilidad y ubicación. AverageRating no está aquí a
-//           propósito: no es algo que el profesional pueda editar manualmente, se calculará
-//           a partir de Review.cs.
-// Entidades relacionadas: Professional.cs (indirectamente, vía ProfessionalService.UpdateAsync)
-// Tablas relacionadas: Ninguna directamente (TBL_PROFESSIONALS se actualiza desde
-//                       ProfessionalService.cs)
+// FILE SUMMARY
+// What it does: Describes the body of PUT /api/professionals/{id} — updates description,
+//               experience, availability, and location. AverageRating is intentionally
+//               absent: it isn't something the professional can edit manually, it will be
+//               computed from Review.cs.
+// Entities connected: Professional.cs (indirectly, via ProfessionalService.UpdateAsync)
+// Tables related: None directly (TBL_PROFESSIONALS is updated from ProfessionalService.cs)
 // =====================================================================================
 namespace uberworks_webapi.Models.DTOs.Requests;
 

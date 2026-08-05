@@ -1,18 +1,18 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Guarda una sanción aplicada a un usuario (temporal o permanente) con su razón
-//           y fechas de inicio/fin. Todavía no tiene Repository/Service/Controller
-//           construidos — probablemente se conecte con los permisos de Admin que
-//           discutiremos más adelante (un Admin podría penalizar a un usuario).
-// Entidades relacionadas: User.cs (N:1)
-// Tablas relacionadas: TBL_PENALTIES (mapeo en Data/Configurations/PenaltyConfiguration.cs)
+// FILE SUMMARY
+// What it does: Stores a sanction applied to a user (temporary or permanent) with its
+//               reason and start/end dates. Doesn't have a Repository/Service/Controller
+//               built yet — it will likely connect with the Admin permissions we'll discuss
+//               later (an Admin might be able to penalize a user).
+// Entities connected: User.cs (N:1)
+// Tables related: TBL_PENALTIES (mapping in Data/Configurations/PenaltyConfiguration.cs)
 // =====================================================================================
 using uberworks_webapi.Common.Enums;
 
 namespace uberworks_webapi.Models.Entities;
 
 /// <summary>
-/// Mapea a TBL_PENALTIES.
+/// Maps to TBL_PENALTIES.
 /// </summary>
 public class Penalty
 {
@@ -24,6 +24,6 @@ public class Penalty
     public DateTime StartDate { get; set; }
     public DateTime? EndDate { get; set; }
 
-    // Navegaciones
+    // Navigation properties
     public User User { get; set; } = null!;
 }

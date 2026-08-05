@@ -1,5 +1,5 @@
 # Service Interfaces
 
-Contratos de la lógica de negocio (ej. `IServiceRequestService`, `IAuthService`) que los Controllers consumen vía inyección de dependencias.
+Business logic contracts (e.g. `IServiceRequestService`, `IAuthService`) that Controllers consume via dependency injection.
 
-Los Controllers nunca deberían hablar directo con los Repositories — siempre pasan por un Service.
+Controllers should never talk directly to Repositories — they always go through a Service.

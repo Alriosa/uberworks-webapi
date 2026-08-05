@@ -1,11 +1,11 @@
 # Enums
 
-Enums de C# que representan los `CHECK` constraints y valores por defecto del diagrama:
+C# enums representing the `CHECK` constraints and default values from the diagram:
 
-- `UserRole`: CLIENT, PROFESSIONAL, ADMINISTRATOR, SUPPORT
-- `UserStatus`: ACTIVE, SUSPENDED, PENALIZED
-- `ServiceStatus`: PENDING, ACCEPTED, CANCELLED, COMPLETED
-- `ServiceProfessionalStatus`: UNDER_NEGOTIATION, ACCEPTED, REJECTED, IN_PROGRESS, COMPLETED
-- `PaymentMethod`: CREDIT_CARD, PAYPAL, ZELLE
-- `PaymentStatus`: PENDING, HELD, RELEASED
-- `PenaltyType`: TEMPORARY, PERMANENT
+- `UserRole`: MasterAdmin, Admin, Client, Professional
+- `UserStatus`: Active, Suspended, Penalized
+- `ServiceStatus`: Pending, Accepted, Cancelled, Completed
+- `ServiceProfessionalStatus`: UnderNegotiation, Accepted, Rejected, InProgress, Completed
+- `PaymentMethod`: CreditCard, PayPal, Zelle
+- `PaymentStatus`: Pending, Held, Released
+- `PenaltyType`: Temporary, Permanent

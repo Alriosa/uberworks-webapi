@@ -1,12 +1,13 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Es lo que devuelve POST /api/services/{id}/confirm-completion — un resumen
-//           chiquito de en qué punto va el cierre del trabajo: si ya confirmó el cliente,
-//           si ya confirmó el profesional, y si con eso el Service quedó Completed.
-// Entidades relacionadas: Service.cs (indirectamente, vía
-//                          ServiceProfessionalService.ConfirmCompletionAsync)
-// Tablas relacionadas: Ninguna directamente — resume campos de TBL_SERVICES sin ser un
-//                       mapeo 1:1 de toda la fila
+// FILE SUMMARY
+// What it does: This is what POST /api/services/{id}/confirm-completion returns — a small
+//               summary of where the job-closing process stands: whether the client already
+//               confirmed, whether the professional already confirmed, and whether that
+//               made the Service Completed.
+// Entities connected: Service.cs (indirectly, via
+//                      ServiceProfessionalService.ConfirmCompletionAsync)
+// Tables related: None directly — summarizes fields from TBL_SERVICES without being a 1:1
+//                 mapping of the full row
 // =====================================================================================
 namespace uberworks_webapi.Models.DTOs.Responses;
 

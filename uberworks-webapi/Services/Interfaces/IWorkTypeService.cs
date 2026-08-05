@@ -1,10 +1,10 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Contrato de la lógica de negocio de WorkType (CRUD del catálogo).
-//           WorkTypesController.cs depende de esta interface, no de WorkTypeService.cs
-//           directamente.
-// Entidades relacionadas: WorkType.cs
-// Tablas relacionadas: TBL_WORKTYPES (indirectamente, vía WorkTypeService.cs)
+// FILE SUMMARY
+// What it does: Contract for the WorkType business logic (catalog CRUD).
+//               WorkTypesController.cs depends on this interface, not on WorkTypeService.cs
+//               directly.
+// Entities connected: WorkType.cs
+// Tables related: TBL_WORKTYPES (indirectly, via WorkTypeService.cs)
 // =====================================================================================
 using uberworks_webapi.Models.DTOs.Requests;
 using uberworks_webapi.Models.DTOs.Responses;

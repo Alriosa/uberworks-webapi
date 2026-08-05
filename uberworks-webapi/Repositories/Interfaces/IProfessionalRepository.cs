@@ -1,11 +1,11 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Contrato de acceso a datos para Professional — buscar por id, por UserId
-//           (para saber si un usuario ya tiene perfil profesional), crear, actualizar.
-//           ProfessionalService.cs y ServiceProfessionalService.cs dependen de esta
-//           interface, no de la implementación concreta.
-// Entidades relacionadas: Professional.cs
-// Tablas relacionadas: TBL_PROFESSIONALS (indirectamente, vía ProfessionalRepository.cs)
+// FILE SUMMARY
+// What it does: Data-access contract for Professional — find by id, by UserId (to check if
+//               a user already has a professional profile), create, update.
+//               ProfessionalService.cs and ServiceProfessionalService.cs depend on this
+//               interface, not on the concrete implementation.
+// Entities connected: Professional.cs
+// Tables related: TBL_PROFESSIONALS (indirectly, via ProfessionalRepository.cs)
 // =====================================================================================
 using uberworks_webapi.Models.Entities;
 

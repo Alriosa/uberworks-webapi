@@ -1,5 +1,5 @@
 # EF Core Configurations
 
-Una clase `IEntityTypeConfiguration<T>` por entidad (Fluent API), en vez de meter todo en `OnModelCreating` del `AppDbContext`.
+One `IEntityTypeConfiguration<T>` class per entity (Fluent API), instead of cramming everything into `AppDbContext`'s `OnModelCreating`.
 
-Ej: `UserConfiguration.cs`, `ServiceConfiguration.cs`, etc. Aquí se definen nombres de tabla/columna, longitudes, checks, relaciones y llaves foráneas según el diagrama original.
+E.g. `UserConfiguration.cs`, `ServiceConfiguration.cs`, etc. This is where table/column names, lengths, checks, relationships, and foreign keys are defined, matching the original diagram.

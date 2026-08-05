@@ -1,14 +1,14 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Es una "capa" (middleware) que envuelve TODA petición HTTP que entra a la API.
-//           Si algún Controller/Service lanza una de las excepciones custom de
-//           Common/Exceptions (NotFoundException, ConflictException, etc.), este código la
-//           atrapa aquí en un solo lugar y arma la respuesta HTTP correcta (404/409/401/400),
-//           en vez de tener que repetir un try/catch en cada uno de los ~15 métodos de
-//           Controller. Cualquier excepción no reconocida se convierte en 500 y se registra
-//           en el log (nunca se le muestra el detalle interno al cliente, por seguridad).
-// Entidades relacionadas: Ninguna directamente — es infraestructura transversal
-// Tablas relacionadas: Ninguna (no toca la base de datos)
+// FILE SUMMARY
+// What it does: This is a "layer" (middleware) that wraps EVERY HTTP request coming into
+//               the API. If any Controller/Service throws one of the custom exceptions from
+//               Common/Exceptions (NotFoundException, ConflictException, etc.), this code
+//               catches it in a single place and builds the right HTTP response
+//               (404/409/401/400), instead of having to repeat a try/catch in each of the
+//               ~15 Controller methods. Any unrecognized exception becomes a 500 and gets
+//               logged (the internal detail is never shown to the client, for security).
+// Entities connected: None directly — this is cross-cutting infrastructure
+// Tables related: None (doesn't touch the database)
 // =====================================================================================
 using System.Net;
 using System.Text.Json;
@@ -17,8 +17,8 @@ using uberworks_webapi.Common.Exceptions;
 namespace uberworks_webapi.Middleware;
 
 /// <summary>
-/// Captura las excepciones de dominio (Common/Exceptions) y cualquier excepción no
-/// controlada, devolviendo siempre un JSON de error consistente en toda la API.
+/// Catches the domain exceptions (Common/Exceptions) and any unhandled exception,
+/// always returning a consistent JSON error across the whole API.
 /// </summary>
 public class ExceptionHandlingMiddleware
 {
@@ -56,14 +56,14 @@ public class ExceptionHandlingMiddleware
 
         if (statusCode == HttpStatusCode.InternalServerError)
         {
-            _logger.LogError(exception, "Excepción no controlada");
+            _logger.LogError(exception, "Unhandled exception");
         }
 
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = (int)statusCode;
 
         var message = statusCode == HttpStatusCode.InternalServerError
-            ? "Ocurrió un error inesperado."
+            ? "An unexpected error occurred."
             : exception.Message;
 
         var payload = JsonSerializer.Serialize(new { statusCode = (int)statusCode, message });

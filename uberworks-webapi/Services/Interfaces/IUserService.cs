@@ -1,11 +1,11 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Contrato de la lógica de negocio de usuarios. UsersController.cs depende de
-//           esta interface, no de UserService.cs directamente — así Program.cs decide en
-//           un solo lugar (Extensions/ServiceCollectionExtensions.cs) qué implementación
-//           real se conecta.
-// Entidades relacionadas: User.cs
-// Tablas relacionadas: TBL_USERS (indirectamente, vía UserService.cs)
+// FILE SUMMARY
+// What it does: Contract for the user business logic. UsersController.cs depends on this
+//               interface, not on UserService.cs directly — so Program.cs decides in one
+//               single place (Extensions/ServiceCollectionExtensions.cs) which real
+//               implementation gets wired up.
+// Entities connected: User.cs
+// Tables related: TBL_USERS (indirectly, via UserService.cs)
 // =====================================================================================
 using uberworks_webapi.Models.DTOs.Requests;
 using uberworks_webapi.Models.DTOs.Responses;

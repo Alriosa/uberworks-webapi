@@ -1,5 +1,5 @@
 # Response DTOs
 
-Objetos que se devuelven al cliente (webapp o mobile) en las respuestas de la API (ej. `UserResponse`, `ServiceResponse`).
+Objects returned to the client (webapp or mobile) in API responses (e.g. `UserResponse`, `ServiceResponse`).
 
-Permiten ocultar campos sensibles (como `CL_PASSWORD`) y dar forma a la respuesta sin acoplarla al esquema de base de datos.
+Let sensitive fields (like `CL_PASSWORD`) stay hidden and shape the response without coupling it to the database schema.

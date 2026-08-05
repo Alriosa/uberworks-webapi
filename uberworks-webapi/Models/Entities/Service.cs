@@ -1,23 +1,23 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Es el "Work Post" que describiste — lo que un cliente publica cuando necesita
-//           un servicio (ej. "necesito que reparen el refrigerador"). Guarda la ubicación
-//           GPS exacta y la dirección (privadas, solo visibles para el dueño y el
-//           profesional aceptado), la Zona pública (ej. "Granadilla", visible para todos),
-//           y los datos de cierre del trabajo (foto de evidencia + confirmación de ambas
-//           partes). Toda la lógica de "quién puede ver qué" vive en Services/ServiceService.cs,
-//           no aquí — esta clase solo describe la forma de los datos.
-// Entidades relacionadas: WorkType.cs (N:1), User.cs (N:1, como Client),
-//                          ServiceProfessional.cs (1:N, las propuestas que recibe),
-//                          Review.cs (1:N), Payment.cs (1:N)
-// Tablas relacionadas: TBL_SERVICES (mapeo en Data/Configurations/ServiceConfiguration.cs)
+// FILE SUMMARY
+// What it does: This is the "Work Post" — what a client publishes when they need a service
+//               (e.g. "I need my fridge fixed"). Stores the exact GPS location and address
+//               (private, only visible to the owner and the accepted professional), the
+//               public Zone (e.g. "Downtown", visible to everyone), and the job-closing data
+//               (completion photo + confirmation from both parties). All the "who can see
+//               what" logic lives in Services/ServiceService.cs, not here — this class only
+//               describes the shape of the data.
+// Entities connected: WorkType.cs (N:1), User.cs (N:1, as Client),
+//                      ServiceProfessional.cs (1:N, the proposals it receives),
+//                      Review.cs (1:N), Payment.cs (1:N)
+// Tables related: TBL_SERVICES (mapping in Data/Configurations/ServiceConfiguration.cs)
 // =====================================================================================
 using uberworks_webapi.Common.Enums;
 
 namespace uberworks_webapi.Models.Entities;
 
 /// <summary>
-/// Mapea a TBL_SERVICES (solicitud de servicio creada por un cliente).
+/// Maps to TBL_SERVICES (a service request created by a client).
 /// </summary>
 public class Service
 {
@@ -31,19 +31,19 @@ public class Service
     public ServiceStatus Status { get; set; } = ServiceStatus.Pending;
     public DateTime RequestDate { get; set; }
 
-    // Ubicación: la dirección exacta es privada, solo se expone al dueño (cliente)
-    // y al profesional cuya propuesta fue aceptada. La Zona es pública desde el inicio.
+    // Location: the exact address is private, only exposed to the owner (client)
+    // and to the professional whose proposal was accepted. The Zone is public from the start.
     public decimal Latitude { get; set; }
     public decimal Longitude { get; set; }
     public string ExactAddress { get; set; } = string.Empty;
     public string Zone { get; set; } = string.Empty;
 
-    // Cierre del trabajo: evidencia + confirmación mutua.
+    // Job closing: evidence + mutual confirmation.
     public string? CompletionPhotoUrl { get; set; }
     public DateTime? ClientConfirmedCompletionAt { get; set; }
     public DateTime? ProfessionalConfirmedCompletionAt { get; set; }
 
-    // Navegaciones
+    // Navigation properties
     public WorkType WorkType { get; set; } = null!;
     public User Client { get; set; } = null!;
     public ICollection<ServiceProfessional> ServiceProfessionals { get; set; } = new List<ServiceProfessional>();

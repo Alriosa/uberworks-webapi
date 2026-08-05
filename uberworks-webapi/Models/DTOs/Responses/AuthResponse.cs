@@ -1,11 +1,10 @@
 // =====================================================================================
-// RESUMEN DEL ARCHIVO
-// Qué hace: Es lo que devuelve POST /api/users/login — los datos públicos del usuario
-//           (UserResponse), el token JWT que debe guardar el cliente (webapp/mobile), y
-//           cuándo expira ese token (para que la app sepa cuándo pedir uno nuevo).
-// Entidades relacionadas: User.cs (indirectamente, vía UserResponse)
-// Tablas relacionadas: Ninguna (el Token no se guarda en la base de datos, solo se firma
-//                       y se devuelve)
+// FILE SUMMARY
+// What it does: This is what POST /api/users/login returns — the user's public data
+//               (UserResponse), the JWT token the client (webapp/mobile) must store, and
+//               when it expires (so the app knows when to request a new one).
+// Entities connected: User.cs (indirectly, via UserResponse)
+// Tables related: None (the Token isn't stored in the database, it's just signed and returned)
 // =====================================================================================
 namespace uberworks_webapi.Models.DTOs.Responses;
 
