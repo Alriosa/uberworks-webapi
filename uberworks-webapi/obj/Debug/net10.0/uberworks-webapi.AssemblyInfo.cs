@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("uberworks-webapi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2f58a3cc5a0a6e30288a4a567598a695d07b29e3")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0b5dd045edc3b95c4f3eafd9f499131f243025ef")]
 [assembly: System.Reflection.AssemblyProductAttribute("uberworks-webapi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("uberworks-webapi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
