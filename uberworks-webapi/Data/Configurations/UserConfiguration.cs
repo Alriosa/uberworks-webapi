@@ -28,6 +28,12 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasColumnName("PK_USER_ID")
             .UseIdentityColumn();
 
+        builder.Property(u => u.Username)
+            .HasColumnName("CL_USERNAME")
+            .HasMaxLength(50)
+            .IsRequired();
+        builder.HasIndex(u => u.Username).IsUnique();
+
         builder.Property(u => u.FirstName)
             .HasColumnName("CL_FIRST_NAME")
             .HasMaxLength(100)

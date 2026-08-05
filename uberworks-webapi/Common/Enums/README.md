@@ -9,3 +9,4 @@ C# enums representing the `CHECK` constraints and default values from the diagra
 - `PaymentMethod`: CreditCard, PayPal, Zelle
 - `PaymentStatus`: Pending, Held, Released
 - `PenaltyType`: Temporary, Permanent
+- `LogSource`: Direct, WebApp, MobileApp (which client made the call, for audit logging)

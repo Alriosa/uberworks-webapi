@@ -1,7 +1,7 @@
 // =====================================================================================
 // FILE SUMMARY
-// What it does: Builds the actual JWT token. Takes the logged-in user's data (Id, Email,
-//               Role) and puts them inside the token as "claims" (signed statements), using
+// What it does: Builds the actual JWT token. Takes the logged-in user's data (Id, Username,
+//               Email, Role) and puts them inside the token as "claims" (signed statements), using
 //               the SecretKey from appsettings.json/Jwt to sign it. The result is a long
 //               piece of text the client (webapp/mobile) must send on every future request
 //               inside the "Authorization: Bearer {token}" header.
@@ -37,6 +37,7 @@ public class JwtTokenService : IJwtTokenService
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim("username", user.Username),
             new Claim(ClaimTypes.Email, user.Email),
             new Claim(ClaimTypes.Role, user.Role.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())

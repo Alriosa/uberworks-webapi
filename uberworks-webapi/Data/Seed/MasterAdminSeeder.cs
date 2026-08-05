@@ -6,9 +6,13 @@
 //               appsettings.json (or better, in "dotnet user-secrets") under the
 //               "MasterAdmin" section. This way the highest-privilege account never goes
 //               through the public registration endpoint (which explicitly rejects it, see
-//               Services/UserService.cs → RegisterAsync).
-// Entities connected: User.cs (creates a row with Role = UserRole.MasterAdmin)
-// Tables related: TBL_USERS
+//               Services/UserService.cs → RegisterAsync). The creation itself is recorded
+//               directly into TBL_ADMIN_ACTION_LOGS (bypassing IAuditLogService, since there
+//               is no HTTP request/IP/logged-in caller at startup to pull from) so there's
+//               still a permanent audit trail of exactly when the master account was created.
+// Entities connected: User.cs (creates a row with Role = UserRole.MasterAdmin),
+//                      AdminActionLog.cs (records the creation event)
+// Tables related: TBL_USERS, TBL_ADMIN_ACTION_LOGS
 // =====================================================================================
 using Microsoft.EntityFrameworkCore;
 using uberworks_webapi.Common.Enums;
@@ -45,6 +49,7 @@ public static class MasterAdminSeeder
 
         var masterAdmin = new User
         {
+            Username = "masteradmin",
             FirstName = "Master",
             LastName = "Admin",
             Email = email,
@@ -54,6 +59,20 @@ public static class MasterAdminSeeder
         };
 
         context.Users.Add(masterAdmin);
+        await context.SaveChangesAsync();
+
+        context.AdminActionLogs.Add(new AdminActionLog
+        {
+            OccurredAt = DateTime.UtcNow,
+            Source = LogSource.Direct,
+            ActorUserId = masterAdmin.Id,
+            ActorUsername = masterAdmin.Username,
+            ActorRole = UserRole.MasterAdmin,
+            Action = "MASTER_ADMIN_SEEDED",
+            TargetEntityType = "User",
+            TargetEntityId = masterAdmin.Id,
+            Details = $"MasterAdmin account created automatically on API startup for {email}."
+        });
         await context.SaveChangesAsync();
 
         logger.LogInformation("MasterAdmin account seeded for {Email}.", email);

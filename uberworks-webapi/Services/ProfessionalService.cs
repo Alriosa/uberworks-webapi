@@ -94,9 +94,9 @@ public class ProfessionalService : IProfessionalService
     {
         Id = professional.Id,
         UserId = professional.UserId,
+        Username = professional.User.Username,
         FirstName = professional.User.FirstName,
         LastName = professional.User.LastName,
-        Email = professional.User.Email,
         Description = professional.Description,
         Experience = professional.Experience,
         Availability = professional.Availability,

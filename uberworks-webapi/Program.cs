@@ -4,11 +4,13 @@
 //               you run "dotnet run". It builds the "pipeline" (the pipe every HTTP request
 //               flows through, in order): (1) registers services (DB, Repos, Services, JWT),
 //               (2) seeds the MasterAdmin if it doesn't exist, (3) wires up the error
-//               middleware, OpenAPI, HTTPS, authentication (reads and validates the JWT) and
-//               authorization (checks [Authorize]), and finally (4) wires up the Controllers.
-//               The order of app.Use...() calls DOES matter: UseAuthentication() must go
-//               BEFORE UseAuthorization(), because you first need to know who you are, and
-//               only then decide if you're allowed.
+//               middleware, OpenAPI, HTTPS, authentication (reads and validates the JWT),
+//               authorization (checks [Authorize]), and rate limiting (caps requests per
+//               caller, see Extensions/ServiceCollectionExtensions.AddRateLimiting), and
+//               finally (4) wires up the Controllers. The order of app.Use...() calls DOES
+//               matter: UseAuthentication() must go BEFORE UseAuthorization() and
+//               UseRateLimiter(), because the rate limiter needs to know the caller's
+//               identity (from the JWT) to key the per-user limit correctly.
 // Entities connected: None directly — orchestrates the startup of the whole app
 // Tables related: None directly (though it does trigger the MasterAdmin seed into TBL_USERS)
 // =====================================================================================
@@ -27,6 +29,7 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddJwtAuthentication(builder.Configuration);
+builder.Services.AddRateLimiting();
 
 var app = builder.Build();
 
@@ -49,6 +52,7 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using uberworks_webapi.Data;
 
@@ -11,9 +12,11 @@ using uberworks_webapi.Data;
 namespace uberworks_webapi.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260805192805_AddUsernameToUsers")]
+    partial class AddUsernameToUsers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,74 +24,6 @@ namespace uberworks_webapi.Data.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("uberworks_webapi.Models.Entities.AdminActionLog", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("PK_ADMIN_ACTION_LOG_ID");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("CL_ACTION");
-
-                    b.Property<string>("ActorRole")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasColumnName("CL_ACTOR_ROLE");
-
-                    b.Property<int>("ActorUserId")
-                        .HasColumnType("int")
-                        .HasColumnName("CL_ACTOR_USER_ID");
-
-                    b.Property<string>("ActorUsername")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("CL_ACTOR_USERNAME");
-
-                    b.Property<string>("Details")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("CL_DETAILS");
-
-                    b.Property<string>("IpAddress")
-                        .HasMaxLength(45)
-                        .HasColumnType("nvarchar(45)")
-                        .HasColumnName("CL_IP_ADDRESS");
-
-                    b.Property<DateTime>("OccurredAt")
-                        .HasColumnType("datetime")
-                        .HasColumnName("CL_OCCURRED_AT");
-
-                    b.Property<string>("Source")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasColumnName("CL_SOURCE");
-
-                    b.Property<int?>("TargetEntityId")
-                        .HasColumnType("int")
-                        .HasColumnName("CL_TARGET_ENTITY_ID");
-
-                    b.Property<string>("TargetEntityType")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("CL_TARGET_ENTITY_TYPE");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ActorUserId");
-
-                    b.HasIndex("OccurredAt");
-
-                    b.ToTable("TBL_ADMIN_ACTION_LOGS", (string)null);
-                });
 
             modelBuilder.Entity("uberworks_webapi.Models.Entities.Chat", b =>
                 {
@@ -124,77 +59,6 @@ namespace uberworks_webapi.Data.Migrations
                     b.HasIndex("ProfessionalId");
 
                     b.ToTable("TBL_CHATS", (string)null);
-                });
-
-            modelBuilder.Entity("uberworks_webapi.Models.Entities.ErrorLog", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("PK_ERROR_LOG_ID");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ExceptionType")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
-                        .HasColumnName("CL_EXCEPTION_TYPE");
-
-                    b.Property<string>("IpAddress")
-                        .HasMaxLength(45)
-                        .HasColumnType("nvarchar(45)")
-                        .HasColumnName("CL_IP_ADDRESS");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("CL_MESSAGE");
-
-                    b.Property<DateTime>("OccurredAt")
-                        .HasColumnType("datetime")
-                        .HasColumnName("CL_OCCURRED_AT");
-
-                    b.Property<string>("RequestMethod")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)")
-                        .HasColumnName("CL_REQUEST_METHOD");
-
-                    b.Property<string>("RequestPath")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("CL_REQUEST_PATH");
-
-                    b.Property<string>("Source")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasColumnName("CL_SOURCE");
-
-                    b.Property<string>("StackTrace")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("CL_STACK_TRACE");
-
-                    b.Property<int>("StatusCode")
-                        .HasColumnType("int")
-                        .HasColumnName("CL_STATUS_CODE");
-
-                    b.Property<int?>("UserId")
-                        .HasColumnType("int")
-                        .HasColumnName("CL_USER_ID");
-
-                    b.Property<string>("Username")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("CL_USERNAME");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OccurredAt");
-
-                    b.ToTable("TBL_ERROR_LOGS", (string)null);
                 });
 
             modelBuilder.Entity("uberworks_webapi.Models.Entities.Payment", b =>
@@ -621,67 +485,6 @@ namespace uberworks_webapi.Data.Migrations
                         {
                             t.HasCheckConstraint("CK_USERS_ROLE", "CL_ROLE IN ('MASTER_ADMIN','ADMIN','CLIENT','PROFESSIONAL')");
                         });
-                });
-
-            modelBuilder.Entity("uberworks_webapi.Models.Entities.UserActionLog", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("PK_USER_ACTION_LOG_ID");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("CL_ACTION");
-
-                    b.Property<int?>("ActorUserId")
-                        .HasColumnType("int")
-                        .HasColumnName("CL_ACTOR_USER_ID");
-
-                    b.Property<string>("ActorUsername")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("CL_ACTOR_USERNAME");
-
-                    b.Property<string>("Details")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("CL_DETAILS");
-
-                    b.Property<string>("IpAddress")
-                        .HasMaxLength(45)
-                        .HasColumnType("nvarchar(45)")
-                        .HasColumnName("CL_IP_ADDRESS");
-
-                    b.Property<DateTime>("OccurredAt")
-                        .HasColumnType("datetime")
-                        .HasColumnName("CL_OCCURRED_AT");
-
-                    b.Property<string>("Source")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasColumnName("CL_SOURCE");
-
-                    b.Property<int?>("TargetEntityId")
-                        .HasColumnType("int")
-                        .HasColumnName("CL_TARGET_ENTITY_ID");
-
-                    b.Property<string>("TargetEntityType")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("CL_TARGET_ENTITY_TYPE");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ActorUserId");
-
-                    b.HasIndex("OccurredAt");
-
-                    b.ToTable("TBL_USER_ACTION_LOGS", (string)null);
                 });
 
             modelBuilder.Entity("uberworks_webapi.Models.Entities.WorkType", b =>

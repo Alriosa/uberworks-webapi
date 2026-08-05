@@ -19,6 +19,13 @@ namespace uberworks_webapi.Models.Entities;
 public class User
 {
     public int Id { get; set; }
+
+    /// <summary>
+    /// Public handle shown to other users (e.g. in a Professional's public profile).
+    /// Not used for login — that's still Email. Unique, just like Email.
+    /// </summary>
+    public string Username { get; set; } = string.Empty;
+
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;

@@ -4,15 +4,20 @@
 //               the API. If any Controller/Service throws one of the custom exceptions from
 //               Common/Exceptions (NotFoundException, ConflictException, etc.), this code
 //               catches it in a single place and builds the right HTTP response
-//               (404/409/401/400), instead of having to repeat a try/catch in each of the
-//               ~15 Controller methods. Any unrecognized exception becomes a 500 and gets
-//               logged (the internal detail is never shown to the client, for security).
-// Entities connected: None directly — this is cross-cutting infrastructure
-// Tables related: None (doesn't touch the database)
+//               (404/409/403/401/400), instead of having to repeat a try/catch in each of
+//               the Controller methods. Any unrecognized exception becomes a 500, gets
+//               logged to the normal application logger (console/file) AND written to
+//               TBL_ERROR_LOGS via IAuditLogService — this is what gives "TODA LA APP" (the
+//               whole app) automatic error logging without touching every Controller
+//               individually. The internal detail (stack trace) is never shown to the
+//               client, for security — it only goes to the log.
+// Entities connected: ErrorLog.cs (indirectly, via IAuditLogService)
+// Tables related: TBL_ERROR_LOGS (indirectly)
 // =====================================================================================
 using System.Net;
 using System.Text.Json;
 using uberworks_webapi.Common.Exceptions;
+using uberworks_webapi.Services.Interfaces;
 
 namespace uberworks_webapi.Middleware;
 
@@ -31,7 +36,11 @@ public class ExceptionHandlingMiddleware
         _logger = logger;
     }
 
-    public async Task InvokeAsync(HttpContext context)
+    // IAuditLogService is injected here as a method parameter (not through the constructor)
+    // because middleware is built once at startup, while IAuditLogService is a scoped
+    // service tied to a single request — ASP.NET Core resolves method parameters like this
+    // fresh on every call to InvokeAsync.
+    public async Task InvokeAsync(HttpContext context, IAuditLogService auditLogService)
     {
         try
         {
@@ -39,16 +48,17 @@ public class ExceptionHandlingMiddleware
         }
         catch (Exception exception)
         {
-            await HandleExceptionAsync(context, exception);
+            await HandleExceptionAsync(context, exception, auditLogService);
         }
     }
 
-    private async Task HandleExceptionAsync(HttpContext context, Exception exception)
+    private async Task HandleExceptionAsync(HttpContext context, Exception exception, IAuditLogService auditLogService)
     {
         var statusCode = exception switch
         {
             NotFoundException => HttpStatusCode.NotFound,
             ConflictException => HttpStatusCode.Conflict,
+            ForbiddenException => HttpStatusCode.Forbidden,
             InvalidCredentialsException => HttpStatusCode.Unauthorized,
             ArgumentException => HttpStatusCode.BadRequest,
             _ => HttpStatusCode.InternalServerError
@@ -57,6 +67,12 @@ public class ExceptionHandlingMiddleware
         if (statusCode == HttpStatusCode.InternalServerError)
         {
             _logger.LogError(exception, "Unhandled exception");
+
+            await auditLogService.LogErrorAsync(
+                exception,
+                context.Request.Method,
+                context.Request.Path,
+                (int)statusCode);
         }
 
         context.Response.ContentType = "application/json";
