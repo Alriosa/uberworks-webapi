@@ -3,9 +3,10 @@
 -- What it does: Standalone T-SQL script that creates the UberworksDb database from
 --               scratch, with all 13 tables, columns, types, defaults, CHECK constraints,
 --               foreign keys, and indexes — matching the final state produced by EF Core's
---               5 migrations (InitialCreate, AddServiceLocationAndCompletionFields,
---               UpdateUserRoles, AddUsernameToUsers, AddAuditLogging). Useful for handing
---               the schema to someone who doesn't run
+--               7 migrations (InitialCreate, AddServiceLocationAndCompletionFields,
+--               UpdateUserRoles, AddUsernameToUsers, AddAuditLogging,
+--               MakePenaltyTypeAndReasonRequired, MakeMoreFieldsRequired). Useful for
+--               handing the schema to someone who doesn't run
 --               dotnet-ef (a DBA, the webapp/mobile teams, or just to inspect the schema in
 --               one place), or for restoring a clean database quickly.
 --               Tables are ordered so each one is created after the tables it has a foreign
@@ -15,7 +16,7 @@
 --               each of those entities in Models/Entities for why).
 --               This script also seeds the __EFMigrationsHistory table at the end, so that
 --               if you point EF Core at a database created with this script, it correctly
---               thinks all 5 migrations are already applied (and won't try to re-run them
+--               thinks all 7 migrations are already applied (and won't try to re-run them
 --               or complain about a mismatched schema).
 -- Entities related: All 13 (User, Professional, WorkType, Service, ServiceProfessional,
 --                   Review, Payment, Chat, Penalty, Reward, ErrorLog, UserActionLog,
@@ -78,10 +79,10 @@ GO
 CREATE TABLE [TBL_PROFESSIONALS] (
     [PK_PROFESSIONAL_ID]  INT IDENTITY(1,1) NOT NULL,
     [PK_USER_ID]          INT               NOT NULL,
-    [CL_DESCRIPTION]      NVARCHAR(MAX)     NULL,
-    [CL_EXPERIENCE]       NVARCHAR(MAX)     NULL,
-    [CL_AVAILABILITY]     NVARCHAR(100)     NULL,
-    [CL_LOCATION]         NVARCHAR(200)     NULL,
+    [CL_DESCRIPTION]      NVARCHAR(MAX)     NOT NULL,
+    [CL_EXPERIENCE]       NVARCHAR(MAX)     NOT NULL,
+    [CL_AVAILABILITY]     NVARCHAR(100)     NOT NULL,
+    [CL_LOCATION]         NVARCHAR(200)     NOT NULL,
     [CL_AVERAGE_RATING]   DECIMAL(3,2)      NOT NULL CONSTRAINT [DF_PROFESSIONALS_AVERAGE_RATING] DEFAULT (0),
     CONSTRAINT [PK_TBL_PROFESSIONALS] PRIMARY KEY ([PK_PROFESSIONAL_ID]),
     CONSTRAINT [FK_TBL_PROFESSIONALS_TBL_USERS_PK_USER_ID]
@@ -156,14 +157,13 @@ CREATE TABLE [TBL_REVIEWS] (
     [PK_PROFESSIONAL_ID]        INT               NOT NULL,
     [PK_SERVICE_ID]             INT               NOT NULL,
     [CL_CLIENT_ID]              INT               NOT NULL,
-    [CL_CLIENT_RATING]          TINYINT           NULL,
-    [CL_PROFESSIONAL_RATING]    TINYINT           NULL,
-    [CL_COMMENT]                NVARCHAR(MAX)     NULL,
+    [CL_CLIENT_RATING]          TINYINT           NOT NULL,
+    [CL_PROFESSIONAL_RATING]    TINYINT           NOT NULL,
+    [CL_COMMENT]                NVARCHAR(MAX)     NOT NULL,
     [CL_REVIEW_DATE]            DATETIME          NOT NULL CONSTRAINT [DF_REVIEWS_REVIEW_DATE] DEFAULT (GETDATE()),
     CONSTRAINT [PK_TBL_REVIEWS] PRIMARY KEY ([PK_REVIEW_ID]),
     CONSTRAINT [CK_REVIEWS_RATINGS] CHECK (
-        ([CL_CLIENT_RATING] IS NULL OR [CL_CLIENT_RATING] BETWEEN 1 AND 5)
-        AND ([CL_PROFESSIONAL_RATING] IS NULL OR [CL_PROFESSIONAL_RATING] BETWEEN 1 AND 5)
+        [CL_CLIENT_RATING] BETWEEN 1 AND 5 AND [CL_PROFESSIONAL_RATING] BETWEEN 1 AND 5
     ),
     CONSTRAINT [FK_TBL_REVIEWS_TBL_PROFESSIONALS_PK_PROFESSIONAL_ID]
         FOREIGN KEY ([PK_PROFESSIONAL_ID]) REFERENCES [TBL_PROFESSIONALS] ([PK_PROFESSIONAL_ID]) ON DELETE NO ACTION,
@@ -185,12 +185,12 @@ GO
 CREATE TABLE [TBL_PAYMENTS] (
     [PK_PAYMENT_ID]     INT IDENTITY(1,1) NOT NULL,
     [PK_SERVICE_ID]     INT               NOT NULL,
-    [CL_METHOD]         NVARCHAR(50)      NULL,
-    [CL_AMOUNT]         DECIMAL(10,2)     NULL,
+    [CL_METHOD]         NVARCHAR(50)      NOT NULL,
+    [CL_AMOUNT]         DECIMAL(10,2)     NOT NULL,
     [CL_STATUS]         NVARCHAR(50)      NOT NULL CONSTRAINT [DF_PAYMENTS_STATUS] DEFAULT (N'PENDING'),
     [CL_PAYMENT_DATE]   DATETIME          NOT NULL CONSTRAINT [DF_PAYMENTS_PAYMENT_DATE] DEFAULT (GETDATE()),
     CONSTRAINT [PK_TBL_PAYMENTS] PRIMARY KEY ([PK_PAYMENT_ID]),
-    CONSTRAINT [CK_PAYMENTS_METHOD] CHECK ([CL_METHOD] IS NULL OR [CL_METHOD] IN (N'CREDITCARD', N'PAYPAL', N'ZELLE')),
+    CONSTRAINT [CK_PAYMENTS_METHOD] CHECK ([CL_METHOD] IN (N'CREDITCARD', N'PAYPAL', N'ZELLE')),
     CONSTRAINT [FK_TBL_PAYMENTS_TBL_SERVICES_PK_SERVICE_ID]
         FOREIGN KEY ([PK_SERVICE_ID]) REFERENCES [TBL_SERVICES] ([PK_SERVICE_ID]) ON DELETE NO ACTION
 );
@@ -206,7 +206,7 @@ CREATE TABLE [TBL_CHATS] (
     [PK_CHAT_ID]            INT IDENTITY(1,1) NOT NULL,
     [PK_PROFESSIONAL_ID]    INT               NOT NULL,
     [CL_CLIENT_ID]          INT               NOT NULL,
-    [CL_MESSAGE]            NVARCHAR(MAX)     NULL,
+    [CL_MESSAGE]            NVARCHAR(MAX)     NOT NULL,
     [CL_MESSAGE_DATE]       DATETIME          NOT NULL CONSTRAINT [DF_CHATS_MESSAGE_DATE] DEFAULT (GETDATE()),
     CONSTRAINT [PK_TBL_CHATS] PRIMARY KEY ([PK_CHAT_ID]),
     CONSTRAINT [FK_TBL_CHATS_TBL_PROFESSIONALS_PK_PROFESSIONAL_ID]
@@ -226,10 +226,10 @@ GO
 CREATE TABLE [TBL_PENALTIES] (
     [PK_PENALTY_ID]  INT IDENTITY(1,1) NOT NULL,
     [PK_USER_ID]     INT               NOT NULL,
-    [CL_TYPE]        NVARCHAR(50)      NULL,
-    [CL_REASON]      NVARCHAR(MAX)     NULL,
+    [CL_TYPE]        NVARCHAR(50)      NOT NULL,
+    [CL_REASON]      NVARCHAR(MAX)     NOT NULL,
     [CL_START_DATE]  DATETIME          NOT NULL CONSTRAINT [DF_PENALTIES_START_DATE] DEFAULT (GETDATE()),
-    [CL_END_DATE]    DATETIME          NULL,
+    [CL_END_DATE]    DATETIME          NOT NULL CONSTRAINT [DF_PENALTIES_END_DATE] DEFAULT (GETDATE()),
     CONSTRAINT [PK_TBL_PENALTIES] PRIMARY KEY ([PK_PENALTY_ID]),
     CONSTRAINT [FK_TBL_PENALTIES_TBL_USERS_PK_USER_ID]
         FOREIGN KEY ([PK_USER_ID]) REFERENCES [TBL_USERS] ([PK_USER_ID]) ON DELETE NO ACTION
@@ -266,7 +266,7 @@ CREATE TABLE [TBL_ERROR_LOGS] (
     [CL_OCCURRED_AT]     DATETIME          NOT NULL,
     [CL_SOURCE]          NVARCHAR(20)      NOT NULL,
     [CL_USER_ID]         INT               NULL,
-    [CL_USERNAME]        NVARCHAR(50)      NULL,
+    [CL_USERNAME]        NVARCHAR(50)      NOT NULL,
     [CL_REQUEST_METHOD]  NVARCHAR(10)      NOT NULL,
     [CL_REQUEST_PATH]    NVARCHAR(500)     NOT NULL,
     [CL_STATUS_CODE]     INT               NOT NULL,
@@ -346,5 +346,7 @@ INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES
     (N'20260805180233_AddServiceLocationAndCompletionFields', N'10.0.10'),
     (N'20260805181252_UpdateUserRoles', N'10.0.10'),
     (N'20260805192805_AddUsernameToUsers', N'10.0.10'),
-    (N'20260805204333_AddAuditLogging', N'10.0.10');
+    (N'20260805204333_AddAuditLogging', N'10.0.10'),
+    (N'20260805210751_MakePenaltyTypeAndReasonRequired', N'10.0.10'),
+    (N'20260806153730_MakeMoreFieldsRequired', N'10.0.10');
 GO

@@ -1,9 +1,37 @@
 <mxfile host="Electron">
   <diagram name="Page-1" id="QQe6mTj-qMHks2S4_JPk">
-    <mxGraphModel dx="1414" dy="841" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="2214" dy="841" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
+        <mxCell id="CZ1ie2lIwuPGmmDGrsqq-5" edge="1" parent="1" source="CZ1ie2lIwuPGmmDGrsqq-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="CZ1ie2lIwuPGmmDGrsqq-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CZ1ie2lIwuPGmmDGrsqq-8" edge="1" parent="1" source="CZ1ie2lIwuPGmmDGrsqq-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="CZ1ie2lIwuPGmmDGrsqq-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="CZ1ie2lIwuPGmmDGrsqq-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Login" vertex="1">
+          <mxGeometry height="60" width="120" x="124" y="519" as="geometry" />
+        </mxCell>
+        <mxCell id="CZ1ie2lIwuPGmmDGrsqq-3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Login Fallido" vertex="1">
+          <mxGeometry height="60" width="120" x="-16" y="434" as="geometry" />
+        </mxCell>
+        <mxCell id="CZ1ie2lIwuPGmmDGrsqq-7" edge="1" parent="1" source="CZ1ie2lIwuPGmmDGrsqq-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="CZ1ie2lIwuPGmmDGrsqq-6">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="318" y="311" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="CZ1ie2lIwuPGmmDGrsqq-4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Login correcto" vertex="1">
+          <mxGeometry height="60" width="120" x="258" y="432" as="geometry" />
+        </mxCell>
+        <mxCell id="CZ1ie2lIwuPGmmDGrsqq-6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Dashboard" vertex="1">
+          <mxGeometry height="60" width="120" x="392" y="281" as="geometry" />
+        </mxCell>
+        <mxCell id="CZ1ie2lIwuPGmmDGrsqq-11" parent="1" style="shape=card;whiteSpace=wrap;html=1;" value="recuerda que aqui debe salir los 5 intentos antes de congelar la cuenta y pedir reinicio de cuenta" vertex="1">
+          <mxGeometry height="100" width="161" x="-422" y="301" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>

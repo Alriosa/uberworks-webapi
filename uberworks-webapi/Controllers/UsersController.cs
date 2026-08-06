@@ -7,6 +7,9 @@
 //               down to the Service, which enforces that only the profile owner or an
 //               Admin/MasterAdmin can view/edit it (see UserService.EnsureSelfOrAdmin) —
 //               this is what stops anyone from scraping every user's email/phone by id.
+//               AdminCreate requires [Authorize(Roles = "MasterAdmin,Admin")] — a regular
+//               Client/Professional JWT gets a 403 from ASP.NET Core before the action even
+//               runs — and lets that admin create Admin/Client/Professional accounts.
 // Entities connected: User.cs (indirectly, via IUserService)
 // Tables related: TBL_USERS (indirectly, through all the layers)
 // =====================================================================================
@@ -42,6 +45,21 @@ public class UsersController : ControllerBase
     {
         var result = await _userService.LoginAsync(request);
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Lets an already-authenticated Admin/MasterAdmin create a new account, including
+    /// Admin accounts (never MasterAdmin — see UserService.CreateByAdminAsync).
+    /// </summary>
+    [HttpPost("admin-create")]
+    [Authorize(Roles = "MasterAdmin,Admin")]
+    public async Task<IActionResult> AdminCreate([FromBody] AdminCreateUserRequest request)
+    {
+        var actorUserId = _currentUserService.UserId!.Value;
+        var actorUsername = _currentUserService.Username!;
+        var actorRole = _currentUserService.Role!.Value;
+        var result = await _userService.CreateByAdminAsync(actorUserId, actorUsername, actorRole, request);
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
     /// <summary>Only the profile owner or an Admin/MasterAdmin can view the full record.</summary>

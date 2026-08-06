@@ -104,7 +104,7 @@ public class AuditLogService : IAuditLogService
                 OccurredAt = DateTime.UtcNow,
                 Source = _currentUserService.Source,
                 UserId = _currentUserService.UserId,
-                Username = _currentUserService.Username,
+                Username = _currentUserService.Username ?? "anonymous",
                 RequestMethod = requestMethod,
                 RequestPath = requestPath,
                 StatusCode = statusCode,

@@ -2,7 +2,7 @@
 // FILE SUMMARY
 // What it does: Tells EF Core how to store Payment.cs in TBL_PAYMENTS, including the CHECK
 //               constraint on the payment method (CREDITCARD/PAYPAL/ZELLE) and its manual
-//               nullable enum conversion (PaymentMethod?) to text and back.
+//               enum conversion to text and back. Method/Amount are both required (NOT NULL).
 // Entities connected: Payment.cs (this class configures it; Repository/Service/Controller
 //                      not built yet)
 // Tables related: TBL_PAYMENTS
@@ -20,7 +20,7 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
     {
         builder.ToTable("TBL_PAYMENTS", t => t.HasCheckConstraint(
             "CK_PAYMENTS_METHOD",
-            "CL_METHOD IS NULL OR CL_METHOD IN ('CREDITCARD','PAYPAL','ZELLE')"));
+            "CL_METHOD IN ('CREDITCARD','PAYPAL','ZELLE')"));
 
         builder.HasKey(p => p.Id);
         builder.Property(p => p.Id)
@@ -33,13 +33,15 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
         builder.Property(p => p.Method)
             .HasColumnName("CL_METHOD")
             .HasConversion(
-                method => method == null ? null : PaymentMethodToDb(method.Value),
-                value => value == null ? null : (PaymentMethod?)PaymentMethodFromDb(value))
-            .HasMaxLength(50);
+                method => PaymentMethodToDb(method),
+                value => PaymentMethodFromDb(value))
+            .HasMaxLength(50)
+            .IsRequired();
 
         builder.Property(p => p.Amount)
             .HasColumnName("CL_AMOUNT")
-            .HasColumnType("decimal(10,2)");
+            .HasColumnType("decimal(10,2)")
+            .IsRequired();
 
         builder.Property(p => p.Status)
             .HasColumnName("CL_STATUS")

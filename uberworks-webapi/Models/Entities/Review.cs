@@ -20,12 +20,12 @@ public class Review
     public int ClientId { get; set; }
 
     /// <summary>Rating the client gives the professional (1-5).</summary>
-    public byte? ClientRating { get; set; }
+    public byte ClientRating { get; set; }
 
     /// <summary>Rating the professional gives the client (1-5).</summary>
-    public byte? ProfessionalRating { get; set; }
+    public byte ProfessionalRating { get; set; }
 
-    public string? Comment { get; set; }
+    public string Comment { get; set; } = string.Empty;
     public DateTime ReviewDate { get; set; }
 
     // Navigation properties

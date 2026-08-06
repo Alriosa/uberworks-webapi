@@ -13,6 +13,9 @@
 //               based on whether id == callerUserId. Controllers (UsersController.cs) never
 //               talk directly to the database — they always go through here, and this
 //               Service never talks directly to SQL — it always goes through IUserRepository.
+//               CreateByAdminAsync is the counterpart to RegisterAsync for Admin/MasterAdmin
+//               callers: it allows creating Admin accounts too (never MasterAdmin) and always
+//               logs to AdminActionLog, since the actor is never the target.
 // Entities connected: User.cs
 // Tables related: TBL_USERS (indirectly, via IUserRepository); TBL_USER_ACTION_LOGS,
 //                 TBL_ADMIN_ACTION_LOGS (indirectly, via IAuditLogService)
@@ -119,6 +122,51 @@ public class UserService : IUserService
             Token = token,
             ExpiresAtUtc = expiresAtUtc
         };
+    }
+
+    public async Task<UserResponse> CreateByAdminAsync(int actorUserId, string actorUsername, UserRole actorRole, AdminCreateUserRequest request)
+    {
+        // Only MasterAdmin/Admin can reach this (enforced by [Authorize(Roles=...)] on the
+        // controller), but MasterAdmin itself can still never be created here — there must
+        // only ever be one, and it only comes from Data/Seed/MasterAdminSeeder.cs.
+        if (request.Role == UserRole.MasterAdmin)
+        {
+            throw new ArgumentException("The MasterAdmin account cannot be created through this endpoint.");
+        }
+
+        if (await _userRepository.ExistsByEmailAsync(request.Email))
+        {
+            throw new ConflictException($"A user with the email '{request.Email}' already exists.");
+        }
+
+        if (await _userRepository.ExistsByUsernameAsync(request.Username))
+        {
+            throw new ConflictException($"The username '{request.Username}' is already taken.");
+        }
+
+        var user = new User
+        {
+            Username = request.Username,
+            FirstName = request.FirstName,
+            LastName = request.LastName,
+            Email = request.Email,
+            Phone = request.Phone,
+            PasswordHash = PasswordHasher.Hash(request.Password),
+            Role = request.Role
+        };
+
+        await _userRepository.AddAsync(user);
+
+        await _auditLogService.LogAdminActionAsync(
+            actorUserId: actorUserId,
+            actorUsername: actorUsername,
+            actorRole: actorRole,
+            action: "USER_CREATED_BY_ADMIN",
+            targetEntityType: "User",
+            targetEntityId: user.Id,
+            details: $"Role={user.Role}, Email={user.Email}");
+
+        return MapToResponse(user);
     }
 
     public async Task<UserResponse> GetByIdAsync(int id, int callerUserId, UserRole callerRole)

@@ -1,7 +1,8 @@
 // =====================================================================================
 // FILE SUMMARY
 // What it does: Tells EF Core how to store Chat.cs in TBL_CHATS: real column names and the
-//               two foreign keys (to Professional and to User as Client).
+//               two foreign keys (to Professional and to User as Client). Message is
+//               required (NOT NULL).
 // Entities connected: Chat.cs (this class configures it; Repository/Service/Controller
 //                      not built yet)
 // Tables related: TBL_CHATS
@@ -31,7 +32,8 @@ public class ChatConfiguration : IEntityTypeConfiguration<Chat>
 
         builder.Property(c => c.Message)
             .HasColumnName("CL_MESSAGE")
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("nvarchar(max)")
+            .IsRequired();
 
         builder.Property(c => c.MessageDate)
             .HasColumnName("CL_MESSAGE_DATE")

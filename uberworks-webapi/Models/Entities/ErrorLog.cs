@@ -25,7 +25,7 @@ public class ErrorLog
     /// row must survive untouched for audit purposes.
     /// </summary>
     public int? UserId { get; set; }
-    public string? Username { get; set; }
+    public string Username { get; set; } = string.Empty;
 
     public string RequestMethod { get; set; } = string.Empty;
     public string RequestPath { get; set; } = string.Empty;

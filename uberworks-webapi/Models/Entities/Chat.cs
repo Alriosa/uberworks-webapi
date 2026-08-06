@@ -17,7 +17,7 @@ public class Chat
     public int ProfessionalId { get; set; }
     public int ClientId { get; set; }
 
-    public string? Message { get; set; }
+    public string Message { get; set; } = string.Empty;
     public DateTime MessageDate { get; set; }
 
     // Navigation properties

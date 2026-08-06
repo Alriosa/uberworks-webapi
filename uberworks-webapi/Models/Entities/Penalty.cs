@@ -19,10 +19,10 @@ public class Penalty
     public int Id { get; set; }
     public int UserId { get; set; }
 
-    public PenaltyType? Type { get; set; }
-    public string? Reason { get; set; }
+    public PenaltyType Type { get; set; }
+    public string Reason { get; set; } = string.Empty;
     public DateTime StartDate { get; set; }
-    public DateTime? EndDate { get; set; }
+    public DateTime EndDate { get; set; }
 
     // Navigation properties
     public User User { get; set; } = null!;

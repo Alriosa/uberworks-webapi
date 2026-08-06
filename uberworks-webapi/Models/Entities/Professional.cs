@@ -22,10 +22,10 @@ public class Professional
     /// </summary>
     public int UserId { get; set; }
 
-    public string? Description { get; set; }
-    public string? Experience { get; set; }
-    public string? Availability { get; set; }
-    public string? Location { get; set; }
+    public string Description { get; set; } = string.Empty;
+    public string Experience { get; set; } = string.Empty;
+    public string Availability { get; set; } = string.Empty;
+    public string Location { get; set; } = string.Empty;
     public decimal AverageRating { get; set; }
 
     // Navigation properties

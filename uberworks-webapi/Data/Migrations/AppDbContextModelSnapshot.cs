@@ -104,6 +104,7 @@ namespace uberworks_webapi.Data.Migrations
                         .HasColumnName("CL_CLIENT_ID");
 
                     b.Property<string>("Message")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("CL_MESSAGE");
 
@@ -186,6 +187,7 @@ namespace uberworks_webapi.Data.Migrations
                         .HasColumnName("CL_USER_ID");
 
                     b.Property<string>("Username")
+                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("CL_USERNAME");
@@ -206,11 +208,12 @@ namespace uberworks_webapi.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<decimal?>("Amount")
+                    b.Property<decimal>("Amount")
                         .HasColumnType("decimal(10,2)")
                         .HasColumnName("CL_AMOUNT");
 
                     b.Property<string>("Method")
+                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("CL_METHOD");
@@ -239,7 +242,7 @@ namespace uberworks_webapi.Data.Migrations
 
                     b.ToTable("TBL_PAYMENTS", null, t =>
                         {
-                            t.HasCheckConstraint("CK_PAYMENTS_METHOD", "CL_METHOD IS NULL OR CL_METHOD IN ('CREDITCARD','PAYPAL','ZELLE')");
+                            t.HasCheckConstraint("CK_PAYMENTS_METHOD", "CL_METHOD IN ('CREDITCARD','PAYPAL','ZELLE')");
                         });
                 });
 
@@ -252,11 +255,12 @@ namespace uberworks_webapi.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime?>("EndDate")
+                    b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime")
                         .HasColumnName("CL_END_DATE");
 
                     b.Property<string>("Reason")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("CL_REASON");
 
@@ -267,6 +271,7 @@ namespace uberworks_webapi.Data.Migrations
                         .HasDefaultValueSql("GETDATE()");
 
                     b.Property<string>("Type")
+                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("CL_TYPE");
@@ -292,6 +297,7 @@ namespace uberworks_webapi.Data.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Availability")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("CL_AVAILABILITY");
@@ -303,14 +309,17 @@ namespace uberworks_webapi.Data.Migrations
                         .HasColumnName("CL_AVERAGE_RATING");
 
                     b.Property<string>("Description")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("CL_DESCRIPTION");
 
                     b.Property<string>("Experience")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("CL_EXPERIENCE");
 
                     b.Property<string>("Location")
+                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)")
                         .HasColumnName("CL_LOCATION");
@@ -340,11 +349,12 @@ namespace uberworks_webapi.Data.Migrations
                         .HasColumnType("int")
                         .HasColumnName("CL_CLIENT_ID");
 
-                    b.Property<byte?>("ClientRating")
+                    b.Property<byte>("ClientRating")
                         .HasColumnType("tinyint")
                         .HasColumnName("CL_CLIENT_RATING");
 
                     b.Property<string>("Comment")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("CL_COMMENT");
 
@@ -352,7 +362,7 @@ namespace uberworks_webapi.Data.Migrations
                         .HasColumnType("int")
                         .HasColumnName("PK_PROFESSIONAL_ID");
 
-                    b.Property<byte?>("ProfessionalRating")
+                    b.Property<byte>("ProfessionalRating")
                         .HasColumnType("tinyint")
                         .HasColumnName("CL_PROFESSIONAL_RATING");
 
@@ -376,7 +386,7 @@ namespace uberworks_webapi.Data.Migrations
 
                     b.ToTable("TBL_REVIEWS", null, t =>
                         {
-                            t.HasCheckConstraint("CK_REVIEWS_RATINGS", "(CL_CLIENT_RATING IS NULL OR CL_CLIENT_RATING BETWEEN 1 AND 5) AND (CL_PROFESSIONAL_RATING IS NULL OR CL_PROFESSIONAL_RATING BETWEEN 1 AND 5)");
+                            t.HasCheckConstraint("CK_REVIEWS_RATINGS", "CL_CLIENT_RATING BETWEEN 1 AND 5 AND CL_PROFESSIONAL_RATING BETWEEN 1 AND 5");
                         });
                 });
 

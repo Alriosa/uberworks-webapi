@@ -47,10 +47,10 @@ public class ProfessionalService : IProfessionalService
         var professional = new Professional
         {
             UserId = userId,
-            Description = request.Description,
-            Experience = request.Experience,
-            Availability = request.Availability,
-            Location = request.Location
+            Description = request.Description ?? string.Empty,
+            Experience = request.Experience ?? string.Empty,
+            Availability = request.Availability ?? string.Empty,
+            Location = request.Location ?? string.Empty
         };
 
         await _professionalRepository.AddAsync(professional);
@@ -80,10 +80,10 @@ public class ProfessionalService : IProfessionalService
         var professional = await _professionalRepository.GetByIdAsync(id)
             ?? throw new NotFoundException($"Professional with id {id} was not found.");
 
-        professional.Description = request.Description;
-        professional.Experience = request.Experience;
-        professional.Availability = request.Availability;
-        professional.Location = request.Location;
+        professional.Description = request.Description ?? string.Empty;
+        professional.Experience = request.Experience ?? string.Empty;
+        professional.Availability = request.Availability ?? string.Empty;
+        professional.Location = request.Location ?? string.Empty;
 
         await _professionalRepository.UpdateAsync(professional);
 

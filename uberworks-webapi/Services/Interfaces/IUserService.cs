@@ -6,6 +6,9 @@
 //               implementation gets wired up. GetByIdAsync/UpdateAsync take the caller's
 //               identity (id + role) because only the profile owner or an Admin/MasterAdmin
 //               is allowed to view or edit it — see ownership check in UserService.cs.
+//               CreateByAdminAsync is the "dedicated endpoint" that RegisterAsync's comment
+//               refers to: it lets an already-authenticated Admin/MasterAdmin create Admin,
+//               Client, or Professional accounts (never another MasterAdmin).
 // Entities connected: User.cs
 // Tables related: TBL_USERS (indirectly, via UserService.cs)
 // =====================================================================================
@@ -21,4 +24,5 @@ public interface IUserService
     Task<AuthResponse> LoginAsync(LoginRequest request);
     Task<UserResponse> GetByIdAsync(int id, int callerUserId, UserRole callerRole);
     Task<UserResponse> UpdateAsync(int id, int callerUserId, string callerUsername, UserRole callerRole, UpdateUserRequest request);
+    Task<UserResponse> CreateByAdminAsync(int actorUserId, string actorUsername, UserRole actorRole, AdminCreateUserRequest request);
 }

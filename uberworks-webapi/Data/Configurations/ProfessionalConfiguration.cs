@@ -3,6 +3,7 @@
 // What it does: Tells EF Core how to store Professional.cs in TBL_PROFESSIONALS, and
 //               defines the 1:1 relationship with User (a User can only have one
 //               Professional, enforced with a unique index on the PK_USER_ID column).
+//               Description/Experience/Availability/Location are all required (NOT NULL).
 // Entities connected: Professional.cs (this class configures it), User.cs (1:1)
 // Tables related: TBL_PROFESSIONALS
 // =====================================================================================
@@ -29,19 +30,23 @@ public class ProfessionalConfiguration : IEntityTypeConfiguration<Professional>
 
         builder.Property(p => p.Description)
             .HasColumnName("CL_DESCRIPTION")
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("nvarchar(max)")
+            .IsRequired();
 
         builder.Property(p => p.Experience)
             .HasColumnName("CL_EXPERIENCE")
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("nvarchar(max)")
+            .IsRequired();
 
         builder.Property(p => p.Availability)
             .HasColumnName("CL_AVAILABILITY")
-            .HasMaxLength(100);
+            .HasMaxLength(100)
+            .IsRequired();
 
         builder.Property(p => p.Location)
             .HasColumnName("CL_LOCATION")
-            .HasMaxLength(200);
+            .HasMaxLength(200)
+            .IsRequired();
 
         builder.Property(p => p.AverageRating)
             .HasColumnName("CL_AVERAGE_RATING")

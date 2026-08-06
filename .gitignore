@@ -22,8 +22,9 @@ obj/
 *.tmp
 *.cache
 
-# drawio backups (the real .drawio is versioned; the .bkp is just editor scratch).
+# drawio backups/autosave (the real .drawio is versioned; .bkp/.dtmp are editor scratch).
 *.bkp
+*.dtmp
 
 # Local secrets (in case a .env ever gets used instead of user-secrets).
 .env

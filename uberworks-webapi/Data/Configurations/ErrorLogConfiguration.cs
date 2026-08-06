@@ -42,7 +42,8 @@ public class ErrorLogConfiguration : IEntityTypeConfiguration<ErrorLog>
 
         builder.Property(e => e.Username)
             .HasColumnName("CL_USERNAME")
-            .HasMaxLength(50);
+            .HasMaxLength(50)
+            .IsRequired();
 
         builder.Property(e => e.RequestMethod)
             .HasColumnName("CL_REQUEST_METHOD")

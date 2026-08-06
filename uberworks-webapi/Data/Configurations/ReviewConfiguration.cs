@@ -2,7 +2,8 @@
 // FILE SUMMARY
 // What it does: Tells EF Core how to store Review.cs in TBL_REVIEWS, including the CHECK
 //               constraint that forces ratings (1-5) to stay within a valid range, and its
-//               three foreign keys (Professional, Service, User as Client).
+//               three foreign keys (Professional, Service, User as Client). Ratings and
+//               Comment are all required (NOT NULL).
 // Entities connected: Review.cs (this class configures it; Repository/Service/Controller
 //                      not built yet)
 // Tables related: TBL_REVIEWS
@@ -19,8 +20,7 @@ public class ReviewConfiguration : IEntityTypeConfiguration<Review>
     {
         builder.ToTable("TBL_REVIEWS", t => t.HasCheckConstraint(
             "CK_REVIEWS_RATINGS",
-            "(CL_CLIENT_RATING IS NULL OR CL_CLIENT_RATING BETWEEN 1 AND 5) " +
-            "AND (CL_PROFESSIONAL_RATING IS NULL OR CL_PROFESSIONAL_RATING BETWEEN 1 AND 5)"));
+            "CL_CLIENT_RATING BETWEEN 1 AND 5 AND CL_PROFESSIONAL_RATING BETWEEN 1 AND 5"));
 
         builder.HasKey(r => r.Id);
         builder.Property(r => r.Id)
@@ -38,15 +38,18 @@ public class ReviewConfiguration : IEntityTypeConfiguration<Review>
 
         builder.Property(r => r.ClientRating)
             .HasColumnName("CL_CLIENT_RATING")
-            .HasColumnType("tinyint");
+            .HasColumnType("tinyint")
+            .IsRequired();
 
         builder.Property(r => r.ProfessionalRating)
             .HasColumnName("CL_PROFESSIONAL_RATING")
-            .HasColumnType("tinyint");
+            .HasColumnType("tinyint")
+            .IsRequired();
 
         builder.Property(r => r.Comment)
             .HasColumnName("CL_COMMENT")
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("nvarchar(max)")
+            .IsRequired();
 
         builder.Property(r => r.ReviewDate)
             .HasColumnName("CL_REVIEW_DATE")
