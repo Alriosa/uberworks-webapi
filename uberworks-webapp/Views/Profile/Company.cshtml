@@ -1,0 +1,18 @@
+@model uberworks_webapp.Models.ViewModels.CompanyProfileViewModel
+@{
+    ViewData["Title"] = "My Profile";
+}
+
+<h1>My profile</h1>
+<partial name="_ProfileFields" model="Model" />
+
+<h2>Company details</h2>
+<dl class="row">
+    <dt class="col-sm-3">Workers</dt>
+    <dd class="col-sm-9">@Model.WorkerCount</dd>
+</dl>
+
+<p>
+    <a asp-controller="Company" asp-action="MyWorkers" class="btn btn-outline-primary">View my workers</a>
+    <a asp-controller="Company" asp-action="CreateWorker" class="btn btn-primary">Create a worker</a>
+</p>

@@ -20,4 +20,8 @@ public interface IUsersApiClient
     Task<AuthResponse> LoginAsync(LoginRequest request);
     Task<UserResponse> RegisterAsync(RegisterUserRequest request);
     Task<UserResponse> AdminCreateUserAsync(string accessToken, AdminCreateUserRequest request);
+    Task<AuthResponse> ExternalLoginAsync(ExternalLoginRequest request);
+    Task ForgotPasswordAsync(ForgotPasswordRequest request);
+    Task ResetPasswordAsync(ResetPasswordRequest request);
+    Task<UserResponse> GetByIdAsync(string accessToken, int id);
 }

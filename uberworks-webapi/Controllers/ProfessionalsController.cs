@@ -4,7 +4,10 @@
 //               validates it at a shape level ([Authorize] checks the role before the code
 //               enters the method), and delegates ALL the real logic to IProfessionalService
 //               — the Controller never decides business rules, it just translates
-//               HTTP <-> calls to Services.
+//               HTTP <-> calls to Services. CompanyCreateWorker/MyWorkers are restricted to
+//               [Authorize(Roles = nameof(UserRole.Company))] and always act on the CALLER's
+//               own CompanyUserId (from the JWT, via ICurrentUserService) — a Company can
+//               never create or list workers under a different Company's account.
 // Entities connected: Professional.cs (indirectly, via IProfessionalService)
 // Tables related: TBL_PROFESSIONALS (indirectly, through all the layers)
 // =====================================================================================
@@ -56,6 +59,25 @@ public class ProfessionalsController : ControllerBase
     public async Task<IActionResult> Update(int id, [FromBody] UpdateProfessionalRequest request)
     {
         var result = await _professionalService.UpdateAsync(id, request);
+        return Ok(result);
+    }
+
+    [HttpPost("company-create")]
+    [Authorize(Roles = nameof(UserRole.Company))]
+    public async Task<IActionResult> CompanyCreateWorker([FromBody] CompanyCreateWorkerRequest request)
+    {
+        var companyUserId = _currentUserService.UserId!.Value;
+        var companyUsername = _currentUserService.Username!;
+        var result = await _professionalService.CreateByCompanyAsync(companyUserId, companyUsername, request);
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+    }
+
+    [HttpGet("my-workers")]
+    [Authorize(Roles = nameof(UserRole.Company))]
+    public async Task<IActionResult> MyWorkers()
+    {
+        var companyUserId = _currentUserService.UserId!.Value;
+        var result = await _professionalService.GetByCompanyUserIdAsync(companyUserId);
         return Ok(result);
     }
 }

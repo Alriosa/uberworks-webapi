@@ -9,6 +9,13 @@
 //               CreateByAdminAsync is the "dedicated endpoint" that RegisterAsync's comment
 //               refers to: it lets an already-authenticated Admin/MasterAdmin create Admin,
 //               Client, or Professional accounts (never another MasterAdmin).
+//               ExternalLoginAsync backs Google sign-in: the WebApp already verified the
+//               email with Google, so this either logs an existing user in or auto-creates
+//               a new Role=Client account — never MasterAdmin/Admin.
+//               ForgotPasswordAsync/ResetPasswordAsync back the "forgot password" email
+//               flow (PasswordResetToken.cs + IEmailSender.cs). ForgotPasswordAsync never
+//               reveals whether an email exists; ResetPasswordAsync treats an unknown,
+//               expired, or already-used token identically (one generic error).
 // Entities connected: User.cs
 // Tables related: TBL_USERS (indirectly, via UserService.cs)
 // =====================================================================================
@@ -25,4 +32,7 @@ public interface IUserService
     Task<UserResponse> GetByIdAsync(int id, int callerUserId, UserRole callerRole);
     Task<UserResponse> UpdateAsync(int id, int callerUserId, string callerUsername, UserRole callerRole, UpdateUserRequest request);
     Task<UserResponse> CreateByAdminAsync(int actorUserId, string actorUsername, UserRole actorRole, AdminCreateUserRequest request);
+    Task<AuthResponse> ExternalLoginAsync(ExternalLoginRequest request);
+    Task ForgotPasswordAsync(ForgotPasswordRequest request);
+    Task ResetPasswordAsync(ResetPasswordRequest request);
 }

@@ -8,7 +8,7 @@
 //               without having to list them by hand.
 // Entities connected: ALL (User, Professional, WorkType, Service, ServiceProfessional,
 //                      Review, Payment, Chat, Penalty, Reward, ErrorLog, UserActionLog,
-//                      AdminActionLog)
+//                      AdminActionLog, PasswordResetToken)
 // Tables related: ALL the TBL_* tables in the database
 // =====================================================================================
 using Microsoft.EntityFrameworkCore;
@@ -35,6 +35,7 @@ public class AppDbContext : DbContext
     public DbSet<ErrorLog> ErrorLogs => Set<ErrorLog>();
     public DbSet<UserActionLog> UserActionLogs => Set<UserActionLog>();
     public DbSet<AdminActionLog> AdminActionLogs => Set<AdminActionLog>();
+    public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

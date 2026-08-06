@@ -199,6 +199,51 @@ namespace uberworks_webapi.Data.Migrations
                     b.ToTable("TBL_ERROR_LOGS", (string)null);
                 });
 
+            modelBuilder.Entity("uberworks_webapi.Models.Entities.PasswordResetToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("PK_TOKEN_ID");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("CL_CREATED_AT")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime")
+                        .HasColumnName("CL_EXPIRES_AT");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("CL_TOKEN_HASH");
+
+                    b.Property<bool>("Used")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false)
+                        .HasColumnName("CL_USED");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("PK_USER_ID");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("TBL_PASSWORD_RESET_TOKENS", (string)null);
+                });
+
             modelBuilder.Entity("uberworks_webapi.Models.Entities.Payment", b =>
                 {
                     b.Property<int>("Id")
@@ -308,6 +353,10 @@ namespace uberworks_webapi.Data.Migrations
                         .HasDefaultValue(0m)
                         .HasColumnName("CL_AVERAGE_RATING");
 
+                    b.Property<int?>("CompanyUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("CL_COMPANY_USER_ID");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
@@ -329,6 +378,8 @@ namespace uberworks_webapi.Data.Migrations
                         .HasColumnName("PK_USER_ID");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CompanyUserId");
 
                     b.HasIndex("UserId")
                         .IsUnique();
@@ -629,7 +680,7 @@ namespace uberworks_webapi.Data.Migrations
 
                     b.ToTable("TBL_USERS", null, t =>
                         {
-                            t.HasCheckConstraint("CK_USERS_ROLE", "CL_ROLE IN ('MASTER_ADMIN','ADMIN','CLIENT','PROFESSIONAL')");
+                            t.HasCheckConstraint("CK_USERS_ROLE", "CL_ROLE IN ('MASTER_ADMIN','ADMIN','CLIENT','PROFESSIONAL','MANAGER','COMPANY')");
                         });
                 });
 
@@ -745,6 +796,17 @@ namespace uberworks_webapi.Data.Migrations
                     b.Navigation("Professional");
                 });
 
+            modelBuilder.Entity("uberworks_webapi.Models.Entities.PasswordResetToken", b =>
+                {
+                    b.HasOne("uberworks_webapi.Models.Entities.User", "User")
+                        .WithMany("PasswordResetTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("uberworks_webapi.Models.Entities.Payment", b =>
                 {
                     b.HasOne("uberworks_webapi.Models.Entities.Service", "Service")
@@ -769,11 +831,18 @@ namespace uberworks_webapi.Data.Migrations
 
             modelBuilder.Entity("uberworks_webapi.Models.Entities.Professional", b =>
                 {
+                    b.HasOne("uberworks_webapi.Models.Entities.User", "CompanyUser")
+                        .WithMany("ManagedWorkers")
+                        .HasForeignKey("CompanyUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("uberworks_webapi.Models.Entities.User", "User")
                         .WithOne("Professional")
                         .HasForeignKey("uberworks_webapi.Models.Entities.Professional", "UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("CompanyUser");
 
                     b.Navigation("User");
                 });
@@ -875,6 +944,10 @@ namespace uberworks_webapi.Data.Migrations
             modelBuilder.Entity("uberworks_webapi.Models.Entities.User", b =>
                 {
                     b.Navigation("ChatsAsClient");
+
+                    b.Navigation("ManagedWorkers");
+
+                    b.Navigation("PasswordResetTokens");
 
                     b.Navigation("Penalties");
 

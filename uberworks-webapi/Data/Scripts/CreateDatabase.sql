@@ -1,11 +1,12 @@
 -- =====================================================================================
 -- FILE SUMMARY
 -- What it does: Standalone T-SQL script that creates the UberworksDb database from
---               scratch, with all 13 tables, columns, types, defaults, CHECK constraints,
+--               scratch, with all 14 tables, columns, types, defaults, CHECK constraints,
 --               foreign keys, and indexes — matching the final state produced by EF Core's
---               7 migrations (InitialCreate, AddServiceLocationAndCompletionFields,
+--               9 migrations (InitialCreate, AddServiceLocationAndCompletionFields,
 --               UpdateUserRoles, AddUsernameToUsers, AddAuditLogging,
---               MakePenaltyTypeAndReasonRequired, MakeMoreFieldsRequired). Useful for
+--               MakePenaltyTypeAndReasonRequired, MakeMoreFieldsRequired,
+--               AddManagerCompanyRolesAndWorkerLink, AddPasswordResetTokens). Useful for
 --               handing the schema to someone who doesn't run
 --               dotnet-ef (a DBA, the webapp/mobile teams, or just to inspect the schema in
 --               one place), or for restoring a clean database quickly.
@@ -18,13 +19,13 @@
 --               if you point EF Core at a database created with this script, it correctly
 --               thinks all 7 migrations are already applied (and won't try to re-run them
 --               or complain about a mismatched schema).
--- Entities related: All 13 (User, Professional, WorkType, Service, ServiceProfessional,
+-- Entities related: All 14 (User, Professional, WorkType, Service, ServiceProfessional,
 --                   Review, Payment, Chat, Penalty, Reward, ErrorLog, UserActionLog,
---                   AdminActionLog)
+--                   AdminActionLog, PasswordResetToken)
 -- Tables created: TBL_USERS, TBL_WORKTYPES, TBL_PROFESSIONALS, TBL_SERVICES,
 --                 TBL_SERVICE_PROFESSIONALS, TBL_REVIEWS, TBL_PAYMENTS, TBL_CHATS,
 --                 TBL_PENALTIES, TBL_REWARDS, TBL_ERROR_LOGS, TBL_USER_ACTION_LOGS,
---                 TBL_ADMIN_ACTION_LOGS, __EFMigrationsHistory
+--                 TBL_ADMIN_ACTION_LOGS, TBL_PASSWORD_RESET_TOKENS, __EFMigrationsHistory
 -- =====================================================================================
 
 IF DB_ID(N'UberworksDb') IS NULL
@@ -52,7 +53,7 @@ CREATE TABLE [TBL_USERS] (
     [CL_STATUS]             NVARCHAR(20)      NOT NULL CONSTRAINT [DF_USERS_STATUS] DEFAULT (N'ACTIVE'),
     [CL_REGISTRATION_DATE]  DATETIME          NOT NULL CONSTRAINT [DF_USERS_REGISTRATION_DATE] DEFAULT (GETDATE()),
     CONSTRAINT [PK_TBL_USERS] PRIMARY KEY ([PK_USER_ID]),
-    CONSTRAINT [CK_USERS_ROLE] CHECK ([CL_ROLE] IN (N'MASTER_ADMIN', N'ADMIN', N'CLIENT', N'PROFESSIONAL'))
+    CONSTRAINT [CK_USERS_ROLE] CHECK ([CL_ROLE] IN (N'MASTER_ADMIN', N'ADMIN', N'CLIENT', N'PROFESSIONAL', N'MANAGER', N'COMPANY'))
 );
 GO
 
@@ -84,13 +85,17 @@ CREATE TABLE [TBL_PROFESSIONALS] (
     [CL_AVAILABILITY]     NVARCHAR(100)     NOT NULL,
     [CL_LOCATION]         NVARCHAR(200)     NOT NULL,
     [CL_AVERAGE_RATING]   DECIMAL(3,2)      NOT NULL CONSTRAINT [DF_PROFESSIONALS_AVERAGE_RATING] DEFAULT (0),
+    [CL_COMPANY_USER_ID]  INT               NULL,
     CONSTRAINT [PK_TBL_PROFESSIONALS] PRIMARY KEY ([PK_PROFESSIONAL_ID]),
     CONSTRAINT [FK_TBL_PROFESSIONALS_TBL_USERS_PK_USER_ID]
-        FOREIGN KEY ([PK_USER_ID]) REFERENCES [TBL_USERS] ([PK_USER_ID]) ON DELETE NO ACTION
+        FOREIGN KEY ([PK_USER_ID]) REFERENCES [TBL_USERS] ([PK_USER_ID]) ON DELETE NO ACTION,
+    CONSTRAINT [FK_TBL_PROFESSIONALS_TBL_USERS_CL_COMPANY_USER_ID]
+        FOREIGN KEY ([CL_COMPANY_USER_ID]) REFERENCES [TBL_USERS] ([PK_USER_ID]) ON DELETE NO ACTION
 );
 GO
 
 CREATE UNIQUE INDEX [IX_TBL_PROFESSIONALS_PK_USER_ID] ON [TBL_PROFESSIONALS] ([PK_USER_ID]);
+CREATE INDEX [IX_TBL_PROFESSIONALS_CL_COMPANY_USER_ID] ON [TBL_PROFESSIONALS] ([CL_COMPANY_USER_ID]);
 GO
 
 -- -------------------------------------------------------------------------------------
@@ -329,6 +334,27 @@ CREATE INDEX [IX_TBL_ADMIN_ACTION_LOGS_CL_ACTOR_USER_ID] ON [TBL_ADMIN_ACTION_LO
 GO
 
 -- -------------------------------------------------------------------------------------
+-- TBL_PASSWORD_RESET_TOKENS — one row per "forgot password" request. Only the SHA256 hash
+-- of the token is stored (CL_TOKEN_HASH), never the raw value that goes in the email link.
+-- -------------------------------------------------------------------------------------
+CREATE TABLE [TBL_PASSWORD_RESET_TOKENS] (
+    [PK_TOKEN_ID]     INT IDENTITY(1,1) NOT NULL,
+    [PK_USER_ID]      INT               NOT NULL,
+    [CL_TOKEN_HASH]   NVARCHAR(100)     NOT NULL,
+    [CL_EXPIRES_AT]   DATETIME          NOT NULL,
+    [CL_USED]         BIT               NOT NULL CONSTRAINT [DF_PASSWORD_RESET_TOKENS_USED] DEFAULT (0),
+    [CL_CREATED_AT]   DATETIME          NOT NULL CONSTRAINT [DF_PASSWORD_RESET_TOKENS_CREATED_AT] DEFAULT (GETDATE()),
+    CONSTRAINT [PK_TBL_PASSWORD_RESET_TOKENS] PRIMARY KEY ([PK_TOKEN_ID]),
+    CONSTRAINT [FK_TBL_PASSWORD_RESET_TOKENS_TBL_USERS_PK_USER_ID]
+        FOREIGN KEY ([PK_USER_ID]) REFERENCES [TBL_USERS] ([PK_USER_ID]) ON DELETE NO ACTION
+);
+GO
+
+CREATE UNIQUE INDEX [IX_TBL_PASSWORD_RESET_TOKENS_CL_TOKEN_HASH] ON [TBL_PASSWORD_RESET_TOKENS] ([CL_TOKEN_HASH]);
+CREATE INDEX [IX_TBL_PASSWORD_RESET_TOKENS_PK_USER_ID] ON [TBL_PASSWORD_RESET_TOKENS] ([PK_USER_ID]);
+GO
+
+-- -------------------------------------------------------------------------------------
 -- __EFMigrationsHistory — bookkeeping table EF Core uses to know which migrations have
 -- already run. Seeded here so that if you later point the API (EF Core) at a database
 -- created with this script, it recognizes the schema as already up to date instead of
@@ -348,5 +374,7 @@ INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES
     (N'20260805192805_AddUsernameToUsers', N'10.0.10'),
     (N'20260805204333_AddAuditLogging', N'10.0.10'),
     (N'20260805210751_MakePenaltyTypeAndReasonRequired', N'10.0.10'),
-    (N'20260806153730_MakeMoreFieldsRequired', N'10.0.10');
+    (N'20260806153730_MakeMoreFieldsRequired', N'10.0.10'),
+    (N'20260806223658_AddManagerCompanyRolesAndWorkerLink', N'10.0.10'),
+    (N'20260806230708_AddPasswordResetTokens', N'10.0.10');
 GO

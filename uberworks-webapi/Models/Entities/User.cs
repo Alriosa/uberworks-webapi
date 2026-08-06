@@ -4,7 +4,8 @@
 //               system — Client and Professional are really Users with extra data. EF Core
 //               uses this class to read/write to the database automatically (we never write
 //               raw SQL: EF translates this class into SELECT/INSERT/UPDATE).
-// Entities connected: Professional.cs (1:1), Service.cs (1:N as client),
+// Entities connected: Professional.cs (1:1, own profile; 1:N as the owning Company, via
+//                      Professional.CompanyUserId), Service.cs (1:N as client),
 //                      Review.cs (1:N as client), Chat.cs (1:N as client),
 //                      Penalty.cs (1:N), Reward.cs (1:1)
 // Tables related: TBL_USERS (full mapping in Data/Configurations/UserConfiguration.cs)
@@ -42,9 +43,17 @@ public class User
 
     // Navigation properties
     public Professional? Professional { get; set; }
+
+    /// <summary>
+    /// Workers this User created while acting as a Company (Role=Company). Empty for
+    /// every other role — see Professional.CompanyUserId.
+    /// </summary>
+    public ICollection<Professional> ManagedWorkers { get; set; } = new List<Professional>();
+
     public ICollection<Service> ServicesRequested { get; set; } = new List<Service>();
     public ICollection<Review> ReviewsWritten { get; set; } = new List<Review>();
     public ICollection<Chat> ChatsAsClient { get; set; } = new List<Chat>();
     public ICollection<Penalty> Penalties { get; set; } = new List<Penalty>();
     public Reward? Reward { get; set; }
+    public ICollection<PasswordResetToken> PasswordResetTokens { get; set; } = new List<PasswordResetToken>();
 }

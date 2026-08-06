@@ -2,16 +2,27 @@
 // FILE SUMMARY
 // What it does: Entry point of the WebApp. Registers MVC (Controllers + Views), a typed
 //               HttpClient for talking to uberworks-webapi (base URL from
-//               appsettings.json → Api:BaseUrl, with "X-Client-Source: WebApp" attached to
-//               every outgoing request so the API's audit logs can tell this traffic apart
-//               from Mobile or direct calls — see ICurrentUserService.Source in the API),
-//               and cookie-based authentication (so once a user logs in via
-//               AccountController, their identity — and the API's JWT — persists across
-//               page requests without the browser having to resend credentials each time).
+//               appsettings.json → Api:BaseUrl, with "X-Client-Source: WebApp" AND
+//               "X-Internal-Secret" attached to every outgoing request — the first lets the
+//               API's audit logs tell this traffic apart from Mobile or direct calls, the
+//               second is what POST /api/users/external-login checks via
+//               RequireInternalSecretAttribute.cs on the API side, since that one call has
+//               no JWT yet — the same two typed clients also back CompanyController.cs's
+//               calls to /api/professionals/company-create and /api/professionals/my-workers),
+//               cookie-based authentication (so once a user logs in via
+//               AccountController, their identity — and the API's JWT — persists across page
+//               requests without the browser having to resend credentials each time), and
+//               Google as an additional "external" sign-in scheme (AccountController.GoogleLogin
+//               triggers the redirect to Google; AccountController.GoogleCallback receives
+//               the verified email back and exchanges it for the API's own JWT).
 // Entities connected: None — this project has no database entities
 // Tables related: None — WebApp never touches the database directly, only through the API
 // =====================================================================================
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using uberworks_webapp.Common;
+using uberworks_webapp.Common.Helpers;
+using uberworks_webapp.Models.ApiContracts;
 using uberworks_webapp.Services.ApiClient;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,15 +30,23 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-builder.Services.AddHttpClient<IUsersApiClient, UsersApiClient>(client =>
+// Shared by every typed HttpClient below — same base URL and headers for whichever API
+// controller they end up calling.
+void ConfigureApiClient(HttpClient client)
 {
     var baseUrl = builder.Configuration["Api:BaseUrl"]
         ?? throw new InvalidOperationException("Api:BaseUrl is not configured in appsettings.");
+    var internalSecret = builder.Configuration["Internal:SharedSecret"]
+        ?? throw new InvalidOperationException("Internal:SharedSecret is not configured in appsettings/user-secrets.");
     client.BaseAddress = new Uri(baseUrl);
     client.DefaultRequestHeaders.Add("X-Client-Source", "WebApp");
-});
+    client.DefaultRequestHeaders.Add("X-Internal-Secret", internalSecret);
+}
 
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+builder.Services.AddHttpClient<IUsersApiClient, UsersApiClient>(ConfigureApiClient);
+builder.Services.AddHttpClient<IProfessionalsApiClient, ProfessionalsApiClient>(ConfigureApiClient);
+
+var authenticationBuilder = builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.LoginPath = "/Account/Login";
@@ -36,6 +55,69 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.ExpireTimeSpan = TimeSpan.FromHours(1);
         options.SlidingExpiration = true;
     });
+
+var googleClientId = builder.Configuration["GoogleAuth:ClientId"];
+var googleClientSecret = builder.Configuration["GoogleAuth:ClientSecret"];
+
+// Google is only registered once real credentials exist in configuration/user-secrets.
+// Google's own OAuthOptions.Validate() throws ArgumentException on an empty ClientId the
+// FIRST time any request goes through auth middleware — which would crash the entire site,
+// not just the "Continue with Google" button — if we always registered it. This flag also
+// drives whether Login.cshtml/Register.cshtml render the Google button at all
+// (see IsGoogleLoginEnabled below).
+var isGoogleLoginEnabled = !string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret);
+builder.Services.AddSingleton(new GoogleLoginOptions(isGoogleLoginEnabled));
+
+if (isGoogleLoginEnabled)
+{
+    authenticationBuilder.AddGoogle(options =>
+    {
+        // Google is only used to VERIFY the person's email — the actual session cookie
+        // that keeps them logged in on this site is still the one issued above by
+        // AddCookie(), built in AccountController.GoogleCallback exactly the same way
+        // as a normal Email/Password login.
+        options.ClientId = googleClientId!;
+        options.ClientSecret = googleClientSecret!;
+
+        // This is where Google's result gets turned into OUR OWN session, not Google's:
+        // once Google confirms the person's identity, exchange their verified email for
+        // the API's JWT (POST /api/users/external-login) and REPLACE Google's claims with
+        // the exact same claim set a normal Email/Password login would produce
+        // (AppClaimsFactory.cs). Because SignInScheme wasn't overridden, it defaults to the
+        // cookie scheme set above — so by the time AccountController.GoogleCallback runs,
+        // the user is already signed in with our claims, not Google's.
+        options.Events.OnCreatingTicket = async context =>
+        {
+            var email = context.Principal?.FindFirstValue(ClaimTypes.Email);
+            if (string.IsNullOrEmpty(email))
+            {
+                throw new InvalidOperationException("Google did not return a verified email address.");
+            }
+
+            var firstName = context.Principal?.FindFirstValue(ClaimTypes.GivenName) ?? string.Empty;
+            var lastName = context.Principal?.FindFirstValue(ClaimTypes.Surname) ?? string.Empty;
+
+            var usersApiClient = context.HttpContext.RequestServices.GetRequiredService<IUsersApiClient>();
+            var auth = await usersApiClient.ExternalLoginAsync(new ExternalLoginRequest
+            {
+                Email = email,
+                FirstName = firstName,
+                LastName = lastName
+            });
+
+            var identity = AppClaimsFactory.CreateIdentity(auth, context.Scheme.Name);
+            context.Principal = new ClaimsPrincipal(identity);
+        };
+
+        options.Events.OnRemoteFailure = context =>
+        {
+            var errorMessage = context.Failure?.Message ?? "Google sign-in failed.";
+            context.Response.Redirect("/Account/Login?error=" + Uri.EscapeDataString(errorMessage));
+            context.HandleResponse();
+            return Task.CompletedTask;
+        };
+    });
+}
 
 var app = builder.Build();
 

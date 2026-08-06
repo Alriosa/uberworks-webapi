@@ -1,0 +1,31 @@
+@model uberworks_webapp.Models.ViewModels.ProfessionalProfileViewModel
+@{
+    ViewData["Title"] = "My Profile";
+}
+
+<h1>My profile</h1>
+<partial name="_ProfileFields" model="Model" />
+
+<h2>Professional details</h2>
+<dl class="row">
+    <dt class="col-sm-3">Description</dt>
+    <dd class="col-sm-9">@(Model.Description ?? "—")</dd>
+
+    <dt class="col-sm-3">Experience</dt>
+    <dd class="col-sm-9">@(Model.Experience ?? "—")</dd>
+
+    <dt class="col-sm-3">Availability</dt>
+    <dd class="col-sm-9">@(Model.Availability ?? "—")</dd>
+
+    <dt class="col-sm-3">Location</dt>
+    <dd class="col-sm-9">@(Model.Location ?? "—")</dd>
+
+    <dt class="col-sm-3">Average rating</dt>
+    <dd class="col-sm-9">@Model.AverageRating</dd>
+
+    @if (Model.CompanyUserId is not null)
+    {
+        <dt class="col-sm-3">Managed by</dt>
+        <dd class="col-sm-9">A company account (User #@Model.CompanyUserId)</dd>
+    }
+</dl>

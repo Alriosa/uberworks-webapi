@@ -1,20 +1,26 @@
 // =====================================================================================
 // FILE SUMMARY
-// What it does: Admin-only area of the WebApp. [Authorize(Roles = "MasterAdmin,Admin")] on
-//               the whole controller means a Client/Professional (or an anonymous visitor)
-//               gets redirected to /Account/Login (or a 403, if already logged in with the
-//               wrong role) before any action runs — MVC's cookie auth checks the "Role"
-//               claim set at login time (see AccountController.SignInAsync). CreateUser
-//               reads the caller's own JWT from the "access_token" claim on that same cookie
-//               and forwards it as a Bearer token to POST /api/users/admin-create, which is
-//               what actually authorizes the write on the API side. The Controller only
-//               handles HTTP/form concerns; all the actual API communication goes through
-//               IUsersApiClient, never directly through HttpClient here.
+// What it does: Admin-only area of the WebApp. [Authorize(Roles = "MasterAdmin,Admin,Manager")]
+//               on the whole controller means a Client/Professional/Company (or an
+//               anonymous visitor) gets redirected to /Account/Login (or a 403, if already
+//               logged in with the wrong role) before any action runs — MVC's cookie auth
+//               checks the "Role" claim set at login time (see AccountController.SignInAsync).
+//               CreateUser reads the caller's own JWT from the "access_token" claim on that
+//               same cookie and forwards it as a Bearer token to POST /api/users/admin-create,
+//               which is what actually authorizes the write on the API side. The Role
+//               dropdown only shows options RoleHierarchy.cs says this caller's role can
+//               create (UI convenience only — the API enforces the real rule regardless).
+//               The Controller only handles HTTP/form concerns; all the actual API
+//               communication goes through IUsersApiClient, never directly through
+//               HttpClient here.
 // Entities connected: None — this project has no database entities
 // Tables related: None — reaches TBL_USERS only indirectly, through the API
 // =====================================================================================
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using uberworks_webapp.Common;
 using uberworks_webapp.Common.Exceptions;
 using uberworks_webapp.Models.ApiContracts;
 using uberworks_webapp.Models.ViewModels;
@@ -22,7 +28,7 @@ using uberworks_webapp.Services.ApiClient;
 
 namespace uberworks_webapp.Controllers;
 
-[Authorize(Roles = "MasterAdmin,Admin")]
+[Authorize(Roles = "MasterAdmin,Admin,Manager")]
 public class AdminController : Controller
 {
     private readonly IUsersApiClient _usersApiClient;
@@ -35,6 +41,7 @@ public class AdminController : Controller
     [HttpGet]
     public IActionResult CreateUser()
     {
+        ViewData["RoleOptions"] = BuildRoleOptions();
         return View(new AdminCreateUserViewModel());
     }
 
@@ -44,6 +51,7 @@ public class AdminController : Controller
     {
         if (!ModelState.IsValid)
         {
+            ViewData["RoleOptions"] = BuildRoleOptions();
             return View(model);
         }
 
@@ -68,7 +76,17 @@ public class AdminController : Controller
         catch (ApiException ex)
         {
             ModelState.AddModelError(string.Empty, ex.Message);
+            ViewData["RoleOptions"] = BuildRoleOptions();
             return View(model);
         }
+    }
+
+    private List<SelectListItem> BuildRoleOptions()
+    {
+        var actorRole = Enum.Parse<UserRole>(User.FindFirstValue(ClaimTypes.Role)!);
+
+        return RoleHierarchy.GetCreatableRoles(actorRole)
+            .Select(role => new SelectListItem(RoleHierarchy.GetDisplayLabel(role), ((int)role).ToString()))
+            .ToList();
     }
 }

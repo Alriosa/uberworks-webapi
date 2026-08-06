@@ -1,7 +1,8 @@
 // =====================================================================================
 // FILE SUMMARY
-// What it does: Holds ALL the user business logic: register (rejecting administrator
-//               roles), log in (verifying the password and issuing the JWT via
+// What it does: Holds ALL the user business logic: register (always as Client — see
+//               UserRole.cs for the full account-creation pyramid), log in (verifying the
+//               password and issuing the JWT via
 //               IJwtTokenService), find by id, and update basic data. GetByIdAsync and
 //               UpdateAsync enforce an ownership rule (EnsureSelfOrAdmin): only the profile
 //               owner or an Admin/MasterAdmin can view or edit a user's full data (email,
@@ -15,7 +16,9 @@
 //               Service never talks directly to SQL — it always goes through IUserRepository.
 //               CreateByAdminAsync is the counterpart to RegisterAsync for Admin/MasterAdmin
 //               callers: it allows creating Admin accounts too (never MasterAdmin) and always
-//               logs to AdminActionLog, since the actor is never the target.
+//               logs to AdminActionLog, since the actor is never the target. ExternalLoginAsync
+//               backs Google sign-in: logs an existing user in, or auto-creates a new
+//               Role=Client account if the (Google-verified) email is new.
 // Entities connected: User.cs
 // Tables related: TBL_USERS (indirectly, via IUserRepository); TBL_USER_ACTION_LOGS,
 //                 TBL_ADMIN_ACTION_LOGS (indirectly, via IAuditLogService)
@@ -36,24 +39,37 @@ public class UserService : IUserService
     private readonly IUserRepository _userRepository;
     private readonly IJwtTokenService _jwtTokenService;
     private readonly IAuditLogService _auditLogService;
+    private readonly IPasswordResetTokenRepository _passwordResetTokenRepository;
+    private readonly IEmailSender _emailSender;
+    private readonly IConfiguration _configuration;
 
-    public UserService(IUserRepository userRepository, IJwtTokenService jwtTokenService, IAuditLogService auditLogService)
+    // How long a "forgot password" link stays valid before it's treated as expired
+    // (same as if it never existed — see ResetPasswordAsync).
+    private static readonly TimeSpan PasswordResetTokenLifetime = TimeSpan.FromHours(1);
+
+    public UserService(
+        IUserRepository userRepository,
+        IJwtTokenService jwtTokenService,
+        IAuditLogService auditLogService,
+        IPasswordResetTokenRepository passwordResetTokenRepository,
+        IEmailSender emailSender,
+        IConfiguration configuration)
     {
         _userRepository = userRepository;
         _jwtTokenService = jwtTokenService;
         _auditLogService = auditLogService;
+        _passwordResetTokenRepository = passwordResetTokenRepository;
+        _emailSender = emailSender;
+        _configuration = configuration;
     }
 
     public async Task<UserResponse> RegisterAsync(RegisterUserRequest request)
     {
-        // MasterAdmin and Admin are never created through this public endpoint:
-        // MasterAdmin is seeded on API startup (Data/Seed/MasterAdminSeeder),
-        // and Admin can only be created by another already-authenticated Admin/MasterAdmin
-        // (dedicated endpoint pending).
-        if (request.Role is UserRole.MasterAdmin or UserRole.Admin)
-        {
-            throw new ArgumentException("Administrator accounts cannot be registered through this endpoint.");
-        }
+        // This is the ONLY role this endpoint can ever create — see the account-creation
+        // pyramid documented on UserRole.cs. Professional/Manager/Company/Admin accounts
+        // can only come from CreateByAdminAsync (an already-authenticated Manager/Admin/
+        // MasterAdmin); MasterAdmin only from Data/Seed/MasterAdminSeeder.cs.
+        const UserRole role = UserRole.Client;
 
         if (await _userRepository.ExistsByEmailAsync(request.Email))
         {
@@ -73,7 +89,7 @@ public class UserService : IUserService
             Email = request.Email,
             Phone = request.Phone,
             PasswordHash = PasswordHasher.Hash(request.Password),
-            Role = request.Role
+            Role = role
         };
 
         await _userRepository.AddAsync(user);
@@ -124,14 +140,96 @@ public class UserService : IUserService
         };
     }
 
+    public async Task<AuthResponse> ExternalLoginAsync(ExternalLoginRequest request)
+    {
+        var user = await _userRepository.GetByEmailAsync(request.Email);
+
+        if (user is null)
+        {
+            // First time this Google email is seen: auto-create a Client account.
+            // Never MasterAdmin/Admin — same rule as RegisterAsync. The password is a
+            // random value nobody knows (this account can only ever be reached via
+            // Google, unless the user later sets a real password through their profile).
+            var randomPassword = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
+
+            user = new User
+            {
+                Username = await GenerateUniqueUsernameAsync(request.Email),
+                FirstName = string.IsNullOrWhiteSpace(request.FirstName) ? "Google" : request.FirstName,
+                LastName = string.IsNullOrWhiteSpace(request.LastName) ? "User" : request.LastName,
+                Email = request.Email,
+                PasswordHash = PasswordHasher.Hash(randomPassword),
+                Role = UserRole.Client
+            };
+
+            await _userRepository.AddAsync(user);
+
+            await _auditLogService.LogUserActionAsync(
+                actorUserId: user.Id,
+                actorUsername: user.Username,
+                action: "USER_REGISTERED",
+                targetEntityType: "User",
+                targetEntityId: user.Id,
+                details: $"Role={user.Role}, Email={user.Email}, Provider=Google");
+        }
+
+        await _auditLogService.LogUserActionAsync(
+            actorUserId: user.Id,
+            actorUsername: user.Username,
+            action: "LOGIN_SUCCESS",
+            targetEntityType: "User",
+            targetEntityId: user.Id,
+            details: "Provider=Google");
+
+        var (token, expiresAtUtc) = _jwtTokenService.GenerateToken(user);
+
+        return new AuthResponse
+        {
+            User = MapToResponse(user),
+            Token = token,
+            ExpiresAtUtc = expiresAtUtc
+        };
+    }
+
+    // Builds a username from the email's local part (before the @), appending a random
+    // 4-digit suffix if that username is already taken — Google never provides a username.
+    private async Task<string> GenerateUniqueUsernameAsync(string email)
+    {
+        var baseUsername = email.Split('@')[0];
+
+        if (!await _userRepository.ExistsByUsernameAsync(baseUsername))
+        {
+            return baseUsername;
+        }
+
+        string candidate;
+        do
+        {
+            candidate = $"{baseUsername}{Random.Shared.Next(1000, 9999)}";
+        }
+        while (await _userRepository.ExistsByUsernameAsync(candidate));
+
+        return candidate;
+    }
+
+    // The account-creation pyramid (see UserRole.cs): each role can create everything
+    // below it, never itself or above. MasterAdmin is never in any list — there must only
+    // ever be one, and it only comes from Data/Seed/MasterAdminSeeder.cs. [Authorize(Roles
+    // = "MasterAdmin,Admin,Manager")] on the controller already filters out Client/
+    // Professional/Company callers entirely; this dictionary is what stops, say, a Manager
+    // from creating another Manager or an Admin.
+    private static readonly Dictionary<UserRole, UserRole[]> CreatableRolesByActor = new()
+    {
+        [UserRole.MasterAdmin] = [UserRole.Admin, UserRole.Manager, UserRole.Company, UserRole.Professional, UserRole.Client],
+        [UserRole.Admin] = [UserRole.Manager, UserRole.Company, UserRole.Professional, UserRole.Client],
+        [UserRole.Manager] = [UserRole.Company, UserRole.Professional, UserRole.Client]
+    };
+
     public async Task<UserResponse> CreateByAdminAsync(int actorUserId, string actorUsername, UserRole actorRole, AdminCreateUserRequest request)
     {
-        // Only MasterAdmin/Admin can reach this (enforced by [Authorize(Roles=...)] on the
-        // controller), but MasterAdmin itself can still never be created here — there must
-        // only ever be one, and it only comes from Data/Seed/MasterAdminSeeder.cs.
-        if (request.Role == UserRole.MasterAdmin)
+        if (!CreatableRolesByActor.TryGetValue(actorRole, out var creatableRoles) || !creatableRoles.Contains(request.Role))
         {
-            throw new ArgumentException("The MasterAdmin account cannot be created through this endpoint.");
+            throw new ForbiddenException($"A {actorRole} cannot create a {request.Role} account.");
         }
 
         if (await _userRepository.ExistsByEmailAsync(request.Email))
@@ -232,6 +330,68 @@ public class UserService : IUserService
         {
             throw new ForbiddenException("You can only view or edit your own profile.");
         }
+    }
+
+    public async Task ForgotPasswordAsync(ForgotPasswordRequest request)
+    {
+        var user = await _userRepository.GetByEmailAsync(request.Email);
+
+        // Deliberately silent if the email doesn't exist: returning normally either way is
+        // what stops this endpoint from being usable to check which emails are registered.
+        if (user is null)
+        {
+            return;
+        }
+
+        var rawToken = SecureTokenHelper.GenerateToken();
+
+        await _passwordResetTokenRepository.AddAsync(new PasswordResetToken
+        {
+            UserId = user.Id,
+            TokenHash = SecureTokenHelper.Hash(rawToken),
+            ExpiresAt = DateTime.UtcNow.Add(PasswordResetTokenLifetime)
+        });
+
+        var webAppBaseUrl = _configuration["WebApp:BaseUrl"]
+            ?? throw new InvalidOperationException("WebApp:BaseUrl is not configured in appsettings.");
+        var resetLink = $"{webAppBaseUrl}/Account/ResetPassword?token={Uri.EscapeDataString(rawToken)}";
+
+        await _emailSender.SendAsync(
+            user.Email,
+            "Reset your Uberworks password",
+            $"""
+             <p>Hi {user.FirstName},</p>
+             <p>Someone (hopefully you) requested to reset your Uberworks password.</p>
+             <p><a href="{resetLink}">Click here to choose a new password</a>. This link expires in 1 hour and can only be used once.</p>
+             <p>If you didn't request this, you can safely ignore this email — your password won't change.</p>
+             """);
+
+        await _auditLogService.LogUserActionAsync(
+            actorUserId: user.Id,
+            actorUsername: user.Username,
+            action: "PASSWORD_RESET_REQUESTED",
+            targetEntityType: "User",
+            targetEntityId: user.Id);
+    }
+
+    public async Task ResetPasswordAsync(ResetPasswordRequest request)
+    {
+        var tokenHash = SecureTokenHelper.Hash(request.Token);
+        var token = await _passwordResetTokenRepository.GetValidByTokenHashAsync(tokenHash)
+            ?? throw new InvalidCredentialsException("This password reset link is invalid or has expired.");
+
+        token.User.PasswordHash = PasswordHasher.Hash(request.NewPassword);
+        await _userRepository.UpdateAsync(token.User);
+
+        token.Used = true;
+        await _passwordResetTokenRepository.UpdateAsync(token);
+
+        await _auditLogService.LogUserActionAsync(
+            actorUserId: token.User.Id,
+            actorUsername: token.User.Username,
+            action: "PASSWORD_RESET_COMPLETED",
+            targetEntityType: "User",
+            targetEntityId: token.User.Id);
     }
 
     private static UserResponse MapToResponse(User user) => new()

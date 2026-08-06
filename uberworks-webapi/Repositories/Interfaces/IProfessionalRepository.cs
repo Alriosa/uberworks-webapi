@@ -1,9 +1,10 @@
 // =====================================================================================
 // FILE SUMMARY
 // What it does: Data-access contract for Professional — find by id, by UserId (to check if
-//               a user already has a professional profile), create, update.
-//               ProfessionalService.cs and ServiceProfessionalService.cs depend on this
-//               interface, not on the concrete implementation.
+//               a user already has a professional profile), by the Company that created it
+//               (GetByCompanyUserIdAsync — for a Company's "my workers" list), create,
+//               update. ProfessionalService.cs and ServiceProfessionalService.cs depend on
+//               this interface, not on the concrete implementation.
 // Entities connected: Professional.cs
 // Tables related: TBL_PROFESSIONALS (indirectly, via ProfessionalRepository.cs)
 // =====================================================================================
@@ -16,6 +17,7 @@ public interface IProfessionalRepository
     Task<Professional?> GetByIdAsync(int id);
     Task<Professional?> GetByUserIdAsync(int userId);
     Task<bool> ExistsByUserIdAsync(int userId);
+    Task<List<Professional>> GetByCompanyUserIdAsync(int companyUserId);
     Task AddAsync(Professional professional);
     Task UpdateAsync(Professional professional);
 }

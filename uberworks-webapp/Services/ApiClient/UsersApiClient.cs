@@ -5,13 +5,15 @@
 //               "X-Client-Source: WebApp" header already attached — see
 //               uberworks-webapi's ICurrentUserService.Source, which reads that exact
 //               header for audit logging) to call POST /api/users/login,
-//               POST /api/users/register, and POST /api/users/admin-create. AdminCreateUserAsync
-//               attaches "Authorization: Bearer {accessToken}" on that one HttpRequestMessage
-//               only (never on _httpClient.DefaultRequestHeaders, which is shared across every
-//               request the typed client makes) so it doesn't leak one admin's token into
-//               unrelated login/register calls made by other users at the same time. If the
-//               API responds with an error status, throws Common/Exceptions/ApiException.cs
-//               with the API's real error message instead of a generic .NET HTTP exception.
+//               POST /api/users/register, POST /api/users/admin-create,
+//               POST /api/users/forgot-password, POST /api/users/reset-password, and
+//               GET /api/users/{id}. AdminCreateUserAsync/GetByIdAsync attach
+//               "Authorization: Bearer {accessToken}" on that one HttpRequestMessage only
+//               (never on _httpClient.DefaultRequestHeaders, which is shared across every
+//               request the typed client makes) so it doesn't leak one user's token into
+//               unrelated calls made by other users at the same time. If the API responds
+//               with an error status, throws Common/Exceptions/ApiException.cs with the
+//               API's real error message instead of a generic .NET HTTP exception.
 // Entities connected: None — WebApp has no database entities; this only talks to the API over HTTP
 // Tables related: None
 // =====================================================================================
@@ -50,12 +52,45 @@ public class UsersApiClient : IUsersApiClient
         return (await response.Content.ReadFromJsonAsync<UserResponse>(JsonOptions))!;
     }
 
+    public async Task<AuthResponse> ExternalLoginAsync(ExternalLoginRequest request)
+    {
+        // No Bearer token here — the API trusts this call via the "X-Internal-Secret"
+        // header that's already on _httpClient.DefaultRequestHeaders (see Program.cs).
+        var response = await _httpClient.PostAsJsonAsync("api/users/external-login", request, JsonOptions);
+        await EnsureSuccessAsync(response);
+
+        return (await response.Content.ReadFromJsonAsync<AuthResponse>(JsonOptions))!;
+    }
+
     public async Task<UserResponse> AdminCreateUserAsync(string accessToken, AdminCreateUserRequest request)
     {
         var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/users/admin-create")
         {
             Content = JsonContent.Create(request, options: JsonOptions)
         };
+        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await _httpClient.SendAsync(httpRequest);
+        await EnsureSuccessAsync(response);
+
+        return (await response.Content.ReadFromJsonAsync<UserResponse>(JsonOptions))!;
+    }
+
+    public async Task ForgotPasswordAsync(ForgotPasswordRequest request)
+    {
+        var response = await _httpClient.PostAsJsonAsync("api/users/forgot-password", request, JsonOptions);
+        await EnsureSuccessAsync(response);
+    }
+
+    public async Task ResetPasswordAsync(ResetPasswordRequest request)
+    {
+        var response = await _httpClient.PostAsJsonAsync("api/users/reset-password", request, JsonOptions);
+        await EnsureSuccessAsync(response);
+    }
+
+    public async Task<UserResponse> GetByIdAsync(string accessToken, int id)
+    {
+        var httpRequest = new HttpRequestMessage(HttpMethod.Get, $"api/users/{id}");
         httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
         var response = await _httpClient.SendAsync(httpRequest);

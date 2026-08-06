@@ -1,0 +1,25 @@
+@* =====================================================================================
+   FILE SUMMARY
+   What it does: Dedicated layout for Login.cshtml/Register.cshtml — a full-screen dark
+                 background with a centered card, no site navbar/footer. Kept separate from
+                 _Layout.cshtml (used by every other page) because auth screens intentionally
+                 look nothing like the rest of the app, matching a design the user provided.
+   Entities connected: None
+   Tables related: None
+   ===================================================================================== *@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - uberworks</title>
+    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+</head>
+<body class="auth-body">
+    <main class="auth-shell">
+        @RenderBody()
+    </main>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

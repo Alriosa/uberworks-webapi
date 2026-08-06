@@ -1,0 +1,36 @@
+@model uberworks_webapp.Models.ViewModels.ProfessionalDashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<h1>Welcome back, @Model.DisplayName!</h1>
+<p class="text-muted">Here's your Uberworks dashboard.</p>
+
+<div class="row g-3 mt-2">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Average rating</h5>
+                <p class="display-6 mb-0">@Model.AverageRating</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">My profile</h5>
+                <p class="card-text">Update your description, experience, availability, and location.</p>
+                <a asp-controller="Profile" asp-action="Index" class="btn btn-outline-primary">View profile</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Job offers</h5>
+                <p class="card-text text-muted">Coming soon.</p>
+                <button class="btn btn-outline-secondary" disabled>View offers</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,46 @@
+@model List<uberworks_webapp.Models.ApiContracts.ProfessionalResponse>
+@{
+    ViewData["Title"] = "My Workers";
+}
+
+<h1>My workers</h1>
+
+@if (TempData["SuccessMessage"] is string successMessage)
+{
+    <div class="alert alert-success">@successMessage</div>
+}
+
+<p>
+    <a asp-controller="Company" asp-action="CreateWorker" class="btn btn-primary">Create a new worker</a>
+</p>
+
+@if (!Model.Any())
+{
+    <p class="text-muted">You haven't created any workers yet.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Name</th>
+                <th>Location</th>
+                <th>Availability</th>
+                <th>Average rating</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var worker in Model)
+            {
+                <tr>
+                    <td>@worker.Username</td>
+                    <td>@worker.FirstName @worker.LastName</td>
+                    <td>@worker.Location</td>
+                    <td>@worker.Availability</td>
+                    <td>@worker.AverageRating</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

@@ -4,6 +4,7 @@
 //               .Include(p => p.User) in the queries: it tells EF Core "when you fetch the
 //               Professional, also fetch its related User in the same query" (avoids a
 //               separate second query just to read the user's name/email).
+//               GetByCompanyUserIdAsync backs a Company's "my workers" list.
 // Entities connected: Professional.cs, User.cs (via Include)
 // Tables related: TBL_PROFESSIONALS, TBL_USERS
 // =====================================================================================
@@ -31,6 +32,9 @@ public class ProfessionalRepository : IProfessionalRepository
 
     public Task<bool> ExistsByUserIdAsync(int userId) =>
         _context.Professionals.AnyAsync(p => p.UserId == userId);
+
+    public Task<List<Professional>> GetByCompanyUserIdAsync(int companyUserId) =>
+        _context.Professionals.Include(p => p.User).Where(p => p.CompanyUserId == companyUserId).ToListAsync();
 
     public async Task AddAsync(Professional professional)
     {

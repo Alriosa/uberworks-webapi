@@ -1,0 +1,19 @@
+@model uberworks_webapp.Models.ViewModels.ManagerDashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<h1>Welcome back, @Model.DisplayName!</h1>
+<p class="text-muted">Here's your Uberworks dashboard.</p>
+
+<div class="row g-3 mt-2">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Register users</h5>
+                <p class="card-text">Create Company, Professional, or Client accounts.</p>
+                <a asp-controller="Admin" asp-action="CreateUser" class="btn btn-primary">Register a user</a>
+            </div>
+        </div>
+    </div>
+</div>

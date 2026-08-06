@@ -1,0 +1,12 @@
+@model uberworks_webapp.Models.ViewModels.MasterAdminProfileViewModel
+@{
+    ViewData["Title"] = "My Profile";
+}
+
+<h1>My profile</h1>
+<p class="text-muted">This is the single MasterAdmin account, seeded automatically on API startup.</p>
+<partial name="_ProfileFields" model="Model" />
+
+<p>
+    <a asp-controller="Admin" asp-action="CreateUser" class="btn btn-primary">Register users</a>
+</p>

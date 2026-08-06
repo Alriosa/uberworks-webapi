@@ -1,0 +1,11 @@
+@model uberworks_webapp.Models.ViewModels.AdminProfileViewModel
+@{
+    ViewData["Title"] = "My Profile";
+}
+
+<h1>My profile</h1>
+<partial name="_ProfileFields" model="Model" />
+
+<p>
+    <a asp-controller="Admin" asp-action="CreateUser" class="btn btn-primary">Register users</a>
+</p>

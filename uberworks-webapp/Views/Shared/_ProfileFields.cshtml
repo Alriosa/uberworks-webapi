@@ -1,0 +1,34 @@
+@* =====================================================================================
+   FILE SUMMARY
+   What it does: Shared partial rendering the fields every profile view has in common
+                 (username, name, email, phone, role, status, registration date). Each
+                 Views/Profile/*.cshtml renders this first, then adds its own role-specific
+                 section below it — this is what keeps 6 separate view files from repeating
+                 the same markup 6 times, without forcing them to share the SAME file.
+   Entities connected: None
+   Tables related: None
+   ===================================================================================== *@
+@model uberworks_webapp.Models.ViewModels.ProfileViewModelBase
+
+<dl class="row">
+    <dt class="col-sm-3">Username</dt>
+    <dd class="col-sm-9">@Model.Username</dd>
+
+    <dt class="col-sm-3">Name</dt>
+    <dd class="col-sm-9">@Model.FirstName @Model.LastName</dd>
+
+    <dt class="col-sm-3">Email</dt>
+    <dd class="col-sm-9">@Model.Email</dd>
+
+    <dt class="col-sm-3">Phone</dt>
+    <dd class="col-sm-9">@(Model.Phone ?? "—")</dd>
+
+    <dt class="col-sm-3">Role</dt>
+    <dd class="col-sm-9">@Model.Role</dd>
+
+    <dt class="col-sm-3">Status</dt>
+    <dd class="col-sm-9">@Model.Status</dd>
+
+    <dt class="col-sm-3">Member since</dt>
+    <dd class="col-sm-9">@Model.RegistrationDate.ToString("MMMM d, yyyy")</dd>
+</dl>

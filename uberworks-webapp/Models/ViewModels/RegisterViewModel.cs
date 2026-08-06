@@ -2,14 +2,13 @@
 // FILE SUMMARY
 // What it does: Backs the Register form (Views/Account/Register.cshtml) with model binding
 //               and validation attributes. Controllers/AccountController.cs maps this into
-//               an ApiContracts.RegisterUserRequest before calling the API. Role only
-//               offers Client/Professional in the dropdown (see the view) — MasterAdmin and
-//               Admin can never be created this way, matching the API's own rule.
+//               an ApiContracts.RegisterUserRequest before calling the API. No Role field:
+//               this form only ever creates Client accounts — every other role can only be
+//               created by a Manager/Admin/MasterAdmin (see AdminController.cs).
 // Entities connected: None — this project has no database entities
 // Tables related: None
 // =====================================================================================
 using System.ComponentModel.DataAnnotations;
-using uberworks_webapp.Models.ApiContracts;
 
 namespace uberworks_webapp.Models.ViewModels;
 
@@ -43,7 +42,4 @@ public class RegisterViewModel
     [DataType(DataType.Password)]
     [Compare(nameof(Password), ErrorMessage = "Passwords do not match.")]
     public string ConfirmPassword { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Select an account type.")]
-    public UserRole Role { get; set; } = UserRole.Client;
 }

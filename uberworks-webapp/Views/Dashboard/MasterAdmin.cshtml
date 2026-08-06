@@ -1,0 +1,19 @@
+@model uberworks_webapp.Models.ViewModels.MasterAdminDashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<h1>Welcome back, @Model.DisplayName!</h1>
+<p class="text-muted">You are the MasterAdmin — the top of the account-creation pyramid.</p>
+
+<div class="row g-3 mt-2">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Register users</h5>
+                <p class="card-text">Create Admin, Manager, Company, Professional, or Client accounts.</p>
+                <a asp-controller="Admin" asp-action="CreateUser" class="btn btn-primary">Register a user</a>
+            </div>
+        </div>
+    </div>
+</div>

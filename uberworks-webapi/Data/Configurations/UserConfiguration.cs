@@ -2,9 +2,9 @@
 // FILE SUMMARY
 // What it does: Tells EF Core how to store User.cs in TBL_USERS: the real column names
 //               (CL_FIRST_NAME, CL_EMAIL, etc.), the CHECK constraint of valid roles
-//               (MASTER_ADMIN/ADMIN/CLIENT/PROFESSIONAL), the unique index on Email, and the
-//               manual translation of UserRole (because "MasterAdmin" uppercased normally
-//               would give "MASTERADMIN" instead of "MASTER_ADMIN").
+//               (MASTER_ADMIN/ADMIN/CLIENT/PROFESSIONAL/MANAGER/COMPANY), the unique index
+//               on Email, and the manual translation of UserRole (because "MasterAdmin"
+//               uppercased normally would give "MASTERADMIN" instead of "MASTER_ADMIN").
 // Entities connected: User.cs (this class configures it)
 // Tables related: TBL_USERS
 // =====================================================================================
@@ -21,7 +21,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
     {
         builder.ToTable("TBL_USERS", t => t.HasCheckConstraint(
             "CK_USERS_ROLE",
-            "CL_ROLE IN ('MASTER_ADMIN','ADMIN','CLIENT','PROFESSIONAL')"));
+            "CL_ROLE IN ('MASTER_ADMIN','ADMIN','CLIENT','PROFESSIONAL','MANAGER','COMPANY')"));
 
         builder.HasKey(u => u.Id);
         builder.Property(u => u.Id)

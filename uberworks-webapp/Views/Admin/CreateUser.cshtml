@@ -1,11 +1,12 @@
-@using uberworks_webapp.Models.ApiContracts
+@using Microsoft.AspNetCore.Mvc.Rendering
 @model uberworks_webapp.Models.ViewModels.AdminCreateUserViewModel
 @{
     ViewData["Title"] = "Register Users";
+    var roleOptions = (List<SelectListItem>)ViewData["RoleOptions"]!;
 }
 
 <h1>Register a user</h1>
-<p class="text-muted">Admin-only: this can create Admin, Client, or Professional accounts.</p>
+<p class="text-muted">The roles available below depend on your own role.</p>
 
 @if (TempData["SuccessMessage"] is string successMessage)
 {
@@ -61,15 +62,13 @@
 
             <div class="form-group mb-3">
                 <label asp-for="Role" class="form-label"></label>
-                <!-- Admin is offered here (unlike the public Register view) because this
-                     controller is already locked down to MasterAdmin/Admin. MasterAdmin
-                     itself is still never offered — there's only ever one, seeded on
-                     API startup. -->
-                <select asp-for="Role" class="form-select">
-                    <option value="@((int)UserRole.Admin)">Admin</option>
-                    <option value="@((int)UserRole.Client)">Client — needs services done</option>
-                    <option value="@((int)UserRole.Professional)">Professional — offers services</option>
-                </select>
+                <!-- Options come from AdminController.BuildRoleOptions(), which only
+                     offers what RoleHierarchy.cs says the CURRENT caller's role is allowed
+                     to create — a Manager never even sees "Admin" as a choice. MasterAdmin
+                     is never offered to anyone — there's only ever one, seeded on API
+                     startup. This is UI convenience only; the API enforces the real rule
+                     independently either way. -->
+                <select asp-for="Role" class="form-select" asp-items="roleOptions"></select>
                 <span asp-validation-for="Role" class="text-danger"></span>
             </div>
 

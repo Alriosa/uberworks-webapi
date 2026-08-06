@@ -6,7 +6,9 @@
 //               to display the name. Email is intentionally NOT here: this response is
 //               public (no login required to view a professional's profile), and there's
 //               no legitimate reason to expose someone's contact email before any
-//               relationship exists between them and a client.
+//               relationship exists between them and a client. CompanyUserId is null
+//               unless this worker was created by a Company (see ProfessionalService.
+//               CreateByCompanyAsync).
 // Entities connected: Professional.cs, User.cs (ProfessionalService.cs maps from there)
 // Tables related: None directly — it's the combined "public shape" of TBL_PROFESSIONALS + TBL_USERS
 // =====================================================================================
@@ -28,4 +30,7 @@ public class ProfessionalResponse
     public string? Availability { get; set; }
     public string? Location { get; set; }
     public decimal AverageRating { get; set; }
+
+    /// <summary>Set only for workers created by a Company (see Professional.CompanyUserId).</summary>
+    public int? CompanyUserId { get; set; }
 }
