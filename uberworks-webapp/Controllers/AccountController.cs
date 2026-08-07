@@ -84,7 +84,7 @@ public class AccountController : Controller
                 return Redirect(returnUrl);
             }
 
-            return RedirectToAction("Index", "Dashboard");
+            return RedirectToAction("LandingPage", "Dashboard");
         }
         catch (ApiException ex)
         {
@@ -155,7 +155,7 @@ public class AccountController : Controller
             return Redirect(returnUrl);
         }
 
-        return RedirectToAction("Index", "Dashboard");
+        return RedirectToAction("LandingPage", "Dashboard");
     }
 
     [HttpGet]
@@ -219,7 +219,7 @@ public class AccountController : Controller
     public async Task<IActionResult> Logout()
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        return RedirectToAction("Index", "Home");
+        return RedirectToAction("LandingPage", "Home");
     }
 
     private async Task SignInAsync(AuthResponse auth)

@@ -45,6 +45,7 @@ void ConfigureApiClient(HttpClient client)
 
 builder.Services.AddHttpClient<IUsersApiClient, UsersApiClient>(ConfigureApiClient);
 builder.Services.AddHttpClient<IProfessionalsApiClient, ProfessionalsApiClient>(ConfigureApiClient);
+builder.Services.AddHttpClient<IContactApiClient, ContactApiClient>(ConfigureApiClient);
 
 var authenticationBuilder = builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -139,7 +140,7 @@ app.MapStaticAssets();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
+    pattern: "{controller=Home}/{action=LandingPage}/{id?}")
     .WithStaticAssets();
 
 

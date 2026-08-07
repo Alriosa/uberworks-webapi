@@ -77,6 +77,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
         services.AddScoped<IEmailSender, SmtpEmailSender>();
 
+        services.AddScoped<IContactService, ContactService>();
+
         services.AddScoped<IProfessionalRepository, ProfessionalRepository>();
         services.AddScoped<IProfessionalService, ProfessionalService>();
 

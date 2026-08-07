@@ -1,0 +1,337 @@
+@* =====================================================================================
+   FILE SUMMARY
+   What it does: "Browse everything" page — what the "Y más servicios" card on
+                 LandingPage.cshtml links to. Same _LandingLayout.cshtml + _LandingHeader.cshtml
+                 as the landing page, but instead of the 6 curated cards with real photos,
+                 this is a plain grid of every service category (icon + name only — there's
+                 no photo/description per category yet, unlike the curated 6). Clicking a
+                 tile calls requestService(name), which just shows a toast — same "decorative
+                 for now, no real booking flow yet" situation as LandingPage.cshtml's cards.
+                 At the bottom there's a REAL "suggest a service" call-to-action: a button opens
+                 a modal (Name, company checkbox + conditional company name, Email, Message,
+                 optional file attachment) that posts to HomeController.SuggestService, which
+                 relays it to the API's POST /api/contact/suggest-service — an actual email is
+                 sent, this is not decorative like the tile clicks above.
+   Entities connected: None — this project has no database entities
+   Tables related: None
+   ===================================================================================== *@
+@model uberworks_webapp.Models.ViewModels.SuggestServiceViewModel
+@{
+    ViewData["Title"] = "Todos los Servicios - ServiGo";
+    Layout = "_LandingLayout";
+}
+
+<div class="fixed top-0 left-1/4 w-[600px] h-[600px] bg-glow-1 pointer-events-none rounded-full z-0"></div>
+<div class="fixed bottom-0 right-1/4 w-[700px] h-[700px] bg-glow-2 pointer-events-none rounded-full z-0"></div>
+
+<partial name="_LandingHeader" />
+
+<main class="relative pt-32 pb-20 z-10">
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <a asp-controller="Home" asp-action="LandingPage" class="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-brand-600 transition-colors mb-6">
+            <i class="fa-solid fa-arrow-left text-xs"></i>
+            <span>Volver al inicio</span>
+        </a>
+
+        <h1 class="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 mb-2">Todos los servicios</h1>
+        <p class="text-slate-600 mb-10">Elige la categoría que necesitas y te conectamos con el especialista indicado.</p>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Carpintería')">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-hammer"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">Carpintería</h3>
+            </div>
+
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Fontanero')">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-faucet-drip"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">Fontanero</h3>
+            </div>
+
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Electricista')">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">Electricista</h3>
+            </div>
+
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Tapicería')">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-couch"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">Tapicería</h3>
+            </div>
+
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Reajustes y Remodelaciones')">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-screwdriver-wrench"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">Reajustes y Remodelaciones</h3>
+            </div>
+
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Fumigación')">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-bug"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">Fumigación</h3>
+            </div>
+
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Limpieza')">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-broom"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">Limpieza</h3>
+            </div>
+
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Lava Platos')">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-sink"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">Lava Platos</h3>
+            </div>
+
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Jardinería')">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-seedling"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">Jardinería</h3>
+            </div>
+
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Pasea Perros')">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-dog"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">Pasea Perros</h3>
+            </div>
+
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Hotel de Perros')">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-house"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">Hotel de Perros</h3>
+            </div>
+
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Pet Grooming')">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-scissors"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">Pet Grooming</h3>
+            </div>
+
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Cocineros')">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-utensils"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">Cocineros</h3>
+            </div>
+
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Ayudante de Cocina')">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-kitchen-set"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">Ayudante de Cocina</h3>
+            </div>
+
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Bartenders')">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-martini-glass"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">Bartenders</h3>
+            </div>
+
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Mesero')">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-bell-concierge"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">Mesero</h3>
+            </div>
+
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Ayudante de Caja')">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-cash-register"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">Ayudante de Caja</h3>
+            </div>
+
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Staff para Eventos')">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-people-group"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">Staff para Eventos</h3>
+            </div>
+
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Coordinador del Evento')">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-clipboard-list"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">Coordinador del Evento</h3>
+            </div>
+
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Promotoras')">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-bullhorn"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">Promotoras</h3>
+            </div>
+
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('DJ')">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-headphones-simple"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">DJ</h3>
+            </div>
+
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Animadores Infantiles')">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-child"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">Animadores Infantiles</h3>
+            </div>
+
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Mudanzas')">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">Mudanzas</h3>
+            </div>
+
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Asistente de Ventas')">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-tags"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-900">Asistente de Ventas</h3>
+            </div>
+
+        </div>
+
+        <div class="mt-16 glass-card rounded-3xl border border-dashed border-slate-300 p-8 sm:p-10 text-center">
+            <h2 class="text-xl sm:text-2xl font-black text-slate-900 mb-2">¿No encontraste el servicio que buscabas?</h2>
+            <p class="text-slate-600 max-w-xl mx-auto mb-6">Escríbenos para analizar un nuevo servicio para vos.</p>
+            <button type="button" onclick="openModal('suggestServiceModal')" class="btn-alive relative overflow-hidden inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-bold px-6 py-3 rounded-xl transition-colors">
+                <i class="fa-solid fa-pen-to-square"></i>
+                <span>Sugerir un servicio</span>
+            </button>
+        </div>
+    </section>
+</main>
+
+<div id="toast" class="fixed bottom-6 right-6 z-50 glass-card px-5 py-4 rounded-2xl border border-brand-500/50 text-slate-900 shadow-2xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300">
+    <div class="w-8 h-8 rounded-xl bg-brand-500 text-white flex items-center justify-center font-bold">
+        <i class="fa-solid fa-check"></i>
+    </div>
+    <div>
+        <p id="toastMessage" class="text-xs font-bold text-slate-900"></p>
+        <p class="text-[10px] text-slate-500">Notificación de ServiGo</p>
+    </div>
+</div>
+
+@* "Sugerir un servicio" modal — submits a real multipart POST to HomeController.SuggestService,
+   which relays it to the API's /api/contact/suggest-service endpoint. *@
+<div id="suggestServiceModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeModal('suggestServiceModal')"></div>
+
+    <div class="relative glass-card w-full max-w-lg rounded-3xl border border-slate-200 shadow-2xl p-6 sm:p-8 max-h-[90vh] overflow-y-auto">
+        <button type="button" onclick="closeModal('suggestServiceModal')" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <h3 class="text-xl font-black text-slate-900 mb-1">Sugerir un servicio</h3>
+        <p class="text-sm text-slate-500 mb-6">Cuéntanos qué servicio te gustaría ver en ServiGo.</p>
+
+        <form asp-controller="Home" asp-action="SuggestService" method="post" enctype="multipart/form-data" class="space-y-4">
+            @Html.AntiForgeryToken()
+
+            <div>
+                <label for="suggestName" class="block text-xs font-bold text-slate-700 mb-1">Nombre</label>
+                <input type="text" id="suggestName" name="Name" required
+                       class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+            </div>
+
+            <div class="flex items-center gap-2">
+                <input type="checkbox" id="suggestIsFromCompany" name="IsFromCompany" value="true" onchange="document.getElementById('suggestCompanyNameWrapper').classList.toggle('hidden', !this.checked)"
+                       class="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
+                <label for="suggestIsFromCompany" class="text-sm text-slate-700">¿Vienes de una empresa?</label>
+            </div>
+
+            <div id="suggestCompanyNameWrapper" class="hidden">
+                <label for="suggestCompanyName" class="block text-xs font-bold text-slate-700 mb-1">Nombre de la empresa</label>
+                <input type="text" id="suggestCompanyName" name="CompanyName"
+                       class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+            </div>
+
+            <div>
+                <label for="suggestEmail" class="block text-xs font-bold text-slate-700 mb-1">Correo electrónico</label>
+                <input type="email" id="suggestEmail" name="Email" required
+                       class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+            </div>
+
+            <div>
+                <label for="suggestMessage" class="block text-xs font-bold text-slate-700 mb-1">Mensaje</label>
+                <textarea id="suggestMessage" name="Message" rows="4" required
+                          class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"></textarea>
+            </div>
+
+            <div>
+                <label for="suggestAttachment" class="block text-xs font-bold text-slate-700 mb-1">Adjunto (opcional)</label>
+                <input type="file" id="suggestAttachment" name="Attachment"
+                       class="w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-brand-50 file:text-brand-600 hover:file:bg-brand-100" />
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-2">
+                <button type="button" onclick="closeModal('suggestServiceModal')" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors">
+                    Cancelar
+                </button>
+                <button type="submit" class="btn-alive relative overflow-hidden bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-colors">
+                    Enviar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function requestService(name) {
+        showToast(`Buscando especialistas disponibles en "${name}"...`);
+    }
+
+    function openModal(id) {
+        const modal = document.getElementById(id);
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(id) {
+        const modal = document.getElementById(id);
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.style.overflow = '';
+    }
+
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        const toastMsg = document.getElementById('toastMessage');
+        toastMsg.innerText = message;
+
+        toast.classList.remove('translate-y-20', 'opacity-0');
+        toast.classList.add('translate-y-0', 'opacity-100');
+
+        setTimeout(() => {
+            toast.classList.remove('translate-y-0', 'opacity-100');
+            toast.classList.add('translate-y-20', 'opacity-0');
+        }, 3500);
+    }
+
+    @if (TempData["SuggestServiceSuccess"] is string successMessage)
+    {
+        <text>document.addEventListener('DOMContentLoaded', () => showToast(@Html.Raw(Json.Serialize(successMessage))));</text>
+    }
+    @if (TempData["SuggestServiceError"] is string errorMessage)
+    {
+        <text>document.addEventListener('DOMContentLoaded', () => { showToast(@Html.Raw(Json.Serialize(errorMessage))); openModal('suggestServiceModal'); });</text>
+    }
+</script>

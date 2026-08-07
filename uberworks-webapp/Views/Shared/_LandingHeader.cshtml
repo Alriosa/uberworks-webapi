@@ -1,0 +1,53 @@
+@* =====================================================================================
+   FILE SUMMARY
+   What it does: The header shared by every page that uses _LandingLayout.cshtml
+                 (LandingPage.cshtml, AllServices.cshtml, and any future public marketing
+                 page). Pulled out into its own partial so the auth-aware logic (Register/Log
+                 in vs. My Dashboard/Log out) only has to be written once — before this
+                 existed, adding a new landing-style page meant copy-pasting the whole header
+                 block. `User` here is the ambient ClaimsPrincipal — Razor partials inherit it
+                 automatically from whatever page includes them, no model needed.
+   Entities connected: None
+   Tables related: None
+   ===================================================================================== *@
+<header class="fixed top-0 left-0 w-full z-50 glass-nav transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+
+        <a asp-controller="Home" asp-action="LandingPage" class="flex items-center gap-3 group">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-brand-500/20 group-hover:scale-105 transition-transform">
+                <i class="fa-solid fa-bolt"></i>
+            </div>
+            <span class="text-2xl font-extrabold tracking-tight text-slate-900 group-hover:text-brand-600 transition-colors">
+                Servi<span class="text-brand-600">Go</span>
+            </span>
+        </a>
+
+        <div class="flex items-center gap-3 sm:gap-4">
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <span class="text-sm text-slate-600 hidden sm:inline">Hola, @User.Identity.Name!</span>
+                <a asp-controller="Dashboard" asp-action="LandingPage" class="btn-alive relative px-5 py-2.5 rounded-xl font-semibold text-sm text-slate-700 hover:text-slate-900 border border-slate-300 hover:border-brand-500/60 bg-white hover:bg-slate-50 transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-gauge text-brand-600 text-xs"></i>
+                    <span>Mi Panel</span>
+                </a>
+                <form asp-controller="Account" asp-action="Logout" method="post">
+                    <button type="submit" class="btn-alive relative px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-brand-500 to-emerald-400 hover:from-brand-400 hover:to-emerald-300 shadow-md shadow-brand-500/25 transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-right-from-bracket text-xs"></i>
+                        <span>Cerrar sesión</span>
+                    </button>
+                </form>
+            }
+            else
+            {
+                <a asp-controller="Account" asp-action="Register" class="btn-alive relative px-5 py-2.5 rounded-xl font-semibold text-sm text-slate-700 hover:text-slate-900 border border-slate-300 hover:border-brand-500/60 bg-white hover:bg-slate-50 transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-user-plus text-brand-600 text-xs"></i>
+                    <span>Registrarse</span>
+                </a>
+                <a asp-controller="Account" asp-action="Login" class="btn-alive relative px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-brand-500 to-emerald-400 hover:from-brand-400 hover:to-emerald-300 shadow-md shadow-brand-500/25 transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-right-to-bracket text-xs"></i>
+                    <span>Iniciar sesión</span>
+                </a>
+            }
+        </div>
+    </div>
+</header>

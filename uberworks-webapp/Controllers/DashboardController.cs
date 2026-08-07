@@ -2,7 +2,7 @@
 // FILE SUMMARY
 // What it does: The landing page after a successful login (see AccountController.Login/
 //               GoogleCallback, which redirect here instead of Home/Index). [Authorize]
-//               (no specific role) — Index() reads the caller's own name/id/role from the
+//               (no specific role) — LandingPage() reads the caller's own name/id/role from the
 //               "access_token" JWT claim, and picks a COMPLETELY DIFFERENT view per role
 //               (Views/Dashboard/Client.cshtml, Professional.cshtml, Company.cshtml,
 //               Manager.cshtml, Admin.cshtml, MasterAdmin.cshtml — one file per role, same
@@ -33,7 +33,7 @@ public class DashboardController : Controller
         _professionalsApiClient = professionalsApiClient;
     }
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> LandingPage()
     {
         var accessToken = User.FindFirst("access_token")!.Value;
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);

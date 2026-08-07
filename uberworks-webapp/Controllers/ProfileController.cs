@@ -35,7 +35,7 @@ public class ProfileController : Controller
         _professionalsApiClient = professionalsApiClient;
     }
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> LandingPage()
     {
         var accessToken = User.FindFirst("access_token")!.Value;
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);

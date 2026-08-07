@@ -4,11 +4,11 @@
 //               System.Net.Mail.SmtpClient (no external NuGet package needed — works fine
 //               with Gmail's SMTP, SendGrid's SMTP relay, etc.). If Smtp:Host isn't
 //               configured yet (appsettings/user-secrets), it does NOT throw or crash the
-//               app — it just logs the email's subject/body instead of sending it. This is
-//               what lets the whole forgot-password flow be built and tested end-to-end
-//               (the reset link shows up in the console/log) before real SMTP credentials
-//               exist; once they're added to user-secrets, sending switches on automatically,
-//               no code changes needed.
+//               app — it just logs the email's subject/body (and the attachment's file name/
+//               size, if any) instead of sending it. This is what lets the whole
+//               forgot-password flow AND the "suggest a service" contact form be built and
+//               tested end-to-end before real SMTP credentials exist; once they're added to
+//               user-secrets, sending switches on automatically, no code changes needed.
 // Entities connected: None
 // Tables related: None
 // =====================================================================================
@@ -29,7 +29,7 @@ public class SmtpEmailSender : IEmailSender
         _logger = logger;
     }
 
-    public async Task SendAsync(string toEmail, string subject, string htmlBody)
+    public async Task SendAsync(string toEmail, string subject, string htmlBody, EmailAttachment? attachment = null)
     {
         var smtpSection = _configuration.GetSection("Smtp");
         var host = smtpSection["Host"];
@@ -37,11 +37,14 @@ public class SmtpEmailSender : IEmailSender
         if (string.IsNullOrWhiteSpace(host))
         {
             // No SMTP configured yet — log instead of sending, so the flow that TRIGGERS
-            // the email (forgot-password) can still be developed/tested. The reset link is
-            // inside htmlBody, so it's fully usable straight from the log/console.
+            // the email (forgot-password, "suggest a service") can still be developed/tested.
+            var attachmentNote = attachment is null
+                ? "none"
+                : $"{attachment.FileName} ({attachment.Content.Length} bytes)";
+
             _logger.LogWarning(
-                "Smtp:Host is not configured — email NOT sent. To: {ToEmail}, Subject: {Subject}, Body: {Body}",
-                toEmail, subject, htmlBody);
+                "Smtp:Host is not configured — email NOT sent. To: {ToEmail}, Subject: {Subject}, Attachment: {Attachment}, Body: {Body}",
+                toEmail, subject, attachmentNote, htmlBody);
             return;
         }
 
@@ -66,6 +69,14 @@ public class SmtpEmailSender : IEmailSender
             IsBodyHtml = true
         };
         message.To.Add(toEmail);
+
+        // The MemoryStream/Attachment objects must stay alive until after SendMailAsync
+        // finishes reading from them — disposed by the `using` here, right after sending.
+        using var attachmentStream = attachment is null ? null : new MemoryStream(attachment.Content);
+        if (attachment is not null && attachmentStream is not null)
+        {
+            message.Attachments.Add(new Attachment(attachmentStream, attachment.FileName, attachment.ContentType));
+        }
 
         await client.SendMailAsync(message);
     }

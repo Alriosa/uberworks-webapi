@@ -1,0 +1,144 @@
+@* =====================================================================================
+   FILE SUMMARY
+   What it does: Dedicated layout for LandingPage.cshtml — a full custom light-theme design
+                 built with Tailwind CSS (loaded via CDN, not the local Bootstrap this project
+                 uses everywhere else) plus FontAwesome and a Google Font. Kept completely
+                 separate from _Layout.cshtml (Bootstrap navbar/footer used by every other
+                 page) for the same reason as _AuthLayout.cshtml: this page controls its own
+                 header/footer 100%, so reusing _Layout.cshtml would stack two navbars on top
+                 of each other. Holds only page-wide setup (Tailwind config, custom CSS
+                 classes like .glass-nav/.btn-alive/.ripple) — all the visible markup lives in
+                 LandingPage.cshtml itself, same split used by _AuthLayout.cshtml.
+                 NOTE on language: this is the one page in the whole app whose visible text is
+                 in Spanish (a public marketing landing page), per explicit request — every
+                 other page (Dashboard, Profile, Admin, Login, etc.) stays in English as usual.
+   Entities connected: None
+   Tables related: None
+   ===================================================================================== *@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            900: '#14532d',
+                        },
+                        dark: {
+                            800: '#0f172a',
+                            900: '#020617',
+                        }
+                    },
+                    animation: {
+                        'pulse-glow': 'pulseGlow 3s infinite alternate',
+                        'float-slow': 'float 6s ease-in-out infinite',
+                        'float-delayed': 'float 6s ease-in-out 3s infinite',
+                    },
+                    keyframes: {
+                        pulseGlow: {
+                            '0%': { boxShadow: '0 0 15px rgba(34, 197, 94, 0.2)' },
+                            '100%': { boxShadow: '0 0 35px rgba(34, 197, 94, 0.6)' }
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-10px)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+        }
+
+        .btn-alive {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-alive:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(34, 197, 94, 0.4);
+        }
+
+        .btn-alive:active {
+            transform: translateY(1px) scale(0.97);
+        }
+
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.35);
+            transform: scale(0);
+            animation: ripple-animation 0.6s linear;
+            pointer-events: none;
+        }
+
+        @@keyframes ripple-animation {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        .bg-glow-1 {
+            background: radial-gradient(circle, rgba(34,197,94,0.12) 0%, rgba(255,255,255,0) 70%);
+        }
+
+        .bg-glow-2 {
+            background: radial-gradient(circle, rgba(59,130,246,0.10) 0%, rgba(255,255,255,0) 70%);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-white text-slate-800 font-sans selection:bg-brand-500 selection:text-white min-h-screen relative overflow-x-hidden">
+    @RenderBody()
+</body>
+</html>
