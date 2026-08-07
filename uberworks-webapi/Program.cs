@@ -35,9 +35,9 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var connectionFactory = scope.ServiceProvider.GetRequiredService<IDbConnectionFactory>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    await MasterAdminSeeder.SeedAsync(dbContext, app.Configuration, logger);
+    await MasterAdminSeeder.SeedAsync(connectionFactory, app.Configuration, logger);
 }
 
 // Configure the HTTP request pipeline.

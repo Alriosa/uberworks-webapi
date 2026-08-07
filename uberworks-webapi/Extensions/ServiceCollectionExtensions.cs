@@ -3,13 +3,14 @@
 // What it does: Keeps Program.cs clean by grouping startup configuration into three
 //               extension methods: AddJwtAuthentication() configures how ASP.NET Core
 //               validates the JWT tokens that arrive on every request (signature, issuer,
-//               audience, expiration); AddApplicationServices() registers EVERY
-//               Repository/Service in the Dependency Injection (DI) container — it's the
-//               only place where "when someone asks for IUserRepository, give them a new
-//               UserRepository" gets wired up; AddRateLimiting() caps how many requests a
-//               single caller can make per minute, to stop mass scraping/enumeration of
-//               public endpoints (see uberworks_webapi.Program for how it's wired into the
-//               pipeline).
+//               audience, expiration); AddApplicationServices() registers IDbConnectionFactory
+//               (the one place the connection string is read — see Data/SqlConnectionFactory.cs)
+//               plus EVERY Repository/Service in the Dependency Injection (DI) container —
+//               it's the only place where "when someone asks for IUserRepository, give them
+//               a new UserRepository" gets wired up; AddRateLimiting() caps how many
+//               requests a single caller can make per minute, to stop mass scraping/
+//               enumeration of public endpoints (see uberworks_webapi.Program for how it's
+//               wired into the pipeline).
 // Entities connected: All of them (this file wires up the Repository/Service for each one)
 // Tables related: None directly (it's startup configuration, not data access)
 // =====================================================================================
@@ -18,7 +19,6 @@ using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using uberworks_webapi.Data;
 using uberworks_webapi.Repositories;
@@ -59,8 +59,10 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+        // Singleton is fine here (unlike EF Core's AddDbContext, which needed Scoped for
+        // its per-request change tracking): SqlConnectionFactory.cs holds nothing but a
+        // connection string and hands out a brand-new IDbConnection on every call.
+        services.AddSingleton<IDbConnectionFactory, SqlConnectionFactory>();
 
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
