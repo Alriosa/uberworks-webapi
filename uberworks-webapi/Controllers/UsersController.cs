@@ -12,8 +12,10 @@
 //               action even runs — and which roles the caller can actually create from
 //               there is enforced by UserService.CreateByAdminAsync's account-creation
 //               pyramid (see UserRole.cs), not by this Controller.
-//               ExternalLogin backs Google sign-in and is guarded by [RequireInternalSecret]
-//               instead of [Authorize], since the caller doesn't have a JWT yet.
+//               ExternalLogin backs Google AND Facebook sign-in and is guarded by
+//               [RequireInternalSecret] instead of [Authorize], since the caller doesn't have
+//               a JWT yet. SetPassword DOES require [Authorize] — it's for someone who
+//               already signed in that way and is now completing account setup.
 //               ForgotPassword/ResetPassword are public on purpose — they're exactly for
 //               people who can't log in.
 // Entities connected: User.cs (indirectly, via IUserService)
@@ -66,6 +68,20 @@ public class UsersController : ControllerBase
     {
         var result = await _userService.ExternalLoginAsync(request);
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Lets an already-authenticated caller (who signed in via Google/Facebook and hasn't
+    /// set a real password yet — see AuthResponse.RequiresPasswordSetup) create one. The
+    /// caller's own id comes from their JWT, never from the request body.
+    /// </summary>
+    [HttpPost("set-password")]
+    [Authorize]
+    public async Task<IActionResult> SetPassword([FromBody] SetPasswordRequest request)
+    {
+        var userId = _currentUserService.UserId!.Value;
+        await _userService.SetPasswordAsync(userId, request);
+        return Ok(new { message = "Password set successfully." });
     }
 
     /// <summary>

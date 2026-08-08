@@ -17,8 +17,12 @@
 //               CreateByAdminAsync is the counterpart to RegisterAsync for Admin/MasterAdmin
 //               callers: it allows creating Admin accounts too (never MasterAdmin) and always
 //               logs to AdminActionLog, since the actor is never the target. ExternalLoginAsync
-//               backs Google sign-in: logs an existing user in, or auto-creates a new
-//               Role=Client account if the (Google-verified) email is new.
+//               backs Google AND Facebook sign-in: logs an existing user in (linking their
+//               FacebookId the first time they use Facebook), or auto-creates a new
+//               Role=Client account if the (provider-verified) email is new — new accounts
+//               get IsPasswordSet=false, which AuthResponse.RequiresPasswordSetup surfaces to
+//               the WebApp so it can prompt for a real password. SetPasswordAsync is how that
+//               prompt actually sets one, for an already-authenticated caller.
 // Entities connected: User.cs
 // Tables related: TBL_USERS (indirectly, via IUserRepository); TBL_USER_ACTION_LOGS,
 //                 TBL_ADMIN_ACTION_LOGS (indirectly, via IAuditLogService)
@@ -136,7 +140,8 @@ public class UserService : IUserService
         {
             User = MapToResponse(user),
             Token = token,
-            ExpiresAtUtc = expiresAtUtc
+            ExpiresAtUtc = expiresAtUtc,
+            RequiresPasswordSetup = !user.IsPasswordSet
         };
     }
 
@@ -146,20 +151,22 @@ public class UserService : IUserService
 
         if (user is null)
         {
-            // First time this Google email is seen: auto-create a Client account.
-            // Never MasterAdmin/Admin — same rule as RegisterAsync. The password is a
-            // random value nobody knows (this account can only ever be reached via
-            // Google, unless the user later sets a real password through their profile).
+            // First time this email is seen from Google/Facebook: auto-create a Client
+            // account. Never MasterAdmin/Admin — same rule as RegisterAsync. The password is
+            // a random value nobody knows (IsPasswordSet=false is what actually matters:
+            // that's what tells the WebApp to prompt for a real password after sign-in).
             var randomPassword = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
 
             user = new User
             {
                 Username = await GenerateUniqueUsernameAsync(request.Email),
-                FirstName = string.IsNullOrWhiteSpace(request.FirstName) ? "Google" : request.FirstName,
+                FirstName = string.IsNullOrWhiteSpace(request.FirstName) ? request.Provider.ToString() : request.FirstName,
                 LastName = string.IsNullOrWhiteSpace(request.LastName) ? "User" : request.LastName,
                 Email = request.Email,
                 PasswordHash = PasswordHasher.Hash(randomPassword),
-                Role = UserRole.Client
+                Role = UserRole.Client,
+                FacebookId = request.Provider == AuthProvider.Facebook ? request.ProviderUserId : null,
+                IsPasswordSet = false
             };
 
             await _userRepository.AddAsync(user);
@@ -170,7 +177,15 @@ public class UserService : IUserService
                 action: "USER_REGISTERED",
                 targetEntityType: "User",
                 targetEntityId: user.Id,
-                details: $"Role={user.Role}, Email={user.Email}, Provider=Google");
+                details: $"Role={user.Role}, Email={user.Email}, Provider={request.Provider}");
+        }
+        else if (request.Provider == AuthProvider.Facebook && user.FacebookId is null && !string.IsNullOrEmpty(request.ProviderUserId))
+        {
+            // Existing account (registered normally, or via Google) signing in with Facebook
+            // for the first time using the same email — link the Facebook account to it so
+            // future Facebook logins are recognized as this same person.
+            user.FacebookId = request.ProviderUserId;
+            await _userRepository.UpdateAsync(user);
         }
 
         await _auditLogService.LogUserActionAsync(
@@ -179,7 +194,7 @@ public class UserService : IUserService
             action: "LOGIN_SUCCESS",
             targetEntityType: "User",
             targetEntityId: user.Id,
-            details: "Provider=Google");
+            details: $"Provider={request.Provider}");
 
         var (token, expiresAtUtc) = _jwtTokenService.GenerateToken(user);
 
@@ -187,8 +202,29 @@ public class UserService : IUserService
         {
             User = MapToResponse(user),
             Token = token,
-            ExpiresAtUtc = expiresAtUtc
+            ExpiresAtUtc = expiresAtUtc,
+            RequiresPasswordSetup = !user.IsPasswordSet
         };
+    }
+
+    // Lets a Google/Facebook-created account (User.IsPasswordSet == false) set a real
+    // password for the first time. Called from an [Authorize]'d endpoint, so userId comes
+    // from the caller's own JWT — nobody can set someone else's password through this.
+    public async Task SetPasswordAsync(int userId, SetPasswordRequest request)
+    {
+        var user = await _userRepository.GetByIdAsync(userId)
+            ?? throw new NotFoundException($"User with id {userId} was not found.");
+
+        user.PasswordHash = PasswordHasher.Hash(request.NewPassword);
+        user.IsPasswordSet = true;
+        await _userRepository.UpdateAsync(user);
+
+        await _auditLogService.LogUserActionAsync(
+            actorUserId: user.Id,
+            actorUsername: user.Username,
+            action: "PASSWORD_SET_COMPLETED",
+            targetEntityType: "User",
+            targetEntityId: user.Id);
     }
 
     // Builds a username from the email's local part (before the @), appending a random

@@ -2,16 +2,19 @@
    FILE SUMMARY
    What it does: "Browse everything" page — what the "Y más servicios" card on
                  LandingPage.cshtml links to. Same _LandingLayout.cshtml + _LandingHeader.cshtml
-                 as the landing page, but instead of the 6 curated cards with real photos,
-                 this is a plain grid of every service category (icon + name only — there's
-                 no photo/description per category yet, unlike the curated 6). Clicking a
-                 tile calls requestService(name), which just shows a toast — same "decorative
-                 for now, no real booking flow yet" situation as LandingPage.cshtml's cards.
-                 At the bottom there's a REAL "suggest a service" call-to-action: a button opens
-                 a modal (Name, company checkbox + conditional company name, Email, Message,
-                 optional file attachment) that posts to HomeController.SuggestService, which
-                 relays it to the API's POST /api/contact/suggest-service — an actual email is
-                 sent, this is not decorative like the tile clicks above.
+                 as the landing page. Clicking any of the 24 category tiles calls
+                 openServiceModalFromCatalog(key) (wwwroot/js/landing-common.js), which looks the
+                 category up in wwwroot/js/service-catalog.js and opens the SAME detail modal
+                 used by LandingPage.cshtml's curated cards — photo, description, and a
+                 "Pedir servicio" button (still decorative: no real booking flow exists yet in
+                 the WebApp). At the bottom there's a REAL "suggest a service" call-to-action: a
+                 button opens a modal (Name, company checkbox + conditional company name, Email,
+                 Message, optional file attachment) that posts to HomeController.SuggestService,
+                 which relays it to the API's POST /api/contact/suggest-service — an actual
+                 email is sent, this is not decorative like the tile clicks above. Both modals
+                 on this page now share the same open/close animation (opacity + scale on an
+                 "#idBox" inner element) provided by landing-common.js, instead of each modal
+                 having its own bespoke show/hide logic.
    Entities connected: None — this project has no database entities
    Tables related: None
    ===================================================================================== *@
@@ -38,168 +41,168 @@
 
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
 
-            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Carpintería')">
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="openServiceModalFromCatalog('Carpintería')">
                 <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <i class="fa-solid fa-hammer"></i>
                 </div>
                 <h3 class="text-sm font-bold text-slate-900">Carpintería</h3>
             </div>
 
-            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Fontanero')">
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="openServiceModalFromCatalog('Fontanero')">
                 <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <i class="fa-solid fa-faucet-drip"></i>
                 </div>
                 <h3 class="text-sm font-bold text-slate-900">Fontanero</h3>
             </div>
 
-            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Electricista')">
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="openServiceModalFromCatalog('Electricista')">
                 <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <i class="fa-solid fa-bolt"></i>
                 </div>
                 <h3 class="text-sm font-bold text-slate-900">Electricista</h3>
             </div>
 
-            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Tapicería')">
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="openServiceModalFromCatalog('Tapicería')">
                 <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <i class="fa-solid fa-couch"></i>
                 </div>
                 <h3 class="text-sm font-bold text-slate-900">Tapicería</h3>
             </div>
 
-            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Reajustes y Remodelaciones')">
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="openServiceModalFromCatalog('Reajustes y Remodelaciones')">
                 <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <i class="fa-solid fa-screwdriver-wrench"></i>
                 </div>
                 <h3 class="text-sm font-bold text-slate-900">Reajustes y Remodelaciones</h3>
             </div>
 
-            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Fumigación')">
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="openServiceModalFromCatalog('Fumigación')">
                 <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <i class="fa-solid fa-bug"></i>
                 </div>
                 <h3 class="text-sm font-bold text-slate-900">Fumigación</h3>
             </div>
 
-            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Limpieza')">
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="openServiceModalFromCatalog('Limpieza')">
                 <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <i class="fa-solid fa-broom"></i>
                 </div>
                 <h3 class="text-sm font-bold text-slate-900">Limpieza</h3>
             </div>
 
-            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Lava Platos')">
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="openServiceModalFromCatalog('Lava Platos')">
                 <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <i class="fa-solid fa-sink"></i>
                 </div>
                 <h3 class="text-sm font-bold text-slate-900">Lava Platos</h3>
             </div>
 
-            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Jardinería')">
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="openServiceModalFromCatalog('Jardinería')">
                 <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <i class="fa-solid fa-seedling"></i>
                 </div>
                 <h3 class="text-sm font-bold text-slate-900">Jardinería</h3>
             </div>
 
-            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Pasea Perros')">
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="openServiceModalFromCatalog('Pasea Perros')">
                 <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <i class="fa-solid fa-dog"></i>
                 </div>
                 <h3 class="text-sm font-bold text-slate-900">Pasea Perros</h3>
             </div>
 
-            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Hotel de Perros')">
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="openServiceModalFromCatalog('Hotel de Perros')">
                 <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <i class="fa-solid fa-house"></i>
                 </div>
                 <h3 class="text-sm font-bold text-slate-900">Hotel de Perros</h3>
             </div>
 
-            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Pet Grooming')">
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="openServiceModalFromCatalog('Pet Grooming')">
                 <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <i class="fa-solid fa-scissors"></i>
                 </div>
                 <h3 class="text-sm font-bold text-slate-900">Pet Grooming</h3>
             </div>
 
-            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Cocineros')">
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="openServiceModalFromCatalog('Cocineros')">
                 <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <i class="fa-solid fa-utensils"></i>
                 </div>
                 <h3 class="text-sm font-bold text-slate-900">Cocineros</h3>
             </div>
 
-            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Ayudante de Cocina')">
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="openServiceModalFromCatalog('Ayudante de Cocina')">
                 <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <i class="fa-solid fa-kitchen-set"></i>
                 </div>
                 <h3 class="text-sm font-bold text-slate-900">Ayudante de Cocina</h3>
             </div>
 
-            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Bartenders')">
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="openServiceModalFromCatalog('Bartenders')">
                 <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <i class="fa-solid fa-martini-glass"></i>
                 </div>
                 <h3 class="text-sm font-bold text-slate-900">Bartenders</h3>
             </div>
 
-            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Mesero')">
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="openServiceModalFromCatalog('Mesero')">
                 <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <i class="fa-solid fa-bell-concierge"></i>
                 </div>
                 <h3 class="text-sm font-bold text-slate-900">Mesero</h3>
             </div>
 
-            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Ayudante de Caja')">
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="openServiceModalFromCatalog('Ayudante de Caja')">
                 <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <i class="fa-solid fa-cash-register"></i>
                 </div>
                 <h3 class="text-sm font-bold text-slate-900">Ayudante de Caja</h3>
             </div>
 
-            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Staff para Eventos')">
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="openServiceModalFromCatalog('Staff para Eventos')">
                 <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <i class="fa-solid fa-people-group"></i>
                 </div>
                 <h3 class="text-sm font-bold text-slate-900">Staff para Eventos</h3>
             </div>
 
-            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Coordinador del Evento')">
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="openServiceModalFromCatalog('Coordinador del Evento')">
                 <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <i class="fa-solid fa-clipboard-list"></i>
                 </div>
                 <h3 class="text-sm font-bold text-slate-900">Coordinador del Evento</h3>
             </div>
 
-            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Promotoras')">
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="openServiceModalFromCatalog('Promotoras')">
                 <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <i class="fa-solid fa-bullhorn"></i>
                 </div>
                 <h3 class="text-sm font-bold text-slate-900">Promotoras</h3>
             </div>
 
-            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('DJ')">
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="openServiceModalFromCatalog('DJ')">
                 <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <i class="fa-solid fa-headphones-simple"></i>
                 </div>
                 <h3 class="text-sm font-bold text-slate-900">DJ</h3>
             </div>
 
-            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Animadores Infantiles')">
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="openServiceModalFromCatalog('Animadores Infantiles')">
                 <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <i class="fa-solid fa-child"></i>
                 </div>
                 <h3 class="text-sm font-bold text-slate-900">Animadores Infantiles</h3>
             </div>
 
-            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Mudanzas')">
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="openServiceModalFromCatalog('Mudanzas')">
                 <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <i class="fa-solid fa-boxes-stacked"></i>
                 </div>
                 <h3 class="text-sm font-bold text-slate-900">Mudanzas</h3>
             </div>
 
-            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="requestService('Asistente de Ventas')">
+            <div class="service-tile group glass-card rounded-2xl border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg p-6 flex flex-col items-center text-center cursor-pointer" onclick="openServiceModalFromCatalog('Asistente de Ventas')">
                 <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl mb-3 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                     <i class="fa-solid fa-tags"></i>
                 </div>
@@ -219,6 +222,47 @@
     </section>
 </main>
 
+@* Service detail modal — identical markup/behavior to LandingPage.cshtml's #serviceModal, so
+   clicking any of the 24 tiles above shows the same photo/description/"Pedir servicio"
+   experience. Opened via openServiceModalFromCatalog(key) in wwwroot/js/landing-common.js. *@
+<div id="serviceModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-card w-full max-w-lg rounded-3xl overflow-hidden border border-slate-200 shadow-2xl relative transform scale-95 transition-transform duration-300" id="serviceModalBox">
+        <button onclick="closeModal('serviceModal')" class="absolute top-4 right-4 z-20 text-white w-9 h-9 rounded-full bg-slate-950/70 backdrop-blur-md flex items-center justify-center hover:bg-slate-900 transition-colors">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div class="relative h-48">
+            <img id="svcImg" src="" alt="Servicio" class="w-full h-full object-cover hidden">
+            <div id="svcIconWrap" class="w-full h-full hidden items-center justify-center bg-gradient-to-br from-brand-500 to-emerald-400">
+                <i id="svcIcon" class="fa-solid text-white text-5xl"></i>
+            </div>
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent"></div>
+        </div>
+
+        <div class="p-6 relative -mt-6">
+            <h3 id="svcTitle" class="text-2xl font-black text-slate-900"></h3>
+            <p id="svcDesc" class="text-sm text-slate-600 mt-2 leading-relaxed"></p>
+
+            <div class="my-6 p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <div class="flex items-center justify-between text-xs text-slate-600">
+                    <span><i class="fa-solid fa-shield-check text-brand-500 mr-1.5"></i>Garantía del servicio:</span>
+                    <span class="text-slate-900 font-bold">100% Protegido</span>
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="closeModal('serviceModal')" class="w-1/3 py-3 rounded-xl font-bold text-xs text-slate-600 border border-slate-300 hover:bg-slate-100 transition-colors">
+                    Cancelar
+                </button>
+                <button onclick="confirmOrder()" class="btn-alive w-2/3 py-3 rounded-xl font-bold text-xs text-white bg-brand-500 hover:bg-brand-400 shadow-lg shadow-brand-500/25 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span>Confirmar y Buscar Técnico</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="toast" class="fixed bottom-6 right-6 z-50 glass-card px-5 py-4 rounded-2xl border border-brand-500/50 text-slate-900 shadow-2xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300">
     <div class="w-8 h-8 rounded-xl bg-brand-500 text-white flex items-center justify-center font-bold">
         <i class="fa-solid fa-check"></i>
@@ -230,11 +274,12 @@
 </div>
 
 @* "Sugerir un servicio" modal — submits a real multipart POST to HomeController.SuggestService,
-   which relays it to the API's /api/contact/suggest-service endpoint. *@
-<div id="suggestServiceModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
-    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeModal('suggestServiceModal')"></div>
-
-    <div class="relative glass-card w-full max-w-lg rounded-3xl border border-slate-200 shadow-2xl p-6 sm:p-8 max-h-[90vh] overflow-y-auto">
+   which relays it to the API's /api/contact/suggest-service endpoint. Uses the same
+   opacity+scale open/close pattern as #serviceModal above (via "#suggestServiceModalBox"), so
+   both modals on this page share the exact same openModal()/closeModal() from
+   wwwroot/js/landing-common.js instead of each having its own bespoke show/hide logic. *@
+<div id="suggestServiceModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="relative glass-card w-full max-w-lg rounded-3xl border border-slate-200 shadow-2xl p-6 sm:p-8 max-h-[90vh] overflow-y-auto transform scale-95 transition-transform duration-300" id="suggestServiceModalBox">
         <button type="button" onclick="closeModal('suggestServiceModal')" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
             <i class="fa-solid fa-xmark"></i>
         </button>
@@ -293,38 +338,12 @@
     </div>
 </div>
 
+<script src="~/js/service-catalog.js" asp-append-version="true"></script>
+<script src="~/js/landing-common.js" asp-append-version="true"></script>
 <script>
-    function requestService(name) {
-        showToast(`Buscando especialistas disponibles en "${name}"...`);
-    }
-
-    function openModal(id) {
-        const modal = document.getElementById(id);
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        document.body.style.overflow = 'hidden';
-    }
-
-    function closeModal(id) {
-        const modal = document.getElementById(id);
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        document.body.style.overflow = '';
-    }
-
-    function showToast(message) {
-        const toast = document.getElementById('toast');
-        const toastMsg = document.getElementById('toastMessage');
-        toastMsg.innerText = message;
-
-        toast.classList.remove('translate-y-20', 'opacity-0');
-        toast.classList.add('translate-y-0', 'opacity-100');
-
-        setTimeout(() => {
-            toast.classList.remove('translate-y-0', 'opacity-100');
-            toast.classList.add('translate-y-20', 'opacity-0');
-        }, 3500);
-    }
+    // openModal/closeModal/openServiceModal/openServiceModalFromCatalog/confirmOrder/showToast
+    // and the .btn-alive ripple effect all live in wwwroot/js/landing-common.js (shared with
+    // LandingPage.cshtml). serviceCatalog lives in wwwroot/js/service-catalog.js (same reason).
 
     @if (TempData["SuggestServiceSuccess"] is string successMessage)
     {

@@ -12,9 +12,19 @@
                  removed on purpose — there's no real data behind them yet. The service cards
                  are decorative for now (no Service/booking feature exists yet in the WebApp)
                  — clicking one opens a detail modal and "confirming" just shows a toast;
-                 wiring this to a real booking flow is a future task.
+                 wiring this to a real booking flow is a future task. The hero <h1> (#heroHeadline)
+                 auto-rotates between the customer pitch and a "come work with us" recruiting
+                 pitch via rotateHeroHeadline() — the recruiting message is a real link to
+                 Account/Register (the customer-pitch message stays plain text, same as before).
    Entities connected: None — this project has no database entities
    Tables related: None
+   NOTE: The search bar (filterServices()) only filters the 6 curated cards above by their
+   visible text. When a search matches none of them (e.g. "DJ", which isn't one of the 6
+   curated services but IS one of the 24 categories on AllServices.cshtml), JS falls back to
+   the `serviceCatalog` array below and generates a matching card on the fly — same size/style
+   AND a real Unsplash photo per category (sourced and reviewed one by one), so search never
+   comes up empty for a real category. `icon` on each catalog entry is only a defensive
+   fallback inside openServiceModal, in case a photo URL ever fails to resolve.
    ===================================================================================== *@
 @{
     ViewData["Title"] = "ServiGo - Servicios Profesionales a Domicilio";
@@ -31,7 +41,7 @@
 
       
 
-        <h1 class="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tight text-slate-900 max-w-5xl mx-auto leading-[1.08] mb-8">
+        <h1 id="heroHeadline" class="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tight text-slate-900 max-w-5xl mx-auto leading-[1.08] mb-8 transition-opacity duration-500">
             Reparaciones y servicios para tu hogar a <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 via-emerald-400 to-cyan-400">un click de distancia</span>.
         </h1>
 
@@ -198,7 +208,10 @@
         </button>
 
         <div class="relative h-48">
-            <img id="svcImg" src="" alt="Servicio" class="w-full h-full object-cover">
+            <img id="svcImg" src="" alt="Servicio" class="w-full h-full object-cover hidden">
+            <div id="svcIconWrap" class="w-full h-full hidden items-center justify-center bg-gradient-to-br from-brand-500 to-emerald-400">
+                <i id="svcIcon" class="fa-solid text-white text-5xl"></i>
+            </div>
             <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent"></div>
         </div>
 
@@ -236,36 +249,12 @@
     </div>
 </div>
 
+<script src="~/js/service-catalog.js" asp-append-version="true"></script>
+<script src="~/js/landing-common.js" asp-append-version="true"></script>
 <script>
-    // Modal Handlers
-    function openModal(id) {
-        const modal = document.getElementById(id);
-        const box = document.getElementById(id + 'Box');
-        modal.classList.remove('opacity-0', 'pointer-events-none');
-        box.classList.remove('scale-95');
-        box.classList.add('scale-100');
-    }
-
-    function closeModal(id) {
-        const modal = document.getElementById(id);
-        const box = document.getElementById(id + 'Box');
-        modal.classList.add('opacity-0', 'pointer-events-none');
-        box.classList.remove('scale-100');
-        box.classList.add('scale-95');
-    }
-
-    // Service Modal Handler
-    function openServiceModal(title, desc, img) {
-        document.getElementById('svcTitle').innerText = title;
-        document.getElementById('svcDesc').innerText = desc;
-        document.getElementById('svcImg').src = img;
-        openModal('serviceModal');
-    }
-
-    function confirmOrder() {
-        closeModal('serviceModal');
-        showToast('¡Solicitud enviada! Buscando al especialista más cercano...');
-    }
+    // openModal/closeModal/openServiceModal/confirmOrder/showToast and the .btn-alive ripple
+    // effect now live in wwwroot/js/landing-common.js (shared with AllServices.cshtml).
+    // serviceCatalog now lives in wwwroot/js/service-catalog.js (same reason).
 
     // Search trigger feedback
     function triggerSearchFeedback() {
@@ -277,55 +266,100 @@
         }
     }
 
-    // Service Card Filter
+    // Service Card Filter. First filters the 6 curated (photo) cards by their visible text,
+    // same as before. If NONE of them match a non-empty query, falls back to serviceCatalog
+    // and injects matching cards on the fly (icon header instead of a photo) — this is what
+    // makes searching "DJ" (or any of the other 18 non-curated categories) return a real
+    // result instead of an empty grid.
     function filterServices() {
-        const query = document.getElementById('searchInput').value.toLowerCase();
-        const cards = document.querySelectorAll('.service-card');
+        const query = document.getElementById('searchInput').value.toLowerCase().trim();
+        const grid = document.getElementById('servicesGrid');
 
-        cards.forEach(card => {
+        grid.querySelectorAll('.catalog-generated-card').forEach(card => card.remove());
+
+        const curatedCards = grid.querySelectorAll('.service-card');
+        let visibleCuratedCount = 0;
+
+        curatedCards.forEach(card => {
             const text = card.innerText.toLowerCase();
-            if (text.includes(query)) {
-                card.style.display = 'block';
-            } else {
-                card.style.display = 'none';
+            const matches = text.includes(query);
+            card.style.display = matches ? 'block' : 'none';
+            if (matches) {
+                visibleCuratedCount++;
             }
+        });
+
+        if (query === '' || visibleCuratedCount > 0) {
+            return;
+        }
+
+        const matchingCatalogEntries = serviceCatalog.filter(s => s.key.toLowerCase().includes(query));
+        const moreServicesTile = grid.lastElementChild;
+
+        matchingCatalogEntries.forEach(s => {
+            const card = document.createElement('div');
+            card.className = 'service-card catalog-generated-card group glass-card rounded-3xl overflow-hidden border border-slate-200 hover:border-brand-500/50 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-brand-500/10 cursor-pointer';
+            card.onclick = () => openServiceModal(s.key, s.desc, s.img, s.icon);
+            card.innerHTML = `
+                <div class="relative h-64 overflow-hidden">
+                    <img src="${s.img}" alt="${s.key}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+                    <span class="absolute top-4 left-4 bg-slate-950/80 backdrop-blur-md text-white border border-white/20 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                        <i class="fa-solid ${s.icon}"></i> ${s.key}
+                    </span>
+                    <div class="absolute bottom-4 left-4 right-4">
+                        <h3 class="text-xl font-extrabold text-white group-hover:text-brand-400 transition-colors">${s.key}</h3>
+                        <p class="text-xs text-slate-300 mt-1 line-clamp-1">${s.desc}</p>
+                    </div>
+                </div>
+                <div class="p-5 flex items-center justify-start border-t border-slate-200 bg-slate-50">
+                    <button class="btn-alive px-4 py-2 rounded-xl text-xs font-bold bg-brand-50 text-brand-700 border border-brand-500/30 hover:bg-brand-500 hover:text-white transition-colors flex items-center gap-1.5">
+                        <span>Pedir servicio</span>
+                        <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </button>
+                </div>
+            `;
+            grid.insertBefore(card, moreServicesTile);
         });
     }
 
-    // Dynamic Toast Notification
-    function showToast(message) {
-        const toast = document.getElementById('toast');
-        const toastMsg = document.getElementById('toastMessage');
-        toastMsg.innerText = message;
-
-        toast.classList.remove('translate-y-20', 'opacity-0');
-        toast.classList.add('translate-y-0', 'opacity-100');
-
-        setTimeout(() => {
-            toast.classList.remove('translate-y-0', 'opacity-100');
-            toast.classList.add('translate-y-20', 'opacity-0');
-        }, 3500);
-    }
-
-    document.addEventListener('click', function (e) {
-        const button = e.target.closest('.btn-alive');
-        if (button) {
-            const rect = button.getBoundingClientRect();
-            const circle = document.createElement('span');
-            const diameter = Math.max(rect.width, rect.height);
-            const radius = diameter / 2;
-
-            circle.style.width = circle.style.height = `${diameter}px`;
-            circle.style.left = `${e.clientX - rect.left - radius}px`;
-            circle.style.top = `${e.clientY - rect.top - radius}px`;
-            circle.classList.add('ripple');
-
-            const existingRipple = button.querySelector('.ripple');
-            if (existingRipple) {
-                existingRipple.remove();
-            }
-
-            button.appendChild(circle);
+    // Hero headline rotation. Alternates between the "customer-facing" pitch and a
+    // "professional-facing" recruiting pitch, on a growing cadence: first swap at 10s, next
+    // swap 20s after that (30s mark), next swap 30s after that (60s mark) — then the 10/20/30
+    // rhythm repeats indefinitely. The highlighted phrase in each message reuses the same
+    // gradient span used elsewhere on this page ("un click de distancia"). The recruiting
+    // message is wrapped in a real link to Account/Register (hardcoded here since this is a
+    // plain JS string, not a .cshtml Tag Helper — but it resolves to the same URL
+    // asp-controller="Account" asp-action="Register" produces via the default MVC route).
+    (function rotateHeroHeadline() {
+        const headline = document.getElementById('heroHeadline');
+        if (!headline) {
+            return;
         }
-    });
+
+        const highlightClass = 'text-transparent bg-clip-text bg-gradient-to-r from-brand-500 via-emerald-400 to-cyan-400';
+        const heroMessages = [
+            `Reparaciones y servicios para tu hogar a <span class="${highlightClass}">un click de distancia</span>.`,
+            `<a href="/Account/Register" class="no-underline text-inherit hover:opacity-80 transition-opacity cursor-pointer">¿Buscando ofrecer <span class="${highlightClass}">tus servicios</span>? Regístrate con nosotros para ayudarte.</a>`
+        ];
+        const stepDurationsMs = [10000, 20000, 30000];
+        let messageIndex = 0;
+        let stepIndex = 0;
+
+        function scheduleNextSwap() {
+            setTimeout(() => {
+                headline.style.opacity = '0';
+                setTimeout(() => {
+                    messageIndex = (messageIndex + 1) % heroMessages.length;
+                    headline.innerHTML = heroMessages[messageIndex];
+                    headline.style.opacity = '1';
+                }, 500);
+
+                stepIndex = (stepIndex + 1) % stepDurationsMs.length;
+                scheduleNextSwap();
+            }, stepDurationsMs[stepIndex]);
+        }
+
+        scheduleNextSwap();
+    })();
 </script>

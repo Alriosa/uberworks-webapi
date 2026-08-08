@@ -28,6 +28,8 @@ public class UserRow
     public string Role { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public DateTime RegistrationDate { get; set; }
+    public string? FacebookId { get; set; }
+    public bool IsPasswordSet { get; set; }
 
     public User ToUser() => new()
     {
@@ -40,6 +42,8 @@ public class UserRow
         PasswordHash = PasswordHash,
         Role = UserRoleMapper.FromDb(Role),
         Status = UserStatusMapper.FromDb(Status),
-        RegistrationDate = RegistrationDate
+        RegistrationDate = RegistrationDate,
+        FacebookId = FacebookId,
+        IsPasswordSet = IsPasswordSet
     };
 }

@@ -9,9 +9,12 @@
 //               CreateByAdminAsync is the "dedicated endpoint" that RegisterAsync's comment
 //               refers to: it lets an already-authenticated Admin/MasterAdmin create Admin,
 //               Client, or Professional accounts (never another MasterAdmin).
-//               ExternalLoginAsync backs Google sign-in: the WebApp already verified the
-//               email with Google, so this either logs an existing user in or auto-creates
-//               a new Role=Client account — never MasterAdmin/Admin.
+//               ExternalLoginAsync backs Google AND Facebook sign-in: the WebApp already
+//               verified the email with the provider, so this either logs an existing user
+//               in (linking FacebookId the first time) or auto-creates a new Role=Client
+//               account — never MasterAdmin/Admin. New accounts have no real password
+//               (IsPasswordSet=false); SetPasswordAsync is how an already-authenticated
+//               caller sets one for the first time.
 //               ForgotPasswordAsync/ResetPasswordAsync back the "forgot password" email
 //               flow (PasswordResetToken.cs + IEmailSender.cs). ForgotPasswordAsync never
 //               reveals whether an email exists; ResetPasswordAsync treats an unknown,
@@ -33,6 +36,7 @@ public interface IUserService
     Task<UserResponse> UpdateAsync(int id, int callerUserId, string callerUsername, UserRole callerRole, UpdateUserRequest request);
     Task<UserResponse> CreateByAdminAsync(int actorUserId, string actorUsername, UserRole actorRole, AdminCreateUserRequest request);
     Task<AuthResponse> ExternalLoginAsync(ExternalLoginRequest request);
+    Task SetPasswordAsync(int userId, SetPasswordRequest request);
     Task ForgotPasswordAsync(ForgotPasswordRequest request);
     Task ResetPasswordAsync(ResetPasswordRequest request);
 }

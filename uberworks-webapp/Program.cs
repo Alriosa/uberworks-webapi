@@ -12,9 +12,14 @@
 //               cookie-based authentication (so once a user logs in via
 //               AccountController, their identity — and the API's JWT — persists across page
 //               requests without the browser having to resend credentials each time), and
-//               Google as an additional "external" sign-in scheme (AccountController.GoogleLogin
-//               triggers the redirect to Google; AccountController.GoogleCallback receives
-//               the verified email back and exchanges it for the API's own JWT).
+//               Google AND Facebook as additional "external" sign-in schemes
+//               (AccountController.GoogleLogin/FacebookLogin trigger the redirect to the
+//               provider; GoogleCallback/FacebookCallback receive the verified identity back
+//               and exchange it for the API's own JWT via POST /api/users/external-login).
+//               Both providers are registered the same way: only if their AppId/Secret are
+//               actually configured (GoogleLoginOptions.cs/FacebookLoginOptions.cs), since
+//               registering either scheme with an empty ClientId/AppId crashes the whole site
+//               the first time auth middleware runs, not just that provider's button.
 // Entities connected: None — this project has no database entities
 // Tables related: None — WebApp never touches the database directly, only through the API
 // =====================================================================================
@@ -103,7 +108,8 @@ if (isGoogleLoginEnabled)
             {
                 Email = email,
                 FirstName = firstName,
-                LastName = lastName
+                LastName = lastName,
+                Provider = AuthProvider.Google
             });
 
             var identity = AppClaimsFactory.CreateIdentity(auth, context.Scheme.Name);
@@ -113,6 +119,68 @@ if (isGoogleLoginEnabled)
         options.Events.OnRemoteFailure = context =>
         {
             var errorMessage = context.Failure?.Message ?? "Google sign-in failed.";
+            context.Response.Redirect("/Account/Login?error=" + Uri.EscapeDataString(errorMessage));
+            context.HandleResponse();
+            return Task.CompletedTask;
+        };
+    });
+}
+
+var facebookAppId = builder.Configuration["FacebookAuth:AppId"];
+var facebookAppSecret = builder.Configuration["FacebookAuth:AppSecret"];
+
+// Same reasoning as isGoogleLoginEnabled above — never register AddFacebook() with an empty
+// AppId.
+var isFacebookLoginEnabled = !string.IsNullOrWhiteSpace(facebookAppId) && !string.IsNullOrWhiteSpace(facebookAppSecret);
+builder.Services.AddSingleton(new FacebookLoginOptions(isFacebookLoginEnabled));
+
+if (isFacebookLoginEnabled)
+{
+    authenticationBuilder.AddFacebook(options =>
+    {
+        options.AppId = facebookAppId!;
+        options.AppSecret = facebookAppSecret!;
+        // Facebook only returns these fields if explicitly requested.
+        options.Fields.Add("email");
+        options.Fields.Add("first_name");
+        options.Fields.Add("last_name");
+
+        // Same exchange as Google's OnCreatingTicket above: verify identity with the
+        // provider, then replace its claims with our own (AppClaimsFactory.cs) built from
+        // the API's JWT. The only real difference is ProviderUserId — Facebook's numeric
+        // user ID gets saved on User.FacebookId (see UserService.ExternalLoginAsync) to link
+        // the account, since Facebook accounts are less reliably tied to a stable email than
+        // Google accounts are.
+        options.Events.OnCreatingTicket = async context =>
+        {
+            var facebookUserId = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+            var email = context.Principal?.FindFirstValue(ClaimTypes.Email);
+            if (string.IsNullOrEmpty(email))
+            {
+                throw new InvalidOperationException(
+                    "Facebook did not return an email address for this account. Please grant email permission, or sign in with a different method.");
+            }
+
+            var firstName = context.Principal?.FindFirstValue(ClaimTypes.GivenName) ?? string.Empty;
+            var lastName = context.Principal?.FindFirstValue(ClaimTypes.Surname) ?? string.Empty;
+
+            var usersApiClient = context.HttpContext.RequestServices.GetRequiredService<IUsersApiClient>();
+            var auth = await usersApiClient.ExternalLoginAsync(new ExternalLoginRequest
+            {
+                Email = email,
+                FirstName = firstName,
+                LastName = lastName,
+                Provider = AuthProvider.Facebook,
+                ProviderUserId = facebookUserId
+            });
+
+            var identity = AppClaimsFactory.CreateIdentity(auth, context.Scheme.Name);
+            context.Principal = new ClaimsPrincipal(identity);
+        };
+
+        options.Events.OnRemoteFailure = context =>
+        {
+            var errorMessage = context.Failure?.Message ?? "Facebook sign-in failed.";
             context.Response.Redirect("/Account/Login?error=" + Uri.EscapeDataString(errorMessage));
             context.HandleResponse();
             return Task.CompletedTask;

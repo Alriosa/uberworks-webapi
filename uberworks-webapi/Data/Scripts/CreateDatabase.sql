@@ -52,12 +52,20 @@ CREATE TABLE [TBL_USERS] (
     [CL_ROLE]               NVARCHAR(50)      NOT NULL,
     [CL_STATUS]             NVARCHAR(20)      NOT NULL CONSTRAINT [DF_USERS_STATUS] DEFAULT (N'ACTIVE'),
     [CL_REGISTRATION_DATE]  DATETIME          NOT NULL CONSTRAINT [DF_USERS_REGISTRATION_DATE] DEFAULT (GETDATE()),
+    -- Facebook's own user ID, saved on first Facebook sign-in to link that account to this
+    -- row (see UserService.ExternalLoginAsync). Null for anyone who has never used Facebook.
+    [CL_FACEBOOK_ID]        NVARCHAR(100)     NULL,
+    -- False for accounts auto-created via Google/Facebook sign-in until the person sets a
+    -- real password (POST /api/users/set-password) — the WebApp re-shows a "create your
+    -- password" modal on every login while this stays 0, even across interrupted attempts.
+    [CL_IS_PASSWORD_SET]    BIT               NOT NULL CONSTRAINT [DF_USERS_IS_PASSWORD_SET] DEFAULT (1),
     CONSTRAINT [PK_TBL_USERS] PRIMARY KEY ([PK_USER_ID]),
     CONSTRAINT [CK_USERS_ROLE] CHECK ([CL_ROLE] IN (N'MASTER_ADMIN', N'ADMIN', N'CLIENT', N'PROFESSIONAL', N'MANAGER', N'COMPANY'))
 );
 GO
 
 CREATE UNIQUE INDEX [IX_TBL_USERS_CL_EMAIL] ON [TBL_USERS] ([CL_EMAIL]);
+CREATE UNIQUE INDEX [IX_TBL_USERS_CL_FACEBOOK_ID] ON [TBL_USERS] ([CL_FACEBOOK_ID]) WHERE [CL_FACEBOOK_ID] IS NOT NULL;
 CREATE UNIQUE INDEX [IX_TBL_USERS_CL_USERNAME] ON [TBL_USERS] ([CL_USERNAME]);
 GO
 

@@ -45,7 +45,9 @@ public class UserRepository : IUserRepository
             CL_PASSWORD AS PasswordHash,
             CL_ROLE AS Role,
             CL_STATUS AS Status,
-            CL_REGISTRATION_DATE AS RegistrationDate
+            CL_REGISTRATION_DATE AS RegistrationDate,
+            CL_FACEBOOK_ID AS FacebookId,
+            CL_IS_PASSWORD_SET AS IsPasswordSet
         FROM TBL_USERS
         """;
 
@@ -91,9 +93,9 @@ public class UserRepository : IUserRepository
         // identity PK_USER_ID, and CL_REGISTRATION_DATE's DEFAULT GETDATE()) in the same
         // round trip as the INSERT — no separate "SELECT SCOPE_IDENTITY()" call needed.
         const string sql = """
-            INSERT INTO TBL_USERS (CL_USERNAME, CL_FIRST_NAME, CL_LAST_NAME, CL_EMAIL, CL_PHONE, CL_PASSWORD, CL_ROLE, CL_STATUS)
+            INSERT INTO TBL_USERS (CL_USERNAME, CL_FIRST_NAME, CL_LAST_NAME, CL_EMAIL, CL_PHONE, CL_PASSWORD, CL_ROLE, CL_STATUS, CL_FACEBOOK_ID, CL_IS_PASSWORD_SET)
             OUTPUT INSERTED.PK_USER_ID AS Id, INSERTED.CL_REGISTRATION_DATE AS RegistrationDate
-            VALUES (@Username, @FirstName, @LastName, @Email, @Phone, @PasswordHash, @Role, @Status)
+            VALUES (@Username, @FirstName, @LastName, @Email, @Phone, @PasswordHash, @Role, @Status, @FacebookId, @IsPasswordSet)
             """;
 
         var generated = await connection.QuerySingleAsync(sql, new
@@ -105,7 +107,9 @@ public class UserRepository : IUserRepository
             user.Phone,
             user.PasswordHash,
             Role = UserRoleMapper.ToDb(user.Role),
-            Status = UserStatusMapper.ToDb(user.Status)
+            Status = UserStatusMapper.ToDb(user.Status),
+            user.FacebookId,
+            user.IsPasswordSet
         });
 
         user.Id = (int)generated.Id;
@@ -125,7 +129,9 @@ public class UserRepository : IUserRepository
                 CL_PHONE = @Phone,
                 CL_PASSWORD = @PasswordHash,
                 CL_ROLE = @Role,
-                CL_STATUS = @Status
+                CL_STATUS = @Status,
+                CL_FACEBOOK_ID = @FacebookId,
+                CL_IS_PASSWORD_SET = @IsPasswordSet
             WHERE PK_USER_ID = @Id
             """;
 
@@ -139,7 +145,9 @@ public class UserRepository : IUserRepository
             user.Phone,
             user.PasswordHash,
             Role = UserRoleMapper.ToDb(user.Role),
-            Status = UserStatusMapper.ToDb(user.Status)
+            Status = UserStatusMapper.ToDb(user.Status),
+            user.FacebookId,
+            user.IsPasswordSet
         });
     }
 }

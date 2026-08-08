@@ -1,14 +1,20 @@
 // =====================================================================================
 // FILE SUMMARY
-// What it does: Represents a row in the users table. It's the "root" entity of the whole
-//               system — Client and Professional are really Users with extra data. EF Core
-//               uses this class to read/write to the database automatically (we never write
-//               raw SQL: EF translates this class into SELECT/INSERT/UPDATE).
+// What it does: Represents a row in TBL_USERS. It's the "root" entity of the whole system —
+//               Client and Professional are really Users with extra data. Data access is via
+//               Dapper (see Repositories/UserRepository.cs and Common/Persistence/UserRow.cs),
+//               not EF Core — this class is just the in-memory shape the rest of the app
+//               works with. FacebookId/IsPasswordSet exist to support signing in via Google
+//               or Facebook (see UserService.ExternalLoginAsync): FacebookId links a Facebook
+//               account to this User once seen; IsPasswordSet is false for accounts
+//               auto-created via Google/Facebook (they get a random, unknown PasswordHash) and
+//               becomes true once the person sets a real password (POST /api/users/set-password)
+//               — the WebApp shows a "create your password" modal on every login until then.
 // Entities connected: Professional.cs (1:1, own profile; 1:N as the owning Company, via
 //                      Professional.CompanyUserId), Service.cs (1:N as client),
 //                      Review.cs (1:N as client), Chat.cs (1:N as client),
 //                      Penalty.cs (1:N), Reward.cs (1:1)
-// Tables related: TBL_USERS (full mapping in Data/Configurations/UserConfiguration.cs)
+// Tables related: TBL_USERS
 // =====================================================================================
 using uberworks_webapi.Common.Enums;
 
@@ -40,6 +46,22 @@ public class User
     public UserRole Role { get; set; }
     public UserStatus Status { get; set; } = UserStatus.Active;
     public DateTime RegistrationDate { get; set; }
+
+    /// <summary>
+    /// Facebook's own user ID, saved the first time this person signs in with Facebook —
+    /// links the Facebook account to this User so future Facebook logins are recognized as
+    /// the same person even if their Facebook email ever changes. Null for anyone who has
+    /// never signed in with Facebook.
+    /// </summary>
+    public string? FacebookId { get; set; }
+
+    /// <summary>
+    /// False for accounts auto-created via Google/Facebook sign-in (PasswordHash is a random
+    /// value nobody knows) until the person sets a real password. Always true for accounts
+    /// created through the normal Register form or by an Admin. See
+    /// UserService.ExternalLoginAsync/SetPasswordAsync.
+    /// </summary>
+    public bool IsPasswordSet { get; set; } = true;
 
     // Navigation properties
     public Professional? Professional { get; set; }

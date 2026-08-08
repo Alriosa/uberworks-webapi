@@ -8,24 +8,34 @@
 //               calling protected API endpoints on the user's behalf. The Controller only
 //               handles HTTP/form concerns; all the actual API communication goes through
 //               IUsersApiClient, never directly through HttpClient here. GoogleLogin/
-//               GoogleCallback back the "Continue with Google" button: by the time
-//               GoogleCallback runs, Program.cs's AddGoogle().Events.OnCreatingTicket has
-//               already exchanged the Google-verified email for the API's JWT and signed
-//               the cookie in — this action only has to redirect. ForgotPassword/
-//               ResetPassword back the "forgot password" email flow: ForgotPassword always
-//               shows the same generic success message (matching the API's own behavior —
-//               never reveals whether an email exists), and ResetPassword reads the token
-//               from the query string (the email link) and carries it through the form as a
-//               hidden field. Login/GoogleCallback redirect to Dashboard/Index (not
-//               Home/Index) after a successful sign-in when there's no returnUrl —
-//               DashboardController.cs picks the right view for the user's role.
+//               GoogleCallback and FacebookLogin/FacebookCallback back the "Continue with
+//               Google"/"Continue with Facebook" buttons: by the time the *Callback action
+//               runs, Program.cs's AddGoogle()/AddFacebook().Events.OnCreatingTicket has
+//               already exchanged the provider-verified email for the API's JWT and signed
+//               the cookie in — these actions only have to redirect. SetPassword backs the
+//               "create your password" modal (_SetPasswordModal.cshtml), shown to anyone
+//               signed in via Google/Facebook who hasn't set a real password yet — on
+//               success, it re-issues the auth cookie with "requires_password_setup" flipped
+//               to false so the modal stops appearing for the REST OF THIS SESSION; if the
+//               browser closes mid-attempt (or the API call itself fails), the next sign-in
+//               re-fetches the flag fresh from the API and the modal simply reappears.
+//               ForgotPassword/ResetPassword back the "forgot password" email flow:
+//               ForgotPassword always shows the same generic success message (matching the
+//               API's own behavior — never reveals whether an email exists), and
+//               ResetPassword reads the token from the query string (the email link) and
+//               carries it through the form as a hidden field. Login/GoogleCallback/
+//               FacebookCallback redirect to Dashboard/LandingPage (not Home/LandingPage)
+//               after a successful sign-in when there's no returnUrl — DashboardController.cs
+//               picks the right view for the user's role.
 // Entities connected: None — this project has no database entities
 // Tables related: None — reaches TBL_USERS only indirectly, through the API
 // =====================================================================================
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Facebook;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using uberworks_webapp.Common;
 using uberworks_webapp.Common.Exceptions;
@@ -40,11 +50,13 @@ public class AccountController : Controller
 {
     private readonly IUsersApiClient _usersApiClient;
     private readonly GoogleLoginOptions _googleLoginOptions;
+    private readonly FacebookLoginOptions _facebookLoginOptions;
 
-    public AccountController(IUsersApiClient usersApiClient, GoogleLoginOptions googleLoginOptions)
+    public AccountController(IUsersApiClient usersApiClient, GoogleLoginOptions googleLoginOptions, FacebookLoginOptions facebookLoginOptions)
     {
         _usersApiClient = usersApiClient;
         _googleLoginOptions = googleLoginOptions;
+        _facebookLoginOptions = facebookLoginOptions;
     }
 
     [HttpGet]
@@ -52,6 +64,7 @@ public class AccountController : Controller
     {
         ViewData["ReturnUrl"] = returnUrl;
         ViewData["GoogleLoginEnabled"] = _googleLoginOptions.IsEnabled;
+        ViewData["FacebookLoginEnabled"] = _facebookLoginOptions.IsEnabled;
         if (!string.IsNullOrEmpty(error))
         {
             ModelState.AddModelError(string.Empty, error);
@@ -97,6 +110,7 @@ public class AccountController : Controller
     public IActionResult Register()
     {
         ViewData["GoogleLoginEnabled"] = _googleLoginOptions.IsEnabled;
+        ViewData["FacebookLoginEnabled"] = _facebookLoginOptions.IsEnabled;
         return View(new RegisterViewModel());
     }
 
@@ -156,6 +170,87 @@ public class AccountController : Controller
         }
 
         return RedirectToAction("LandingPage", "Dashboard");
+    }
+
+    [HttpGet]
+    public IActionResult FacebookLogin(string? returnUrl = null)
+    {
+        if (!_facebookLoginOptions.IsEnabled)
+        {
+            // Same reasoning as GoogleLogin above — FacebookAuth:AppId/AppSecret aren't
+            // configured yet, so Program.cs never registered the Facebook scheme.
+            return NotFound("Facebook sign-in is not configured yet.");
+        }
+
+        var redirectUrl = Url.Action(nameof(FacebookCallback), "Account", new { returnUrl });
+        var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
+        return Challenge(properties, FacebookDefaults.AuthenticationScheme);
+    }
+
+    [HttpGet]
+    public IActionResult FacebookCallback(string? returnUrl = null)
+    {
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
+
+        return RedirectToAction("LandingPage", "Dashboard");
+    }
+
+    /// <summary>
+    /// Lets a Google/Facebook-created account (User.IsPasswordSet == false, surfaced here as
+    /// the "requires_password_setup" cookie claim — see AppClaimsFactory.cs) set a real
+    /// password. Re-issues the auth cookie on success so the modal stops appearing for the
+    /// rest of this session; if it never completes (browser closed, API call failed), the
+    /// next sign-in re-fetches the flag from the API and the modal reappears — nothing about
+    /// "did they finish setting a password" is trusted to the client.
+    /// </summary>
+    [Authorize]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SetPassword(SetPasswordViewModel model, string? returnUrl = null)
+    {
+        IActionResult redirectResult = !string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl)
+            ? Redirect(returnUrl)
+            : RedirectToAction("LandingPage", "Dashboard");
+
+        if (!ModelState.IsValid)
+        {
+            TempData["SetPasswordError"] = "Please enter a password of at least 8 characters, and make sure both fields match.";
+            return redirectResult;
+        }
+
+        var accessToken = User.FindFirst("access_token")?.Value;
+        if (string.IsNullOrEmpty(accessToken))
+        {
+            // Shouldn't happen for an authenticated user, but fail safely instead of a 500.
+            TempData["SetPasswordError"] = "Your session has expired. Please log in again.";
+            return RedirectToAction(nameof(Login));
+        }
+
+        try
+        {
+            await _usersApiClient.SetPasswordAsync(accessToken, model.NewPassword);
+
+            var identity = (ClaimsIdentity)User.Identity!;
+            var oldClaim = identity.FindFirst("requires_password_setup");
+            if (oldClaim is not null)
+            {
+                identity.RemoveClaim(oldClaim);
+            }
+            identity.AddClaim(new Claim("requires_password_setup", "false"));
+
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+
+            TempData["SetPasswordSuccess"] = "Your password has been created. You can now log in with it too.";
+        }
+        catch (ApiException ex)
+        {
+            TempData["SetPasswordError"] = ex.Message;
+        }
+
+        return redirectResult;
     }
 
     [HttpGet]

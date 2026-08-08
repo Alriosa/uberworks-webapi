@@ -6,8 +6,9 @@
 //               uberworks-webapi's ICurrentUserService.Source, which reads that exact
 //               header for audit logging) to call POST /api/users/login,
 //               POST /api/users/register, POST /api/users/admin-create,
-//               POST /api/users/forgot-password, POST /api/users/reset-password, and
-//               GET /api/users/{id}. AdminCreateUserAsync/GetByIdAsync attach
+//               POST /api/users/forgot-password, POST /api/users/reset-password,
+//               POST /api/users/set-password, and GET /api/users/{id}.
+//               AdminCreateUserAsync/SetPasswordAsync/GetByIdAsync attach
 //               "Authorization: Bearer {accessToken}" on that one HttpRequestMessage only
 //               (never on _httpClient.DefaultRequestHeaders, which is shared across every
 //               request the typed client makes) so it doesn't leak one user's token into
@@ -60,6 +61,18 @@ public class UsersApiClient : IUsersApiClient
         await EnsureSuccessAsync(response);
 
         return (await response.Content.ReadFromJsonAsync<AuthResponse>(JsonOptions))!;
+    }
+
+    public async Task SetPasswordAsync(string accessToken, string newPassword)
+    {
+        var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/users/set-password")
+        {
+            Content = JsonContent.Create(new SetPasswordRequest { NewPassword = newPassword }, options: JsonOptions)
+        };
+        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await _httpClient.SendAsync(httpRequest);
+        await EnsureSuccessAsync(response);
     }
 
     public async Task<UserResponse> AdminCreateUserAsync(string accessToken, AdminCreateUserRequest request)
