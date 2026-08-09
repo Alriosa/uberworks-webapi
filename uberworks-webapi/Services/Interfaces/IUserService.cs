@@ -37,6 +37,15 @@ public interface IUserService
     Task<UserResponse> UpdateAsync(int id, int callerUserId, string callerUsername, UserRole callerRole, UpdateUserRequest request);
 
     /// <summary>
+    /// Admin dashboard's "editarlo absolutamente todo" — edits every field of ANY user
+    /// (Username/Email/Role/Status included), unlike UpdateAsync above (self-service,
+    /// FirstName/LastName/Phone only). Admin/MasterAdmin only, enforced by
+    /// [Authorize(Roles = "MasterAdmin,Admin")] on the controller and re-checked here
+    /// (can't touch the MasterAdmin account, can't assign the MasterAdmin role).
+    /// </summary>
+    Task<UserResponse> AdminUpdateAsync(int id, int callerUserId, string callerUsername, UserRole callerRole, AdminUpdateUserRequest request);
+
+    /// <summary>
     /// Soft-deletes a user (sets Status=Deleted, see UserStatus.cs for why this isn't a real
     /// SQL DELETE). Admin/MasterAdmin only — enforced both here (can't delete yourself, can't
     /// delete the MasterAdmin) and by [Authorize(Roles = "MasterAdmin,Admin")] on the controller.
@@ -54,6 +63,14 @@ public interface IUserService
 
     /// <summary>Lets a Manager fetch basic info (name/username) about the company it belongs to.</summary>
     Task<UserResponse> GetMyCompanyAsync(int managerUserId);
+
+    /// <summary>
+    /// Sends the "set your password" email for an account a third party just created
+    /// (used by ProfessionalService.CreateByCompanyAsync — CreateByAdminAsync/
+    /// CreateManagerAsync call the private version of this directly since they're in the
+    /// same class).
+    /// </summary>
+    Task SendPasswordSetupEmailAsync(int userId);
     Task<AuthResponse> ExternalLoginAsync(ExternalLoginRequest request);
     Task SetPasswordAsync(int userId, SetPasswordRequest request);
     Task ForgotPasswordAsync(ForgotPasswordRequest request);

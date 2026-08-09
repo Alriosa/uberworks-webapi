@@ -4,6 +4,10 @@
 // depends on this interface. CreateAsync/UpdateAsync back the Admin dashboard's report CRUD
 // panel; ResolveAsync/NoFaultAsync/CancelAsync back the Support dashboard's 3 action buttons
 // (also reused by the Admin CRUD panel's "Borrar" action, which just calls CancelAsync).
+// CreateFromClientAsync backs the Client dashboard's "Contactar con Soporte" self-service
+// view, per explicit request — unlike CreateAsync (Admin/Support filing on someone else's
+// behalf), ClientUserId here is ALWAYS the caller, never user-supplied, and an optional
+// ServiceId is verified to actually belong to that caller before the report is filed.
 // imageUrls always arrives as already-saved relative URLs (ReportsController.cs does the
 // actual file I/O, same split as ProfessionalsController.UploadPhoto) — this layer only
 // ever deals with strings.
@@ -18,6 +22,10 @@ namespace uberworks_webapi.Services.Interfaces;
 public interface IReportService
 {
     Task<ReportResponse> CreateAsync(int createdByUserId, CreateReportRequest request, IReadOnlyList<string> imageUrls);
+
+    /// <summary>Client's own "Contactar con Soporte" self-service report.</summary>
+    Task<ReportResponse> CreateFromClientAsync(int clientUserId, ClientCreateReportRequest request, IReadOnlyList<string> imageUrls);
+
     Task<IReadOnlyList<ReportResponse>> GetAllAsync();
     Task<ReportResponse> GetByIdAsync(int id);
     Task<ReportResponse> UpdateAsync(int id, UpdateReportRequest request);

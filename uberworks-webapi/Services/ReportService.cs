@@ -7,6 +7,9 @@
 // internal admin/support listing, not a public endpoint. Images travel as a JSON array in
 // Report.ImagesJson (see Report.cs) and are only ever serialized/deserialized here — nothing
 // outside this Service ever sees raw JSON.
+// GetByIdAsync auto-transitions a report from Open to Pending the first time its detail view
+// is opened (per explicit request — "en espera significa que ya alguien abrió el caso, pero
+// no lo ha terminado"); Resolved/Cancelled reports are left alone.
 // ResolveAsync/NoFaultAsync/CancelAsync are honest about what they do NOT yet do: they
 // persist the resolution/cancellation on the Report row itself (real, queryable, drives the
 // Support dashboard's status buckets), but they do not deliver a message into a live chat
@@ -60,6 +63,36 @@ public class ReportService : IReportService
         return await MapToResponseAsync(report);
     }
 
+    public async Task<ReportResponse> CreateFromClientAsync(int clientUserId, ClientCreateReportRequest request, IReadOnlyList<string> imageUrls)
+    {
+        // A client can only tie their support case to one of THEIR OWN service requests —
+        // never someone else's, even if they somehow guessed a valid id.
+        if (request.ServiceId is int serviceId)
+        {
+            var service = await _serviceRepository.GetByIdAsync(serviceId)
+                ?? throw new NotFoundException($"Service with id {serviceId} was not found.");
+
+            if (service.ClientId != clientUserId)
+            {
+                throw new ForbiddenException("You can only file a support case about your own service requests.");
+            }
+        }
+
+        var report = new Report
+        {
+            Title = request.Title,
+            Description = request.Description,
+            ServiceId = request.ServiceId,
+            ClientUserId = clientUserId,
+            CreatedByUserId = clientUserId,
+            ImagesJson = imageUrls.Count > 0 ? JsonSerializer.Serialize(imageUrls) : null
+        };
+
+        await _reportRepository.AddAsync(report);
+
+        return await MapToResponseAsync(report);
+    }
+
     public async Task<IReadOnlyList<ReportResponse>> GetAllAsync()
     {
         var reports = await _reportRepository.GetAllAsync();
@@ -73,9 +106,22 @@ public class ReportService : IReportService
         return result;
     }
 
+    // Only Support/Admin/MasterAdmin can reach this endpoint at all (ReportsController.cs's
+    // class-level [Authorize]), so "someone called GetByIdAsync" already means "Support (or
+    // an Admin standing in for Support) opened this specific report's detail view" — the
+    // exact trigger the user asked for ("en espera significa que ya alguien abrió el caso").
+    // A report already Pending/Resolved/Cancelled is left alone; only a brand-new Open one
+    // flips.
     public async Task<ReportResponse> GetByIdAsync(int id)
     {
         var report = await GetOrThrowAsync(id);
+
+        if (report.Status == ReportStatus.Open)
+        {
+            report.Status = ReportStatus.Pending;
+            await _reportRepository.UpdateAsync(report);
+        }
+
         return await MapToResponseAsync(report);
     }
 

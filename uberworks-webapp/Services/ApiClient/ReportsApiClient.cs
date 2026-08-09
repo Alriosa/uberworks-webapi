@@ -89,6 +89,45 @@ public class ReportsApiClient : IReportsApiClient
         return (await response.Content.ReadFromJsonAsync<ReportResponse>(JsonOptions))!;
     }
 
+    public async Task<ReportResponse> ContactSupportAsync(string accessToken, string title, string description, int? serviceId, List<IFormFile>? images)
+    {
+        using var content = new MultipartFormDataContent
+        {
+            { new StringContent(title), "Title" },
+            { new StringContent(description), "Description" }
+        };
+
+        if (serviceId is int svc)
+        {
+            content.Add(new StringContent(svc.ToString()), "ServiceId");
+        }
+
+        // Streams are only read during SendAsync below; disposing `content` at the end of
+        // this method (via the outer `using`) disposes each StreamContent along with it.
+        if (images is not null)
+        {
+            foreach (var image in images)
+            {
+                if (image.Length == 0)
+                {
+                    continue;
+                }
+
+                var fileContent = new StreamContent(image.OpenReadStream());
+                fileContent.Headers.ContentType = new MediaTypeHeaderValue(image.ContentType);
+                content.Add(fileContent, "Images", image.FileName);
+            }
+        }
+
+        var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/reports/contact-support") { Content = content };
+        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await _httpClient.SendAsync(httpRequest);
+        await EnsureSuccessAsync(response);
+
+        return (await response.Content.ReadFromJsonAsync<ReportResponse>(JsonOptions))!;
+    }
+
     public async Task<List<ReportResponse>> GetAllAsync(string accessToken)
     {
         var httpRequest = new HttpRequestMessage(HttpMethod.Get, "api/reports");

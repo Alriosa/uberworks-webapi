@@ -5,7 +5,9 @@
 //               maps this into an ApiContracts.CompanyCreateWorkerRequest before calling the
 //               API. There's no Role/CompanyUserId field: the worker is always Role=Professional,
 //               and it's always linked to whichever Company is currently logged in — never
-//               something the form itself can choose.
+//               something the form itself can choose. No Password/ConfirmPassword either —
+//               the new worker gets a "set your password" email instead (see
+//               ProfessionalService.CreateByCompanyAsync on the API side).
 // Entities connected: None — this project has no database entities
 // Tables related: None
 // =====================================================================================
@@ -33,16 +35,6 @@ public class CreateWorkerViewModel
 
     [Phone(ErrorMessage = "Enter a valid phone number.")]
     public string? Phone { get; set; }
-
-    [Required(ErrorMessage = "Password is required.")]
-    [DataType(DataType.Password)]
-    [StringLength(100, MinimumLength = 8, ErrorMessage = "Password must be at least 8 characters long.")]
-    public string Password { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Please confirm your password.")]
-    [DataType(DataType.Password)]
-    [Compare(nameof(Password), ErrorMessage = "Passwords do not match.")]
-    public string ConfirmPassword { get; set; } = string.Empty;
 
     public string? Description { get; set; }
     public string? Experience { get; set; }

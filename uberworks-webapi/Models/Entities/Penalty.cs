@@ -1,11 +1,14 @@
 // =====================================================================================
 // FILE SUMMARY
 // What it does: Stores a sanction applied to a user (temporary or permanent) with its
-//               reason and start/end dates. Doesn't have a Repository/Service/Controller
-//               built yet — it will likely connect with the Admin permissions we'll discuss
-//               later (an Admin might be able to penalize a user).
+//               reason and start/end dates. Repositories/PenaltyRepository.cs,
+//               Services/PenaltyService.cs, and Controllers/PenaltiesController.cs implement
+//               the real CRUD — Admin/MasterAdmin apply a penalty, and the affected user (or
+//               an Admin) can look it up. Backs the "Advertencias" panel on the Professional
+//               dashboard, per explicit request.
 // Entities connected: User.cs (N:1)
-// Tables related: TBL_PENALTIES (mapping in Data/Configurations/PenaltyConfiguration.cs)
+// Tables related: TBL_PENALTIES (mapping in Repositories/PenaltyRepository.cs — this app
+//                 uses Dapper with raw SQL, not EF Core, so there's no Configurations file)
 // =====================================================================================
 using uberworks_webapi.Common.Enums;
 

@@ -11,7 +11,28 @@
                  Professional.cs has no WorkTypes relationship in the schema yet (a
                  professional can only bid on a Service one at a time via
                  ServiceProfessional.cs, there's no "these are the job types I do" list to
-                 filter by — a real gap, not an oversight). Everything else on this page
+                 filter by — a real gap, not an oversight). Each job offer is clickable (hover
+                 + click, per explicit request) and opens jobOfferDetailModal: the client's
+                 name, category, zone, description, and a "cuadro especial donde el
+                 profesional dictará el monto" — a real price-proposal form that POSTs to
+                 DashboardController.CreateProposal, which calls the ALREADY-EXISTING
+                 POST /api/services/{serviceId}/proposals (ServiceProfessionalsController.cs on
+                 the API side already implemented the full negotiation lifecycle; only this
+                 WebApp wiring was missing). "Iniciar Chat" in that same modal (for an OPEN,
+                 not-yet-accepted job) stays disabled — correctly so, since the real Chat
+                 system (Dashboard/Chat.cshtml) requires an accepted proposal (see
+                 IChatService.ResolvePartiesAsync on the API side); the real, working
+                 "Chatear con el Cliente" link lives in completedJobDetailModal instead, since
+                 every job listed there already has an accepted professional (this one).
+                 "Advertencias" is ALSO real now (Model.Penalties,
+                 from GET /api/penalties/mine) — clicking it opens penaltiesModal, showing
+                 every sanction on the account or "No tienes ninguna advertencia." "Trabajos
+                 Realizados" is ALSO real now (Model.CompletedJobs, from
+                 GET /api/services/mine-as-professional) — clicking it opens
+                 completedJobsModal (the real list) and each row opens
+                 completedJobDetailModal (full detail), per explicit request ("no solo me
+                 liste el historial, sino que yo pueda acceder internamente a ver qué fue lo
+                 que se hizo"). Everything else on this page
                  (Ingresos Este Mes, Monto No Desembolsado, Trabajos Realizados, Clientes
                  Atendidos, Reporte Activo, Advertencias, and the per-category review
                  breakdown) is DECORATIVE/mock: Payment.cs and Penalty.cs both exist as
@@ -93,15 +114,15 @@
                 </div>
             </div>
 
-            <div class="glass-card rounded-2xl border border-slate-200 p-4 flex items-center gap-3">
+            <button type="button" onclick="openModal('completedJobsModal')" class="glass-card rounded-2xl border border-slate-200 p-4 flex items-center gap-3 text-left hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300">
                 <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
                     <i class="fa-solid fa-briefcase"></i>
                 </div>
                 <div>
                     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Trabajos Realizados</p>
-                    <p class="text-lg font-black text-slate-900">27</p>
+                    <p class="text-lg font-black text-slate-900">@Model.CompletedJobs.Count.ToString("N0")</p>
                 </div>
-            </div>
+            </button>
 
             <div class="glass-card rounded-2xl border border-slate-200 p-4 flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center">
@@ -123,15 +144,15 @@
                 </div>
             </div>
 
-            <div class="glass-card rounded-2xl border border-slate-200 p-4 flex items-center gap-3">
+            <button type="button" onclick="openModal('penaltiesModal')" class="glass-card rounded-2xl border border-slate-200 p-4 flex items-center gap-3 text-left hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300">
                 <div class="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center">
                     <i class="fa-solid fa-triangle-exclamation"></i>
                 </div>
                 <div>
                     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Advertencias</p>
-                    <p class="text-lg font-black text-slate-900">0</p>
+                    <p class="text-lg font-black text-slate-900">@Model.Penalties.Count.ToString("N0")</p>
                 </div>
-            </div>
+            </button>
 
             <a asp-controller="Profile" asp-action="LandingPage" class="glass-card rounded-2xl border border-slate-200 p-4 flex items-center gap-3 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300">
                 <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
@@ -162,14 +183,19 @@
                 <div class="space-y-3">
                     @foreach (var job in Model.OpenJobOffers)
                     {
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 hover:bg-slate-100 hover:border-slate-200 cursor-pointer transition-colors"
+                             data-id="@job.Id" data-worktype="@job.WorkTypeName" data-zone="@job.Zone"
+                             data-clientname="@job.ClientFullName" data-clientusername="@job.ClientUsername"
+                             data-description="@job.Description" data-price="@(job.ProposedPrice?.ToString("0.##"))"
+                             data-status="@job.Status" data-requestdate="@job.RequestDate.ToString("dd/MM/yyyy")"
+                             onclick="openJobOfferDetailModal(this)">
                             <div>
                                 <div class="flex items-center gap-2">
                                     <span class="bg-brand-50 text-brand-700 text-[11px] font-bold px-2 py-0.5 rounded-full">@job.WorkTypeName</span>
                                     <span class="text-[11px] text-slate-400">Zona: @job.Zone</span>
                                 </div>
                                 <p class="text-sm text-slate-700 mt-1">@(job.Description ?? "Sin descripción adicional.")</p>
-                                <p class="text-[11px] text-slate-400 mt-0.5">Publicado: @job.RequestDate.ToString("yyyy-MM-dd")</p>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Publicado: @job.RequestDate.ToString("yyyy-MM-dd") — Por @job.ClientFullName</p>
                             </div>
                             <div class="text-right shrink-0">
                                 <p class="text-lg font-black text-slate-900">@(job.ProposedPrice.HasValue ? $"${job.ProposedPrice.Value:0.00}" : "A negociar")</p>
@@ -205,5 +231,259 @@
 
     </div>
 </main>
+
+@* ===== "Trabajos Realizados" modal — REAL data from GET /api/services/mine-as-professional,
+   per explicit request ("no solo me liste el historial, sino que yo pueda acceder
+   internamente a ver qué fue lo que se hizo"). Clicking a row opens completedJobDetailModal
+   with every field the row already carries — same pattern as Admin.cshtml's jobDetailModal
+   and Client.cshtml's myServiceDetailModal. ===== *@
+<div id="completedJobsModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-card w-full max-w-3xl max-h-[85vh] rounded-3xl border border-slate-200 shadow-2xl relative transform scale-95 transition-transform duration-300 flex flex-col" id="completedJobsModalBox">
+        <div class="flex items-start justify-between p-6 pb-4 border-b border-slate-100">
+            <div>
+                <h3 class="text-lg font-black text-slate-900">Trabajos Realizados</h3>
+                <p class="text-xs text-slate-500">@Model.CompletedJobs.Count.ToString("N0") trabajos en total</p>
+            </div>
+            <button onclick="closeModal('completedJobsModal')" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="overflow-auto p-6 pt-4">
+            @if (Model.CompletedJobs.Count == 0)
+            {
+                <p class="text-sm text-slate-400 py-6 text-center">Todavía no has realizado ningún trabajo.</p>
+            }
+            else
+            {
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-left text-[10px] uppercase tracking-wide text-slate-400 border-b border-slate-100">
+                            <th class="py-2 pr-4">Categoría</th>
+                            <th class="py-2 pr-4">Cliente</th>
+                            <th class="py-2 pr-4">Zona</th>
+                            <th class="py-2 pr-4">Precio</th>
+                            <th class="py-2 pr-4">Estado</th>
+                            <th class="py-2 pr-4">Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var job in Model.CompletedJobs)
+                        {
+                            <tr class="border-b border-slate-50 hover:bg-slate-50/70 cursor-pointer"
+                                data-id="@job.Id" data-worktype="@job.WorkTypeName" data-zone="@job.Zone"
+                                data-clientname="@job.ClientFullName" data-clientusername="@job.ClientUsername"
+                                data-description="@job.Description" data-price="@(job.ProposedPrice?.ToString("0.##"))"
+                                data-status="@job.Status" data-requestdate="@job.RequestDate.ToString("dd/MM/yyyy")"
+                                data-address="@job.ExactAddress" data-completionphotourl="@job.CompletionPhotoUrl"
+                                data-clientconfirmed="@(job.ClientConfirmedCompletionAt?.ToString("dd/MM/yyyy HH:mm"))"
+                                data-professionalconfirmed="@(job.ProfessionalConfirmedCompletionAt?.ToString("dd/MM/yyyy HH:mm"))"
+                                onclick="openCompletedJobDetailModal(this)">
+                                <td class="py-2.5 pr-4 font-bold text-slate-900">@job.WorkTypeName</td>
+                                <td class="py-2.5 pr-4 text-slate-500">@job.ClientFullName</td>
+                                <td class="py-2.5 pr-4 text-slate-500">@job.Zone</td>
+                                <td class="py-2.5 pr-4 text-slate-900">@(job.ProposedPrice.HasValue ? $"${job.ProposedPrice.Value:0.00}" : "—")</td>
+                                <td class="py-2.5 pr-4"><span class="bg-slate-100 text-slate-600 text-[11px] font-bold px-2 py-0.5 rounded-full">@job.Status</span></td>
+                                <td class="py-2.5 pr-4 text-slate-500">@job.RequestDate.ToString("dd/MM/yyyy")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+</div>
+
+@* ===== Detail sub-modal for one completed job (view-only) — same data-* pattern as the
+   Admin dashboard's jobDetailModal ===== *@
+<div id="completedJobDetailModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-[60] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-card w-full max-w-lg max-h-[85vh] overflow-auto rounded-3xl border border-slate-200 shadow-2xl relative transform scale-95 transition-transform duration-300 p-6 sm:p-8" id="completedJobDetailModalBox">
+        <button type="button" onclick="closeModal('completedJobDetailModal')" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <h3 class="text-xl font-black text-slate-900 mb-1">Trabajo <span id="cjdId" class="text-slate-400"></span></h3>
+        <p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-5" id="cjdStatus"></p>
+        <div class="space-y-3 text-sm">
+            <div><span class="font-bold text-slate-700">Cliente:</span> <span id="cjdClient" class="text-slate-600"></span></div>
+            <div><span class="font-bold text-slate-700">Categoría:</span> <span id="cjdWorkType" class="text-slate-600"></span></div>
+            <div><span class="font-bold text-slate-700">Zona:</span> <span id="cjdZone" class="text-slate-600"></span></div>
+            <div><span class="font-bold text-slate-700">Dirección:</span> <span id="cjdAddress" class="text-slate-600"></span></div>
+            <div><span class="font-bold text-slate-700">Descripción:</span> <span id="cjdDescription" class="text-slate-600"></span></div>
+            <div><span class="font-bold text-slate-700">Precio Pagado:</span> <span id="cjdPrice" class="text-slate-600"></span></div>
+            <div><span class="font-bold text-slate-700">Fecha de Solicitud:</span> <span id="cjdRequestDate" class="text-slate-600"></span></div>
+            <div id="cjdCompletionWrap" class="hidden border-t border-slate-100 pt-3 mt-3 space-y-2">
+                <p class="font-black text-slate-900">Finalización</p>
+                <div id="cjdCompletionPhotoWrap" class="hidden">
+                    <span class="font-bold text-slate-700 block mb-1">Foto de Finalización:</span>
+                    <img id="cjdCompletionPhoto" class="rounded-xl max-h-64 border border-slate-200" />
+                </div>
+                <div><span class="font-bold text-slate-700">Confirmó el Cliente:</span> <span id="cjdClientConfirmed" class="text-slate-600"></span></div>
+                <div><span class="font-bold text-slate-700">Confirmaste tú:</span> <span id="cjdProfessionalConfirmed" class="text-slate-600"></span></div>
+            </div>
+        </div>
+        <div class="flex items-center justify-between pt-5">
+            <a id="cjdChatLink" href="#" class="btn-alive relative overflow-hidden inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold px-4 py-2.5 rounded-xl transition-colors">
+                <i class="fa-solid fa-comment-dots"></i> Chatear con el Cliente
+            </a>
+            <button type="button" onclick="closeModal('completedJobDetailModal')" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+@* ===== "Advertencias" modal — REAL data from GET /api/penalties/mine, per explicit request
+   ("también debe generar su modal que abra e indique qué advertencias se le dieron a la
+   persona o si no en ninguna") ===== *@
+<div id="penaltiesModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-card w-full max-w-lg max-h-[85vh] overflow-auto rounded-3xl border border-slate-200 shadow-2xl relative transform scale-95 transition-transform duration-300 p-6 sm:p-8" id="penaltiesModalBox">
+        <button type="button" onclick="closeModal('penaltiesModal')" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <h3 class="text-xl font-black text-slate-900 mb-1">Advertencias</h3>
+        <p class="text-sm text-slate-500 mb-6">Sanciones aplicadas a tu cuenta.</p>
+
+        @if (Model.Penalties.Count == 0)
+        {
+            <p class="text-sm text-slate-400 py-6 text-center">No tienes ninguna advertencia.</p>
+        }
+        else
+        {
+            <div class="space-y-3">
+                @foreach (var penalty in Model.Penalties)
+                {
+                    var penaltyBadgeClass = penalty.IsActive ? "bg-red-50 text-red-600" : "bg-slate-100 text-slate-500";
+                    <div class="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="@penaltyBadgeClass text-[11px] font-bold px-2 py-0.5 rounded-full">@penalty.Type @(penalty.IsActive ? "· Activa" : "· Vencida")</span>
+                            <span class="text-[11px] text-slate-400">@penalty.StartDate.ToString("dd/MM/yyyy")</span>
+                        </div>
+                        <p class="text-sm text-slate-700">@penalty.Reason</p>
+                        @if (penalty.Type == uberworks_webapp.Models.ApiContracts.PenaltyType.Temporary)
+                        {
+                            <p class="text-[11px] text-slate-400 mt-1">Vence: @penalty.EndDate.ToString("dd/MM/yyyy")</p>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@* ===== Job offer detail modal — "quiero ver el nombre de la persona que mandó el trabajo,
+   la localización del trabajo, el tipo del trabajo, iniciar chat... y un cuadro especial
+   donde el profesional dictará el monto", per explicit request. Most fields come from the
+   row's data-* attributes (already loaded with GetOpenAsync). "Iniciar Chat" stays disabled —
+   no Chat system exists yet (see Task #89). The price-proposal form posts to
+   DashboardController.CreateProposal, which calls the ALREADY-EXISTING
+   POST /api/services/{serviceId}/proposals — no new API work was needed for this. ===== *@
+<div id="jobOfferDetailModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-[60] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-card w-full max-w-lg max-h-[85vh] overflow-auto rounded-3xl border border-slate-200 shadow-2xl relative transform scale-95 transition-transform duration-300 p-6 sm:p-8" id="jobOfferDetailModalBox">
+        <button type="button" onclick="closeModal('jobOfferDetailModal')" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <h3 class="text-xl font-black text-slate-900 mb-1">Oferta de Trabajo <span id="jodId" class="text-slate-400"></span></h3>
+        <p class="text-xs font-bold text-emerald-600 uppercase tracking-wide mb-5" id="jodStatus"></p>
+        <div class="space-y-3 text-sm mb-5">
+            <div><span class="font-bold text-slate-700">Cliente:</span> <span id="jodClient" class="text-slate-600"></span></div>
+            <div><span class="font-bold text-slate-700">Categoría:</span> <span id="jodWorkType" class="text-slate-600"></span></div>
+            <div><span class="font-bold text-slate-700">Zona:</span> <span id="jodZone" class="text-slate-600"></span></div>
+            <div><span class="font-bold text-slate-700">Descripción:</span> <span id="jodDescription" class="text-slate-600"></span></div>
+            <div><span class="font-bold text-slate-700">Precio Sugerido por el Cliente:</span> <span id="jodPrice" class="text-slate-600"></span></div>
+            <div><span class="font-bold text-slate-700">Publicado:</span> <span id="jodRequestDate" class="text-slate-600"></span></div>
+        </div>
+
+        <button type="button" disabled title="El chat se habilita una vez que el cliente acepte tu propuesta" class="w-full inline-flex items-center justify-center gap-2 bg-slate-100 text-slate-400 text-sm font-bold px-4 py-2.5 rounded-xl cursor-not-allowed mb-5">
+            <i class="fa-solid fa-comment-dots"></i>
+            <span>Iniciar Chat con el Cliente (disponible tras ser aceptado)</span>
+        </button>
+
+        <div class="border-t border-slate-100 pt-4">
+            <h4 class="text-sm font-black text-slate-900 mb-1">Proponer mi Precio</h4>
+            <p class="text-xs text-slate-500 mb-3">Dicta el monto y el tiempo estimado de llegada. El cliente verá tu propuesta y decidirá si la acepta.</p>
+            <form asp-controller="Dashboard" asp-action="CreateProposal" method="post" class="space-y-3">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="serviceId" id="jodFormServiceId" />
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Tu Precio Propuesto ($)</label>
+                    <input type="number" step="0.01" min="0" name="negotiatedPrice" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Tiempo Estimado de Llegada (minutos)</label>
+                    <input type="number" min="0" name="estimatedArrivalMinutes" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                </div>
+                <div class="flex items-center justify-end gap-3 pt-1">
+                    <button type="button" onclick="closeModal('jobOfferDetailModal')" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors">Cancelar</button>
+                    <button type="submit" class="btn-alive relative overflow-hidden bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-colors">Enviar Propuesta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="fixed bottom-6 right-6 z-50 glass-card px-5 py-4 rounded-2xl border border-brand-500/50 text-slate-900 shadow-2xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300">
+    <div class="w-8 h-8 rounded-xl bg-brand-500 text-white flex items-center justify-center font-bold">
+        <i class="fa-solid fa-check"></i>
+    </div>
+    <div>
+        <p id="toastMessage" class="text-xs font-bold text-slate-900"></p>
+        <p class="text-[10px] text-slate-500">Notificación de ServiGo</p>
+    </div>
+</div>
+
+<script src="~/js/landing-common.js" asp-append-version="true"></script>
+<script>
+    function openCompletedJobDetailModal(tr) {
+        const d = tr.dataset;
+        document.getElementById('cjdId').textContent = '#' + d.id;
+        document.getElementById('cjdChatLink').href = '@Url.Action("Chat", "Dashboard")?serviceId=' + encodeURIComponent(d.id);
+        document.getElementById('cjdStatus').textContent = d.status;
+        document.getElementById('cjdClient').textContent = (d.clientname || '—') + ' (@@' + d.clientusername + ')';
+        document.getElementById('cjdWorkType').textContent = d.worktype || '—';
+        document.getElementById('cjdZone').textContent = d.zone || '—';
+        document.getElementById('cjdAddress').textContent = d.address || '—';
+        document.getElementById('cjdDescription').textContent = d.description || 'Sin descripción.';
+        document.getElementById('cjdPrice').textContent = d.price ? ('$' + d.price) : '—';
+        document.getElementById('cjdRequestDate').textContent = d.requestdate;
+
+        const completionWrap = document.getElementById('cjdCompletionWrap');
+        if (d.clientconfirmed || d.professionalconfirmed || d.completionphotourl) {
+            completionWrap.classList.remove('hidden');
+            document.getElementById('cjdClientConfirmed').textContent = d.clientconfirmed || 'Todavía no';
+            document.getElementById('cjdProfessionalConfirmed').textContent = d.professionalconfirmed || 'Todavía no';
+            const photoWrap = document.getElementById('cjdCompletionPhotoWrap');
+            if (d.completionphotourl) {
+                document.getElementById('cjdCompletionPhoto').src = d.completionphotourl;
+                photoWrap.classList.remove('hidden');
+            } else {
+                photoWrap.classList.add('hidden');
+            }
+        } else {
+            completionWrap.classList.add('hidden');
+        }
+
+        openModal('completedJobDetailModal');
+    }
+
+    function openJobOfferDetailModal(el) {
+        const d = el.dataset;
+        document.getElementById('jodId').textContent = '#' + d.id;
+        document.getElementById('jodStatus').textContent = d.status;
+        document.getElementById('jodClient').textContent = (d.clientname || '—') + ' (@@' + d.clientusername + ')';
+        document.getElementById('jodWorkType').textContent = d.worktype || '—';
+        document.getElementById('jodZone').textContent = d.zone || '—';
+        document.getElementById('jodDescription').textContent = d.description || 'Sin descripción adicional.';
+        document.getElementById('jodPrice').textContent = d.price ? ('$' + d.price) : 'A negociar';
+        document.getElementById('jodRequestDate').textContent = d.requestdate;
+        document.getElementById('jodFormServiceId').value = d.id;
+        openModal('jobOfferDetailModal');
+    }
+
+    @if (TempData["EditProfileSuccess"] is string editProfileSuccess)
+    {
+        <text>document.addEventListener('DOMContentLoaded', () => showToast(@Html.Raw(Json.Serialize(editProfileSuccess))));</text>
+    }
+    @if (TempData["EditProfileError"] is string editProfileError)
+    {
+        <text>document.addEventListener('DOMContentLoaded', () => showToast(@Html.Raw(Json.Serialize(editProfileError))));</text>
+    }
+</script>
 
 <partial name="_LandingFooter" />

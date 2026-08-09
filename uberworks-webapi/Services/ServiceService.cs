@@ -3,15 +3,20 @@
 // What it does: This is where the most important security rule of the business lives:
 //               "only the owning client or the accepted professional can see the exact
 //               address" (private method CanSeeExactLocationAsync). Every public method
-//               builds a ServiceResponse by calling MapToResponse() with includeExactLocation
-//               set to true/false as appropriate: GetOpenAsync() always false (public
-//               listing), GetMyServicesAsync() always true (the owner sees everything of
-//               theirs), GetByIdAsync() decides dynamically. GetAllForAdminAsync/
+//               builds a ServiceResponse by calling MapToResponseAsync() with
+//               includeExactLocation set to true/false as appropriate: GetOpenAsync() always
+//               false (public listing), GetMyServicesAsync() always true (the owner sees
+//               everything of theirs), GetByIdAsync() decides dynamically.
+//               MapToResponseAsync always looks up the client's username/full name too (one
+//               extra GetByIdAsync per Service — N+1, acceptable at this app's scale) since
+//               ClientUsername/ClientFullName travel on ServiceResponse even in the public
+//               GetOpenAsync() listing, per explicit request (a professional browsing job
+//               offers needs to see who posted them). GetAllForAdminAsync/
 //               UpdateForAdminAsync/DeleteForAdminAsync back the Admin dashboard's job CRUD
 //               panel — DeleteForAdminAsync is a soft delete (Status=Cancelled), never a real
 //               SQL DELETE, since ServiceProfessional/Review/Payment rows reference this Service.
 // Entities connected: Service.cs, WorkType.cs, ServiceProfessional.cs (to know who the
-//                      accepted professional is), User.cs (client username, admin listing only)
+//                      accepted professional is), User.cs (client username/full name)
 // Tables related: TBL_SERVICES, TBL_WORKTYPES, TBL_SERVICE_PROFESSIONALS
 // =====================================================================================
 using uberworks_webapi.Common.Enums;
@@ -30,17 +35,20 @@ public class ServiceService : IServiceService
     private readonly IWorkTypeRepository _workTypeRepository;
     private readonly IServiceProfessionalRepository _serviceProfessionalRepository;
     private readonly IUserRepository _userRepository;
+    private readonly IProfessionalRepository _professionalRepository;
 
     public ServiceService(
         IServiceRepository serviceRepository,
         IWorkTypeRepository workTypeRepository,
         IServiceProfessionalRepository serviceProfessionalRepository,
-        IUserRepository userRepository)
+        IUserRepository userRepository,
+        IProfessionalRepository professionalRepository)
     {
         _serviceRepository = serviceRepository;
         _workTypeRepository = workTypeRepository;
         _serviceProfessionalRepository = serviceProfessionalRepository;
         _userRepository = userRepository;
+        _professionalRepository = professionalRepository;
     }
 
     public async Task<ServiceResponse> CreateAsync(int clientId, CreateServiceRequest request)
@@ -65,21 +73,57 @@ public class ServiceService : IServiceService
         var created = await _serviceRepository.GetByIdAsync(service.Id) ?? service;
 
         // The client who just created it is the owner: they always see the full detail.
-        return MapToResponse(created, includeExactLocation: true);
+        return await MapToResponseAsync(created, includeExactLocation: true);
     }
 
     public async Task<IReadOnlyList<ServiceResponse>> GetOpenAsync()
     {
         var services = await _serviceRepository.GetOpenAsync();
 
-        // Public listing for professionals: the exact address is never included here.
-        return services.Select(s => MapToResponse(s, includeExactLocation: false)).ToList();
+        // Public listing for professionals: the exact address is never included here, but
+        // ClientUsername/ClientFullName ARE — see ServiceResponse.cs's FILE SUMMARY for why.
+        // One GetByIdAsync per Service (N+1) is acceptable here, same reasoning as
+        // GetAllForAdminAsync below — this app's traffic is nowhere near the scale where that
+        // would matter.
+        var result = new List<ServiceResponse>(services.Count);
+        foreach (var service in services)
+        {
+            result.Add(await MapToResponseAsync(service, includeExactLocation: false));
+        }
+
+        return result;
     }
 
     public async Task<IReadOnlyList<ServiceResponse>> GetMyServicesAsync(int clientId)
     {
         var services = await _serviceRepository.GetByClientIdAsync(clientId);
-        return services.Select(s => MapToResponse(s, includeExactLocation: true)).ToList();
+        var result = new List<ServiceResponse>(services.Count);
+        foreach (var service in services)
+        {
+            result.Add(await MapToResponseAsync(service, includeExactLocation: true));
+        }
+
+        return result;
+    }
+
+    public async Task<IReadOnlyList<ServiceResponse>> GetMyCompletedJobsAsProfessionalAsync(int professionalUserId)
+    {
+        var professional = await _professionalRepository.GetByUserIdAsync(professionalUserId)
+            ?? throw new NotFoundException("The authenticated user does not have a professional profile.");
+
+        var serviceIds = await _serviceProfessionalRepository.GetAcceptedServiceIdsAsync(professional.Id);
+        var result = new List<ServiceResponse>(serviceIds.Count);
+
+        foreach (var serviceId in serviceIds)
+        {
+            var service = await _serviceRepository.GetByIdAsync(serviceId);
+            if (service is not null)
+            {
+                result.Add(await MapToResponseAsync(service, includeExactLocation: true));
+            }
+        }
+
+        return result;
     }
 
     public async Task<ServiceResponse> GetByIdAsync(int serviceId, int? callerUserId)
@@ -88,7 +132,7 @@ public class ServiceService : IServiceService
             ?? throw new NotFoundException($"Service with id {serviceId} was not found.");
 
         var includeExactLocation = await CanSeeExactLocationAsync(service, callerUserId);
-        return MapToResponse(service, includeExactLocation);
+        return await MapToResponseAsync(service, includeExactLocation);
     }
 
     // Full detail, every status, for the Admin dashboard's job CRUD panel. N+1 lookups
@@ -141,7 +185,7 @@ public class ServiceService : IServiceService
 
         await _serviceRepository.UpdateAsync(service);
 
-        return MapToResponse(service, includeExactLocation: true);
+        return await MapToResponseAsync(service, includeExactLocation: true);
     }
 
     public async Task DeleteForAdminAsync(int serviceId)
@@ -169,14 +213,18 @@ public class ServiceService : IServiceService
         return accepted is not null && accepted.Professional.UserId == callerUserId;
     }
 
-    private static ServiceResponse MapToResponse(Service service, bool includeExactLocation)
+    private async Task<ServiceResponse> MapToResponseAsync(Service service, bool includeExactLocation)
     {
+        var client = await _userRepository.GetByIdAsync(service.ClientId);
+
         var response = new ServiceResponse
         {
             Id = service.Id,
             WorkTypeId = service.WorkTypeId,
             WorkTypeName = service.WorkType?.Name ?? string.Empty,
             ClientId = service.ClientId,
+            ClientUsername = client?.Username ?? string.Empty,
+            ClientFullName = client is null ? string.Empty : $"{client.FirstName} {client.LastName}",
             Description = service.Description,
             ImageUrl = service.ImageUrl,
             ProposedPrice = service.ProposedPrice,

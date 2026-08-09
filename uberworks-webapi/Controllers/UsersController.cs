@@ -124,11 +124,12 @@ public class UsersController : ControllerBase
     }
 
     /// <summary>
-    /// Company dashboard's "Crear Manager" button — also usable by an existing Manager
-    /// (linked to the SAME company, see UserService.CreateManagerAsync).
+    /// Company dashboard's "Crear Manager" button. Company-only, per explicit request — a
+    /// Manager can invite professionals and manage the team, but must never be able to
+    /// create another Manager.
     /// </summary>
     [HttpPost("company-create-manager")]
-    [Authorize(Roles = "Company,Manager")]
+    [Authorize(Roles = "Company")]
     public async Task<IActionResult> CreateManager([FromBody] CompanyCreateManagerRequest request)
     {
         var callerUserId = _currentUserService.UserId!.Value;
@@ -179,6 +180,22 @@ public class UsersController : ControllerBase
         var callerUsername = _currentUserService.Username!;
         var callerRole = _currentUserService.Role!.Value;
         var result = await _userService.UpdateAsync(id, callerId, callerUsername, callerRole, request);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Full edit of ANY user (Username/Email/Role/Status included) — distinct from Update
+    /// above, which is self-service-only for FirstName/LastName/Phone. Backs the Admin
+    /// dashboard's "editarlo absolutamente todo" requirement.
+    /// </summary>
+    [HttpPut("{id:int}/admin-update")]
+    [Authorize(Roles = "MasterAdmin,Admin")]
+    public async Task<IActionResult> AdminUpdate(int id, [FromBody] AdminUpdateUserRequest request)
+    {
+        var callerId = _currentUserService.UserId!.Value;
+        var callerUsername = _currentUserService.Username!;
+        var callerRole = _currentUserService.Role!.Value;
+        var result = await _userService.AdminUpdateAsync(id, callerId, callerUsername, callerRole, request);
         return Ok(result);
     }
 

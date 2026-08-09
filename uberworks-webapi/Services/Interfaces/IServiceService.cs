@@ -17,6 +17,15 @@ public interface IServiceService
     Task<ServiceResponse> CreateAsync(int clientId, CreateServiceRequest request);
     Task<IReadOnlyList<ServiceResponse>> GetOpenAsync();
     Task<IReadOnlyList<ServiceResponse>> GetMyServicesAsync(int clientId);
+
+    /// <summary>
+    /// Backs the Professional dashboard's "Trabajos Realizados" panel — every Service this
+    /// professional has been accepted, in progress, or completed on, most recent first, with
+    /// the exact location included (same rule as the accepted-professional case in
+    /// GetByIdAsync — they did the job, they get to see where it was).
+    /// </summary>
+    Task<IReadOnlyList<ServiceResponse>> GetMyCompletedJobsAsProfessionalAsync(int professionalUserId);
+
     Task<ServiceResponse> GetByIdAsync(int serviceId, int? callerUserId);
 
     /// <summary>Every Service, full detail, regardless of status — Admin dashboard CRUD panel.</summary>

@@ -1,32 +1,44 @@
 @* =====================================================================================
    FILE SUMMARY
-   What it does: Admin's dashboard — the landing page after login for Role=Admin (see
-                 DashboardController.LandingPage). Same _LandingLayout.cshtml Tailwind/
-                 glass-card language as MasterAdmin.cshtml, but UNLIKE that page's "Ver Todos
-                 los Trabajos"/"Ver Todos los Reportes" panels (still decorative mockups
-                 there), every one of this page's 3 big CRUD panels is REAL end-to-end:
-                 "Ver Todos los Usuarios" (GET /api/users, edit via PUT /api/users/{id},
-                 soft-delete via DELETE /api/users/{id}), "Ver Todos los Trabajos"
-                 (GET /api/services admin listing, edit/cancel via PUT+DELETE
-                 /api/services/{id} — Create is deliberately NOT here, see
-                 DashboardController.UpdateServiceAdmin's comment for why), and "Ver Todos
-                 los Reportes" (full CRUD against the new Report system — GET/POST/PUT
-                 /api/reports, cancel via POST /api/reports/{id}/cancel). The 4th big card,
-                 "Crear Usuarios", links to the existing Admin/CreateUser page rather than
-                 duplicating a role-creation form here — RoleHierarchy.cs already lists
-                 Manager/Company/Support/Professional/Client as creatable by Admin, so
-                 nothing new was needed there beyond adding Support to that list (see
-                 Common/RoleHierarchy.cs).
+   What it does: Shared dashboard for BOTH Role=Admin AND Role=MasterAdmin (see
+                 DashboardController.LandingPage — MasterAdmin used to get its own decorative
+                 MasterAdmin.cshtml with fake "Trabajos"/"Reportes" panels; that file was
+                 retired in favor of full CRUD parity, which the user explicitly required:
+                 "el master admin tiene que ser capaz de hacer todo lo que los demás pueden
+                 hacer"). Model.IsMasterAdmin (true only for that role) swaps the header
+                 title/icon and adds the one card MasterAdmin alone gets: "Finanzas" (its own
+                 page, Views/Dashboard/Finances.cshtml). Every one of the 3 big CRUD panels is
+                 REAL end-to-end for both roles: "Ver Todos los Usuarios" (GET /api/users, full
+                 edit via PUT /api/users/{id}/admin-update, soft-delete via
+                 DELETE /api/users/{id}), "Ver Todos los Trabajos" (GET /api/services admin
+                 listing, edit/cancel via PUT+DELETE /api/services/{id} — Create is
+                 deliberately NOT here, see DashboardController.UpdateServiceAdmin's comment
+                 for why), and "Ver Todos los Reportes" (full CRUD against the Report system —
+                 GET/POST/PUT /api/reports, cancel via POST /api/reports/{id}/cancel). The 4th
+                 big card, "Crear Usuarios", links to the existing Admin/CreateUser page rather
+                 than duplicating a role-creation form here — RoleHierarchy.cs already lists
+                 Manager/Company/Support/Professional/Client as creatable by Admin (and
+                 MasterAdmin can create Admin too — CreateUser.cshtml's role dropdown adapts).
                  Every edit modal is a SINGLE shared modal per panel (editUserModal/
                  editJobModal/editReportModal), populated via JS reading data-* attributes off
                  the row's "Editar" button (openEditUserModal(this) etc.) instead of one modal
-                 per row — keeps the DOM small no matter how many rows exist. TempData
+                 per row — keeps the DOM small no matter how many rows exist. The Editar button
+                 is hidden (replaced by a "Protegido" label) for the MasterAdmin row itself,
+                 since PUT /api/users/{id}/admin-update rejects editing that account. TempData
                  ["ReopenModal"] tells the page which modal to re-open after a redirect if an
                  action failed (see DashboardController's UpdateXAdmin/DeleteXAdmin/
                  CreateReport/CancelReportAdmin actions).
+                 Every job row and report row is clickable (cursor-pointer + hover, per explicit
+                 request — "le hace falta un efecto de hover para saber en dónde estoy de pie"):
+                 clicking a job row opens jobDetailModal (view-only, populated via JS from the
+                 SAME data-* attributes the row already carries — no extra API call, every field
+                 already comes down with GetAllForAdminAsync); clicking a report row navigates to
+                 DashboardController.SupportReportDetail (the exact same real detail page Support
+                 uses, already Authorize'd for MasterAdmin/Admin/Support). Both stop click
+                 propagation on their "Acciones" cell so Editar/Cancelar/Borrar still work without
+                 also triggering the row-level handler.
                  "Log out" (not "Atrás") is this page's navigation-continuity requirement —
-                 same reasoning as MasterAdmin.cshtml: this dashboard has no natural parent
-                 page.
+                 this dashboard has no natural parent page.
    Entities connected: None — this project has no database entities
    Tables related: None — Model.Users/Services/Reports reach TBL_USERS/TBL_SERVICES/
                    TBL_REPORTS only indirectly, through the API
@@ -34,7 +46,7 @@
 @model uberworks_webapp.Models.ViewModels.AdminDashboardViewModel
 @using uberworks_webapp.Models.ApiContracts
 @{
-    ViewData["Title"] = "Panel de Admin";
+    ViewData["Title"] = Model.IsMasterAdmin ? "Panel de MasterAdmin" : "Panel de Admin";
     Layout = "_LandingLayout";
 
     var openOrPendingReports = Model.Reports.Count(r => r.Status is ReportStatus.Open or ReportStatus.Pending);
@@ -48,10 +60,10 @@
         <div class="glass-card rounded-3xl border border-slate-200 p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div class="flex items-center gap-4">
                 <div class="w-14 h-14 rounded-2xl bg-slate-900 text-white flex items-center justify-center text-xl">
-                    <i class="fa-solid fa-user-tie"></i>
+                    <i class="fa-solid @(Model.IsMasterAdmin ? "fa-crown" : "fa-user-tie")"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-black text-slate-900">Panel de Admin</h1>
+                    <h1 class="text-xl font-black text-slate-900">@(Model.IsMasterAdmin ? "Panel de MasterAdmin" : "Panel de Admin")</h1>
                     <p class="text-sm text-slate-500 mt-0.5">Hola, @Model.DisplayName — gestión de usuarios, trabajos y reportes</p>
                 </div>
             </div>
@@ -100,7 +112,7 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
             <button onclick="openModal('usersModal')" class="glass-card text-left rounded-3xl border border-slate-200 p-6 relative overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
                 <div class="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-blue-50"></div>
@@ -153,6 +165,22 @@
                 <p class="relative text-sm text-slate-500 mb-4 max-w-md">Registrar cuentas de Manager, Company, Support, Professional o Client.</p>
                 <span class="relative text-emerald-600 font-bold text-sm inline-flex items-center gap-1.5">Registrar un Usuario <i class="fa-solid fa-arrow-right text-xs"></i></span>
             </a>
+
+            @if (Model.IsMasterAdmin)
+            {
+                <a asp-controller="Dashboard" asp-action="Finances" class="glass-card text-left rounded-3xl border border-slate-200 p-6 relative overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300 block">
+                    <div class="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-violet-50"></div>
+                    <div class="relative flex items-start justify-between mb-6">
+                        <div class="w-12 h-12 rounded-2xl bg-violet-100 text-violet-600 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-sack-dollar"></i>
+                        </div>
+                        <span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2.5 py-1 rounded-full">MASTERADMIN</span>
+                    </div>
+                    <h3 class="relative text-xl font-black text-slate-900 mb-1">Finanzas</h3>
+                    <p class="relative text-sm text-slate-500 mb-4 max-w-md">Ingresos diarios/mensuales de la plataforma.</p>
+                    <span class="relative text-violet-600 font-bold text-sm inline-flex items-center gap-1.5">Ver Finanzas <i class="fa-solid fa-arrow-right text-xs"></i></span>
+                </a>
+            }
 
         </div>
     </div>
@@ -211,12 +239,22 @@
                             <td class="py-2.5 pr-4 text-slate-500">@user.RegistrationDate.ToString("dd/MM/yyyy")</td>
                             <td class="py-2.5 pr-4">
                                 <div class="flex items-center gap-2">
-                                    <button type="button"
-                                            class="text-blue-600 hover:text-blue-700 text-xs font-bold"
-                                            data-id="@user.Id" data-firstname="@user.FirstName" data-lastname="@user.LastName" data-phone="@user.Phone"
-                                            onclick="openEditUserModal(this)">
-                                        <i class="fa-solid fa-pen"></i> Editar
-                                    </button>
+                                    @if (user.Role == UserRole.MasterAdmin)
+                                    {
+                                        <span class="text-slate-300 text-xs font-bold" title="La cuenta MasterAdmin no se puede editar desde aquí">
+                                            <i class="fa-solid fa-lock"></i> Protegido
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <button type="button"
+                                                class="text-blue-600 hover:text-blue-700 text-xs font-bold"
+                                                data-id="@user.Id" data-username="@user.Username" data-firstname="@user.FirstName" data-lastname="@user.LastName"
+                                                data-email="@user.Email" data-phone="@user.Phone" data-role="@((int)user.Role)" data-status="@((int)user.Status)"
+                                                onclick="openEditUserModal(this)">
+                                            <i class="fa-solid fa-pen"></i> Editar
+                                        </button>
+                                    }
                                     @if (user.Role != UserRole.MasterAdmin && user.Status != UserStatus.Deleted)
                                     {
                                         <form asp-action="DeleteUserAdmin" method="post" onsubmit="return confirm('¿Eliminar a @user.Username? Esta cuenta ya no podrá iniciar sesión.');">
@@ -271,7 +309,18 @@
                 <tbody>
                     @foreach (var job in Model.Services)
                     {
-                        <tr class="border-b border-slate-50 hover:bg-slate-50/70">
+                        <tr class="border-b border-slate-50 hover:bg-slate-50/70 cursor-pointer"
+                            data-id="@job.Id" data-worktype="@job.WorkTypeName"
+                            data-clientusername="@job.ClientUsername" data-clientfullname="@job.ClientFullName"
+                            data-description="@job.Description" data-imageurl="@job.ImageUrl"
+                            data-price="@(job.ProposedPrice?.ToString("0.##"))" data-status="@job.Status"
+                            data-requestdate="@job.RequestDate.ToString("dd/MM/yyyy HH:mm")"
+                            data-address="@job.ExactAddress" data-zone="@job.Zone"
+                            data-lat="@job.Latitude" data-lng="@job.Longitude"
+                            data-completionphotourl="@job.CompletionPhotoUrl"
+                            data-clientconfirmed="@(job.ClientConfirmedCompletionAt?.ToString("dd/MM/yyyy HH:mm"))"
+                            data-professionalconfirmed="@(job.ProfessionalConfirmedCompletionAt?.ToString("dd/MM/yyyy HH:mm"))"
+                            onclick="openJobDetailModal(this)">
                             <td class="py-2.5 pr-4 font-bold text-slate-900">#@job.Id</td>
                             <td class="py-2.5 pr-4 text-slate-700">@job.WorkTypeName</td>
                             <td class="py-2.5 pr-4 text-slate-500">@job.ClientUsername</td>
@@ -290,7 +339,7 @@
                             <td class="py-2.5 pr-4 text-slate-900 font-bold">@(job.ProposedPrice is { } price ? price.ToString("C") : "—")</td>
                             <td class="py-2.5 pr-4 text-slate-500">@job.Zone</td>
                             <td class="py-2.5 pr-4 text-slate-500">@job.RequestDate.ToString("dd/MM/yyyy")</td>
-                            <td class="py-2.5 pr-4">
+                            <td class="py-2.5 pr-4" onclick="event.stopPropagation()">
                                 <div class="flex items-center gap-2">
                                     <button type="button"
                                             class="text-blue-600 hover:text-blue-700 text-xs font-bold"
@@ -314,6 +363,44 @@
                     }
                 </tbody>
             </table>
+        </div>
+    </div>
+</div>
+
+@* ===== Job detail modal (view-only, populated via JS from the row's data-* attributes —
+   every field already comes down with the listing, so no extra API call is needed) ===== *@
+<div id="jobDetailModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-[60] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-card w-full max-w-lg max-h-[85vh] overflow-auto rounded-3xl border border-slate-200 shadow-2xl relative transform scale-95 transition-transform duration-300 p-6 sm:p-8" id="jobDetailModalBox">
+        <button type="button" onclick="closeModal('jobDetailModal')" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <h3 class="text-xl font-black text-slate-900 mb-1">Detalle del Trabajo <span id="jdId" class="text-slate-400"></span></h3>
+        <p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-5" id="jdStatus"></p>
+        <div class="space-y-3 text-sm">
+            <div><span class="font-bold text-slate-700">Categoría:</span> <span id="jdWorkType" class="text-slate-600"></span></div>
+            <div><span class="font-bold text-slate-700">Cliente:</span> <span id="jdClient" class="text-slate-600"></span></div>
+            <div><span class="font-bold text-slate-700">Descripción:</span> <span id="jdDescription" class="text-slate-600"></span></div>
+            <div><span class="font-bold text-slate-700">Precio Propuesto:</span> <span id="jdPrice" class="text-slate-600"></span></div>
+            <div><span class="font-bold text-slate-700">Zona:</span> <span id="jdZone" class="text-slate-600"></span></div>
+            <div><span class="font-bold text-slate-700">Dirección Exacta:</span> <span id="jdAddress" class="text-slate-600"></span></div>
+            <div><span class="font-bold text-slate-700">Coordenadas:</span> <span id="jdCoords" class="text-slate-600"></span></div>
+            <div><span class="font-bold text-slate-700">Fecha de Solicitud:</span> <span id="jdRequestDate" class="text-slate-600"></span></div>
+            <div id="jdImageWrap" class="hidden">
+                <span class="font-bold text-slate-700 block mb-1">Imagen Adjunta:</span>
+                <img id="jdImage" class="rounded-xl max-h-64 border border-slate-200" />
+            </div>
+            <div id="jdCompletionWrap" class="hidden border-t border-slate-100 pt-3 mt-3 space-y-2">
+                <p class="font-black text-slate-900">Finalización</p>
+                <div id="jdCompletionPhotoWrap" class="hidden">
+                    <span class="font-bold text-slate-700 block mb-1">Foto de Finalización:</span>
+                    <img id="jdCompletionPhoto" class="rounded-xl max-h-64 border border-slate-200" />
+                </div>
+                <div><span class="font-bold text-slate-700">Confirmado por el Cliente:</span> <span id="jdClientConfirmed" class="text-slate-600"></span></div>
+                <div><span class="font-bold text-slate-700">Confirmado por el Profesional:</span> <span id="jdProfessionalConfirmed" class="text-slate-600"></span></div>
+            </div>
+        </div>
+        <div class="flex items-center justify-end pt-5">
+            <button type="button" onclick="closeModal('jobDetailModal')" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors">Cerrar</button>
         </div>
     </div>
 </div>
@@ -363,7 +450,8 @@
                     <tbody>
                         @foreach (var report in Model.Reports)
                         {
-                            <tr class="border-b border-slate-50 hover:bg-slate-50/70">
+                            <tr class="border-b border-slate-50 hover:bg-slate-50/70 cursor-pointer"
+                                onclick="location.href='@Url.Action("SupportReportDetail", "Dashboard", new { id = report.Id })'">
                                 <td class="py-2.5 pr-4 font-bold text-slate-900">#@report.Id</td>
                                 <td class="py-2.5 pr-4 text-slate-700">@report.Title</td>
                                 <td class="py-2.5 pr-4">
@@ -382,7 +470,7 @@
                                 <td class="py-2.5 pr-4 text-slate-500">@(report.ProfessionalUsername ?? "—")</td>
                                 <td class="py-2.5 pr-4 text-slate-500">@(report.ServiceId is { } sid ? $"#{sid}" : "—")</td>
                                 <td class="py-2.5 pr-4 text-slate-500">@report.CreatedAt.ToString("dd/MM/yyyy")</td>
-                                <td class="py-2.5 pr-4">
+                                <td class="py-2.5 pr-4" onclick="event.stopPropagation()">
                                     <div class="flex items-center gap-2">
                                         @if (report.Status != ReportStatus.Cancelled)
                                         {
@@ -420,16 +508,48 @@
             @Html.AntiForgeryToken()
             <input type="hidden" name="id" id="editUserId" />
             <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Nombre</label>
-                <input type="text" name="firstName" id="editUserFirstName" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                <label class="block text-xs font-bold text-slate-700 mb-1">Usuario</label>
+                <input type="text" name="username" id="editUserUsername" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Nombre</label>
+                    <input type="text" name="firstName" id="editUserFirstName" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Apellido</label>
+                    <input type="text" name="lastName" id="editUserLastName" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                </div>
             </div>
             <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Apellido</label>
-                <input type="text" name="lastName" id="editUserLastName" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                <label class="block text-xs font-bold text-slate-700 mb-1">Email</label>
+                <input type="email" name="email" id="editUserEmail" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
             </div>
             <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1">Teléfono</label>
                 <input type="text" name="phone" id="editUserPhone" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Rol</label>
+                    <select name="role" id="editUserRole" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+                        <option value="1">Admin</option>
+                        <option value="2">Client</option>
+                        <option value="3">Professional</option>
+                        <option value="4">Manager</option>
+                        <option value="5">Company</option>
+                        <option value="6">Support</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Estado</label>
+                    <select name="status" id="editUserStatus" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+                        <option value="0">Active</option>
+                        <option value="1">Suspended</option>
+                        <option value="2">Penalized</option>
+                        <option value="3">Deleted</option>
+                    </select>
+                </div>
             </div>
             <div class="flex items-center justify-end gap-3 pt-2">
                 <button type="button" onclick="closeModal('editUserModal')" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors">Cancelar</button>
@@ -612,9 +732,13 @@
 <script>
     function openEditUserModal(btn) {
         document.getElementById('editUserId').value = btn.dataset.id;
+        document.getElementById('editUserUsername').value = btn.dataset.username || '';
         document.getElementById('editUserFirstName').value = btn.dataset.firstname || '';
         document.getElementById('editUserLastName').value = btn.dataset.lastname || '';
+        document.getElementById('editUserEmail').value = btn.dataset.email || '';
         document.getElementById('editUserPhone').value = btn.dataset.phone || '';
+        document.getElementById('editUserRole').value = btn.dataset.role || '';
+        document.getElementById('editUserStatus').value = btn.dataset.status || '';
         openModal('editUserModal');
     }
 
@@ -625,6 +749,46 @@
         document.getElementById('editJobStatus').value = btn.dataset.status;
         document.getElementById('editJobZone').value = btn.dataset.zone || '';
         openModal('editJobModal');
+    }
+
+    function openJobDetailModal(tr) {
+        const d = tr.dataset;
+        document.getElementById('jdId').textContent = '#' + d.id;
+        document.getElementById('jdStatus').textContent = d.status;
+        document.getElementById('jdWorkType').textContent = d.worktype || '—';
+        document.getElementById('jdClient').textContent = (d.clientfullname || '—') + ' (@@' + d.clientusername + ')';
+        document.getElementById('jdDescription').textContent = d.description || 'Sin descripción.';
+        document.getElementById('jdPrice').textContent = d.price ? ('₡' + d.price) : 'No propuesto todavía';
+        document.getElementById('jdZone').textContent = d.zone || '—';
+        document.getElementById('jdAddress').textContent = d.address || '—';
+        document.getElementById('jdCoords').textContent = d.lat + ', ' + d.lng;
+        document.getElementById('jdRequestDate').textContent = d.requestdate;
+
+        const imageWrap = document.getElementById('jdImageWrap');
+        if (d.imageurl) {
+            document.getElementById('jdImage').src = d.imageurl;
+            imageWrap.classList.remove('hidden');
+        } else {
+            imageWrap.classList.add('hidden');
+        }
+
+        const completionWrap = document.getElementById('jdCompletionWrap');
+        if (d.clientconfirmed || d.professionalconfirmed || d.completionphotourl) {
+            completionWrap.classList.remove('hidden');
+            document.getElementById('jdClientConfirmed').textContent = d.clientconfirmed || 'Todavía no';
+            document.getElementById('jdProfessionalConfirmed').textContent = d.professionalconfirmed || 'Todavía no';
+            const photoWrap = document.getElementById('jdCompletionPhotoWrap');
+            if (d.completionphotourl) {
+                document.getElementById('jdCompletionPhoto').src = d.completionphotourl;
+                photoWrap.classList.remove('hidden');
+            } else {
+                photoWrap.classList.add('hidden');
+            }
+        } else {
+            completionWrap.classList.add('hidden');
+        }
+
+        openModal('jobDetailModal');
     }
 
     function openEditReportModal(btn) {

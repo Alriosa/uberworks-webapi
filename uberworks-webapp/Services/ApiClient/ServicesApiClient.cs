@@ -44,6 +44,17 @@ public class ServicesApiClient : IServicesApiClient
         return (await response.Content.ReadFromJsonAsync<List<ServiceResponse>>(JsonOptions))!;
     }
 
+    public async Task<List<ServiceResponse>> GetMineAsProfessionalAsync(string accessToken)
+    {
+        var httpRequest = new HttpRequestMessage(HttpMethod.Get, "api/services/mine-as-professional");
+        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await _httpClient.SendAsync(httpRequest);
+        await EnsureSuccessAsync(response);
+
+        return (await response.Content.ReadFromJsonAsync<List<ServiceResponse>>(JsonOptions))!;
+    }
+
     public async Task<List<AdminServiceListItemResponse>> GetAllForAdminAsync(string accessToken)
     {
         var httpRequest = new HttpRequestMessage(HttpMethod.Get, "api/services");

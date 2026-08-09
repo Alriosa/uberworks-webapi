@@ -8,13 +8,22 @@
                  Home/AllServices (there's no WebApp form wired to POST /api/services yet,
                  even though that endpoint exists — browsing categories is the closest real
                  destination today); "Histórico de Trabajos" opens a modal with REAL data
-                 (Model.MyServices, from GET /api/services/mine); "Editar mi Perfil" opens a
+                 (Model.MyServices, from GET /api/services/mine) — each row is clickable
+                 (hover + click, per explicit request) and opens myServiceDetailModal with
+                 every field the row already carries (description, image, exact address,
+                 completion photo/dates) PLUS "quién lo hizo", fetched on demand from
+                 DashboardController.ClientServiceProfessional since the accepted professional
+                 isn't part of ServiceResponse itself; "Editar mi Perfil" opens a
                  modal with REAL data (Model.CurrentUser/Model.EditProfile) that posts to
                  DashboardController.UpdateProfile → PUT /api/users/{id} (only
                  FirstName/LastName/Phone are editable, same restriction the API enforces);
-                 "Contactar con Soporte" and the thin "Recargar Saldo" button are DECORATIVE
-                 (no support-ticket system or wallet/balance exists in the app yet) — they
-                 just show a toast for now.
+                 "Contactar con Soporte" is ALSO real now — links to
+                 Dashboard/ContactSupport.cshtml, a dedicated page (not a modal) that files a
+                 real Report via POST /api/reports/contact-support, per explicit request. The
+                 thin "Recargar Saldo" button stays DECORATIVE (no wallet/balance system
+                 exists in the app yet) — it just shows a toast for now. The small "Saldo" box
+                 in the header card (next to Log out) is the same kind of placeholder — a
+                 hardcoded ₡0.00, not real data.
    Entities connected: None — this project has no database entities
    Tables related: None — Model.MyServices/Model.CurrentUser reach TBL_SERVICES/TBL_USERS
                    only indirectly, through the API
@@ -40,13 +49,22 @@
                     <p class="text-sm text-slate-500 mt-0.5">Hola, @Model.DisplayName — ¿qué necesitas hoy?</p>
                 </div>
             </div>
-            <form asp-controller="Account" asp-action="Logout" method="post" class="self-start sm:self-auto">
-                @Html.AntiForgeryToken()
-                <button type="submit" class="btn-alive relative overflow-hidden inline-flex items-center justify-center gap-2 bg-slate-900 text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-slate-800 transition-colors">
-                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
-                    <span>Log out</span>
-                </button>
-            </form>
+            <div class="flex items-center gap-3 self-start sm:self-auto">
+                @* Placeholder balance box — no real Payment/wallet system exists in the app
+                   yet, per explicit request ("coloca un número ahorita x, dado de que no
+                   vamos a trabajar con la parte todavía de saldo"). Hardcoded ₡0, not real data. *@
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-right">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Saldo</p>
+                    <p class="text-sm font-black text-slate-900">₡0.00</p>
+                </div>
+                <form asp-controller="Account" asp-action="Logout" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn-alive relative overflow-hidden inline-flex items-center justify-center gap-2 bg-slate-900 text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-slate-800 transition-colors">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                        <span>Log out</span>
+                    </button>
+                </form>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -81,7 +99,7 @@
                 <span class="relative text-purple-600 font-bold text-sm inline-flex items-center gap-1.5">Editar datos <i class="fa-solid fa-arrow-right text-xs"></i></span>
             </button>
 
-            <button onclick="showToast('Soporte estará disponible próximamente.')" class="glass-card text-left rounded-3xl border border-slate-200 p-6 relative overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
+            <a asp-controller="Dashboard" asp-action="ContactSupport" class="glass-card text-left rounded-3xl border border-slate-200 p-6 relative overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300 block">
                 <div class="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-amber-50"></div>
                 <div class="relative w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl mb-6">
                     <i class="fa-solid fa-headset"></i>
@@ -89,7 +107,7 @@
                 <h3 class="relative text-xl font-black text-slate-900 mb-1">Contactar con Soporte</h3>
                 <p class="relative text-sm text-slate-500 mb-4">¿Tienes un problema con un servicio? Escríbenos.</p>
                 <span class="relative text-amber-600 font-bold text-sm inline-flex items-center gap-1.5">Contactar <i class="fa-solid fa-arrow-right text-xs"></i></span>
-            </button>
+            </a>
 
         </div>
 
@@ -140,7 +158,16 @@
                     <tbody>
                         @foreach (var service in Model.MyServices)
                         {
-                            <tr class="border-b border-slate-50">
+                            <tr class="border-b border-slate-50 hover:bg-slate-50/70 cursor-pointer"
+                                data-id="@service.Id" data-worktype="@service.WorkTypeName"
+                                data-description="@service.Description" data-imageurl="@service.ImageUrl"
+                                data-price="@(service.ProposedPrice?.ToString("0.##"))" data-status="@service.Status"
+                                data-requestdate="@service.RequestDate.ToString("dd/MM/yyyy HH:mm")"
+                                data-address="@service.ExactAddress" data-zone="@service.Zone"
+                                data-completionphotourl="@service.CompletionPhotoUrl"
+                                data-clientconfirmed="@(service.ClientConfirmedCompletionAt?.ToString("dd/MM/yyyy HH:mm"))"
+                                data-professionalconfirmed="@(service.ProfessionalConfirmedCompletionAt?.ToString("dd/MM/yyyy HH:mm"))"
+                                onclick="openMyServiceDetailModal(this)">
                                 <td class="py-2.5 pr-4 font-bold text-slate-900">@service.WorkTypeName</td>
                                 <td class="py-2.5 pr-4 text-slate-500">@service.Zone</td>
                                 <td class="py-2.5 pr-4 text-slate-900">@(service.ProposedPrice.HasValue ? $"${service.ProposedPrice.Value:0.00}" : "—")</td>
@@ -213,6 +240,49 @@
     </div>
 </div>
 
+@* ===== "Mi Trabajo" detail modal (view-only) — most fields come straight from the row's
+   data-* attributes (already loaded with the history list, no extra call needed); "quién
+   lo hizo" is fetched on demand from DashboardController.ClientServiceProfessional since it
+   isn't part of ServiceResponse (a Service can have several competing proposals, only one
+   Accepted) ===== *@
+<div id="myServiceDetailModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-[60] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-card w-full max-w-lg max-h-[85vh] overflow-auto rounded-3xl border border-slate-200 shadow-2xl relative transform scale-95 transition-transform duration-300 p-6 sm:p-8" id="myServiceDetailModalBox">
+        <button type="button" onclick="closeModal('myServiceDetailModal')" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <h3 class="text-xl font-black text-slate-900 mb-1">Detalle del Trabajo <span id="msdId" class="text-slate-400"></span></h3>
+        <p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-5" id="msdStatus"></p>
+        <div class="space-y-3 text-sm">
+            <div><span class="font-bold text-slate-700">Categoría:</span> <span id="msdWorkType" class="text-slate-600"></span></div>
+            <div><span class="font-bold text-slate-700">Realizado por:</span> <span id="msdProfessional" class="text-slate-600">Consultando…</span></div>
+            <div><span class="font-bold text-slate-700">Descripción:</span> <span id="msdDescription" class="text-slate-600"></span></div>
+            <div><span class="font-bold text-slate-700">Precio Pagado:</span> <span id="msdPrice" class="text-slate-600"></span></div>
+            <div><span class="font-bold text-slate-700">Zona:</span> <span id="msdZone" class="text-slate-600"></span></div>
+            <div><span class="font-bold text-slate-700">Dirección:</span> <span id="msdAddress" class="text-slate-600"></span></div>
+            <div><span class="font-bold text-slate-700">Fecha de Solicitud:</span> <span id="msdRequestDate" class="text-slate-600"></span></div>
+            <div id="msdImageWrap" class="hidden">
+                <span class="font-bold text-slate-700 block mb-1">Imagen Adjunta:</span>
+                <img id="msdImage" class="rounded-xl max-h-64 border border-slate-200" />
+            </div>
+            <div id="msdCompletionWrap" class="hidden border-t border-slate-100 pt-3 mt-3 space-y-2">
+                <p class="font-black text-slate-900">Finalización</p>
+                <div id="msdCompletionPhotoWrap" class="hidden">
+                    <span class="font-bold text-slate-700 block mb-1">Foto de Finalización:</span>
+                    <img id="msdCompletionPhoto" class="rounded-xl max-h-64 border border-slate-200" />
+                </div>
+                <div><span class="font-bold text-slate-700">Confirmaste que se completó:</span> <span id="msdClientConfirmed" class="text-slate-600"></span></div>
+                <div><span class="font-bold text-slate-700">El profesional confirmó:</span> <span id="msdProfessionalConfirmed" class="text-slate-600"></span></div>
+            </div>
+        </div>
+        <div class="flex items-center justify-between pt-5">
+            <a id="msdChatLink" href="#" class="btn-alive relative overflow-hidden inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold px-4 py-2.5 rounded-xl transition-colors">
+                <i class="fa-solid fa-comment-dots"></i> Chatear con el Profesional
+            </a>
+            <button type="button" onclick="closeModal('myServiceDetailModal')" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors">Cerrar</button>
+        </div>
+    </div>
+</div>
+
 <div id="toast" class="fixed bottom-6 right-6 z-50 glass-card px-5 py-4 rounded-2xl border border-brand-500/50 text-slate-900 shadow-2xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300">
     <div class="w-8 h-8 rounded-xl bg-brand-500 text-white flex items-center justify-center font-bold">
         <i class="fa-solid fa-check"></i>
@@ -225,6 +295,66 @@
 
 <script src="~/js/landing-common.js" asp-append-version="true"></script>
 <script>
+    function openMyServiceDetailModal(tr) {
+        const d = tr.dataset;
+        document.getElementById('msdId').textContent = '#' + d.id;
+        document.getElementById('msdStatus').textContent = d.status;
+        document.getElementById('msdWorkType').textContent = d.worktype || '—';
+        document.getElementById('msdDescription').textContent = d.description || 'Sin descripción.';
+        document.getElementById('msdPrice').textContent = d.price ? ('$' + d.price) : 'No propuesto todavía';
+        document.getElementById('msdZone').textContent = d.zone || '—';
+        document.getElementById('msdAddress').textContent = d.address || '—';
+        document.getElementById('msdRequestDate').textContent = d.requestdate;
+
+        // Chat only makes sense once a professional has actually been accepted — Service.Status
+        // becomes Accepted/Completed exactly when that happens (see ServiceProfessionalService
+        // .AcceptProposalAsync on the API side).
+        const chatLink = document.getElementById('msdChatLink');
+        if (d.status === 'Accepted' || d.status === 'Completed') {
+            chatLink.href = '@Url.Action("Chat", "Dashboard")?serviceId=' + encodeURIComponent(d.id);
+            chatLink.classList.remove('hidden');
+        } else {
+            chatLink.classList.add('hidden');
+        }
+
+        const imageWrap = document.getElementById('msdImageWrap');
+        if (d.imageurl) {
+            document.getElementById('msdImage').src = d.imageurl;
+            imageWrap.classList.remove('hidden');
+        } else {
+            imageWrap.classList.add('hidden');
+        }
+
+        const completionWrap = document.getElementById('msdCompletionWrap');
+        if (d.clientconfirmed || d.professionalconfirmed || d.completionphotourl) {
+            completionWrap.classList.remove('hidden');
+            document.getElementById('msdClientConfirmed').textContent = d.clientconfirmed || 'Todavía no';
+            document.getElementById('msdProfessionalConfirmed').textContent = d.professionalconfirmed || 'Todavía no';
+            const photoWrap = document.getElementById('msdCompletionPhotoWrap');
+            if (d.completionphotourl) {
+                document.getElementById('msdCompletionPhoto').src = d.completionphotourl;
+                photoWrap.classList.remove('hidden');
+            } else {
+                photoWrap.classList.add('hidden');
+            }
+        } else {
+            completionWrap.classList.add('hidden');
+        }
+
+        const professionalEl = document.getElementById('msdProfessional');
+        professionalEl.textContent = 'Consultando…';
+        fetch('@Url.Action("ClientServiceProfessional", "Dashboard")?serviceId=' + encodeURIComponent(d.id))
+            .then(r => r.json())
+            .then(data => {
+                professionalEl.textContent = data.found
+                    ? data.name + (data.rating ? ` (★ ${Number(data.rating).toFixed(1)})` : '')
+                    : 'Todavía sin profesional asignado';
+            })
+            .catch(() => { professionalEl.textContent = 'No se pudo consultar.'; });
+
+        openModal('myServiceDetailModal');
+    }
+
     @if (TempData["EditProfileSuccess"] is string editProfileSuccess)
     {
         <text>document.addEventListener('DOMContentLoaded', () => showToast(@Html.Raw(Json.Serialize(editProfileSuccess))));</text>

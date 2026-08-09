@@ -1,11 +1,13 @@
 // =====================================================================================
 // FILE SUMMARY
 // What it does: Contract for talking to uberworks-webapi's /api/reports endpoints. Backs
-//               both the Admin dashboard's report CRUD panel and (later) the Support
-//               dashboard. CreateAsync takes plain IFormFile images (same reasoning as
+//               both the Admin dashboard's report CRUD panel and the Support dashboard.
+//               CreateAsync takes plain IFormFile images (same reasoning as
 //               IContactApiClient.SuggestServiceAsync) since filing a report can include
-//               photos. Every method needs the caller's own JWT — every /api/reports
-//               endpoint on the API side is [Authorize(Roles = "MasterAdmin,Admin,Support")].
+//               photos. ContactSupportAsync backs the Client dashboard's real "Contactar con
+//               Soporte" self-service view — POST /api/reports/contact-support is
+//               [Authorize(Roles = "Client")] only, unlike every other method here which
+//               needs MasterAdmin/Admin/Support.
 // Entities connected: None — WebApp has no database entities
 // Tables related: None
 // =====================================================================================
@@ -25,6 +27,9 @@ public interface IReportsApiClient
         int? professionalUserId,
         DateTime? incidentDate,
         List<IFormFile>? images);
+
+    /// <summary>Client dashboard's "Contactar con Soporte" self-service view.</summary>
+    Task<ReportResponse> ContactSupportAsync(string accessToken, string title, string description, int? serviceId, List<IFormFile>? images);
 
     Task<List<ReportResponse>> GetAllAsync(string accessToken);
     Task<ReportResponse> GetByIdAsync(string accessToken, int id);

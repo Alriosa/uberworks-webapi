@@ -146,6 +146,20 @@ public class UsersApiClient : IUsersApiClient
         await EnsureSuccessAsync(response);
     }
 
+    public async Task<UserResponse> AdminUpdateAsync(string accessToken, int id, AdminUpdateUserRequest request)
+    {
+        var httpRequest = new HttpRequestMessage(HttpMethod.Put, $"api/users/{id}/admin-update")
+        {
+            Content = JsonContent.Create(request, options: JsonOptions)
+        };
+        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await _httpClient.SendAsync(httpRequest);
+        await EnsureSuccessAsync(response);
+
+        return (await response.Content.ReadFromJsonAsync<UserResponse>(JsonOptions))!;
+    }
+
     public async Task<UserResponse> CreateManagerAsync(string accessToken, CompanyCreateManagerRequest request)
     {
         var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/users/company-create-manager")

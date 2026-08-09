@@ -98,6 +98,12 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IEventInvitationRepository, EventInvitationRepository>();
         services.AddScoped<IEventService, EventService>();
 
+        services.AddScoped<IPenaltyRepository, PenaltyRepository>();
+        services.AddScoped<IPenaltyService, PenaltyService>();
+
+        services.AddScoped<IChatRepository, ChatRepository>();
+        services.AddScoped<IChatService, ChatService>();
+
         // Repositories/Services for the remaining entities are registered here
         // as they get implemented.
 

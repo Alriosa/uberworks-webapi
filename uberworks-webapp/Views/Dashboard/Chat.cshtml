@@ -1,0 +1,84 @@
+@* =====================================================================================
+   FILE SUMMARY
+   What it does: The real conversation view between a Client and the Professional accepted
+                 on their Service — "iniciar chat con la persona cliente, para hablar sobre
+                 el trabajo", per explicit request. Own page (not a modal), same reasoning as
+                 EventInvitations.cshtml/ContactSupport.cshtml. Messages are aligned by
+                 comparing each ChatMessageResponse.SenderRole against Model.ViewerRole (the
+                 logged-in caller's own role) — "yours" (right, brand color) vs "theirs"
+                 (left, gray). Posts to DashboardController.SendChatMessage, which forwards to
+                 POST /api/chats/by-service/{serviceId} — a real message gets stored, no
+                 real-time delivery yet (WebSockets/SignalR), so the page reloads after
+                 sending instead of updating live.
+   Entities connected: None — this project has no database entities
+   Tables related: None — Model.Messages reaches TBL_CHATS only indirectly, through the API
+   ===================================================================================== *@
+@model uberworks_webapp.Models.ViewModels.ChatViewModel
+@using uberworks_webapp.Models.ApiContracts
+@{
+    ViewData["Title"] = "Chat";
+    Layout = "_LandingLayout";
+
+    // Was THIS message sent by the person looking at the screen right now?
+    bool IsMine(ChatSenderRole senderRole) =>
+        (Model.ViewerRole == UserRole.Client && senderRole == ChatSenderRole.Client) ||
+        (Model.ViewerRole == UserRole.Professional && senderRole == ChatSenderRole.Professional);
+}
+
+<partial name="_LandingHeader" />
+
+<main class="relative min-h-screen bg-slate-50 pt-28 pb-8 px-4 sm:px-6 lg:px-8 z-10">
+    <div class="max-w-2xl mx-auto space-y-6">
+
+        <div class="glass-card rounded-3xl border border-slate-200 p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-brand-500 text-white flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-comment-dots"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black text-slate-900">Chat</h1>
+                    <p class="text-sm text-slate-500 mt-0.5">Sobre el trabajo #@Model.ServiceId</p>
+                </div>
+            </div>
+            <a asp-controller="Dashboard" asp-action="LandingPage" class="btn-alive relative overflow-hidden inline-flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-colors self-start sm:self-auto">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>Atrás — Volver al Panel</span>
+            </a>
+        </div>
+
+        <div class="glass-card rounded-3xl border border-slate-200 flex flex-col h-[60vh]">
+            <div class="flex-1 overflow-y-auto p-6 space-y-3">
+                @if (Model.Messages.Count == 0)
+                {
+                    <p class="text-sm text-slate-400 text-center py-10">Todavía no hay mensajes. ¡Escribe el primero!</p>
+                }
+                else
+                {
+                    @foreach (var message in Model.Messages)
+                    {
+                        var mine = IsMine(message.SenderRole);
+                        <div class="flex @(mine ? "justify-end" : "justify-start")">
+                            <div class="max-w-[75%] rounded-2xl px-4 py-2.5 @(mine ? "bg-brand-500 text-white" : "bg-slate-100 text-slate-900")">
+                                <p class="text-[10px] font-bold @(mine ? "text-white/70" : "text-slate-400") uppercase tracking-wide mb-0.5">@message.SenderUsername</p>
+                                <p class="text-sm">@message.Message</p>
+                                <p class="text-[10px] @(mine ? "text-white/60" : "text-slate-400") mt-1">@message.MessageDate.ToString("dd/MM/yyyy HH:mm")</p>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+            <form asp-controller="Dashboard" asp-action="SendChatMessage" method="post" class="border-t border-slate-100 p-4 flex items-center gap-3">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="serviceId" value="@Model.ServiceId" />
+                <input type="text" name="message" required autocomplete="off" placeholder="Escribe un mensaje..."
+                       class="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                <button type="submit" class="btn-alive relative overflow-hidden bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-colors">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+
+    </div>
+</main>
+
+<partial name="_LandingFooter" />

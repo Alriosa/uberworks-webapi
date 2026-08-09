@@ -5,7 +5,9 @@
 //               listing, used as the Professional dashboard's job offers) and
 //               GET /api/services/mine (a Client's own request history). Latitude/Longitude/
 //               ExactAddress stay null unless the caller is the owning client or the
-//               accepted professional — same privacy rule as the API side.
+//               accepted professional — same privacy rule as the API side. ClientUsername/
+//               ClientFullName ARE always filled in, even on the public open-jobs listing —
+//               a professional browsing job offers needs to see who posted them.
 // Entities connected: None — this project has no database entities, only API contracts
 // Tables related: None
 // =====================================================================================
@@ -17,6 +19,8 @@ public class ServiceResponse
     public int WorkTypeId { get; set; }
     public string WorkTypeName { get; set; } = string.Empty;
     public int ClientId { get; set; }
+    public string ClientUsername { get; set; } = string.Empty;
+    public string ClientFullName { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string? ImageUrl { get; set; }
     public decimal? ProposedPrice { get; set; }

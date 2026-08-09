@@ -4,8 +4,14 @@
 //               where the location privacy rule lives: Latitude/Longitude/ExactAddress are
 //               nullable (?) and ServiceService.cs decides in real time whether to fill them
 //               in or leave them null depending on who's asking (see Services/ServiceService.cs).
-//               Zone always travels filled in, even in the public listing.
-// Entities connected: Service.cs, WorkType.cs (ServiceService.cs maps from there)
+//               Zone always travels filled in, even in the public listing. ClientUsername/
+//               ClientFullName are also always filled in — including on the PUBLIC
+//               GetOpenAsync() listing — per explicit request that a professional see "el
+//               nombre de la persona que mandó el trabajo" before even clicking to bid; this
+//               is intentionally less private than the exact address, which stays hidden
+//               until a proposal is accepted.
+// Entities connected: Service.cs, WorkType.cs, User.cs (as Client — ServiceService.cs maps
+//                      from there)
 // Tables related: None directly — it's the "public shape" (with privacy rules) of a
 //                 TBL_SERVICES row
 // =====================================================================================
@@ -19,6 +25,8 @@ public class ServiceResponse
     public int WorkTypeId { get; set; }
     public string WorkTypeName { get; set; } = string.Empty;
     public int ClientId { get; set; }
+    public string ClientUsername { get; set; } = string.Empty;
+    public string ClientFullName { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string? ImageUrl { get; set; }
     public decimal? ProposedPrice { get; set; }

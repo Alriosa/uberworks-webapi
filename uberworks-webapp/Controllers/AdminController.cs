@@ -10,6 +10,10 @@
 //               which is what actually authorizes the write on the API side. The Role
 //               dropdown only shows options RoleHierarchy.cs says this caller's role can
 //               create (UI convenience only — the API enforces the real rule regardless).
+//               There is no Password field on this form on purpose: the API creates the
+//               account with IsPasswordSet=false and emails the new user a real
+//               "set your password" link (reusing the forgot-password token flow) — nobody
+//               but that person should ever know their own password.
 //               The Controller only handles HTTP/form concerns; all the actual API
 //               communication goes through IUsersApiClient, never directly through
 //               HttpClient here.
@@ -66,11 +70,10 @@ public class AdminController : Controller
                 LastName = model.LastName,
                 Email = model.Email,
                 Phone = model.Phone,
-                Password = model.Password,
                 Role = model.Role
             });
 
-            TempData["SuccessMessage"] = $"User '{model.Username}' was created successfully.";
+            TempData["SuccessMessage"] = $"User '{model.Username}' was created. We've emailed {model.Email} a link to set their password.";
             return RedirectToAction(nameof(CreateUser));
         }
         catch (ApiException ex)

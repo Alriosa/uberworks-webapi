@@ -19,6 +19,9 @@ public interface IServicesApiClient
 {
     Task<List<ServiceResponse>> GetOpenAsync();
     Task<List<ServiceResponse>> GetMineAsync(string accessToken);
+
+    /// <summary>Backs the Professional dashboard's "Trabajos Realizados" panel.</summary>
+    Task<List<ServiceResponse>> GetMineAsProfessionalAsync(string accessToken);
     Task<List<AdminServiceListItemResponse>> GetAllForAdminAsync(string accessToken);
     Task<ServiceResponse> UpdateForAdminAsync(string accessToken, int id, UpdateServiceAdminRequest request);
     Task DeleteForAdminAsync(string accessToken, int id);

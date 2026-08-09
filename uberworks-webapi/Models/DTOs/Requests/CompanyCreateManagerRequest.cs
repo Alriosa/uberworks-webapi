@@ -1,12 +1,13 @@
 // =====================================================================================
 // FILE SUMMARY
-// What it does: Describes the body of POST /api/users/company-create-manager. A Company OR
-//               one of its own Managers uses this to create a new Manager account, always
-//               linked to the SAME company — see UserService.CreateManagerAsync for how the
-//               company is resolved (the caller's own id if they're a Company, or their own
-//               User.ManagedByCompanyUserId if they're already a Manager). CompanyUserId is
-//               intentionally NOT here, same reasoning as CompanyCreateWorkerRequest.cs: it's
-//               never taken from what the client sends.
+// What it does: Describes the body of POST /api/users/company-create-manager. Only a
+//               Company can call this (never a Manager — see the [Authorize] on
+//               UsersController.CreateManager), and the new Manager is always linked to the
+//               caller's own company. CompanyUserId is intentionally NOT here, same
+//               reasoning as CompanyCreateWorkerRequest.cs: it's never taken from what the
+//               client sends. No Password field either, same reasoning as
+//               AdminCreateUserRequest.cs — the new Manager gets a "set your password" email
+//               instead (see UserService.SendPasswordSetupLinkAsync).
 // Entities connected: User.cs (created by UserService.CreateManagerAsync)
 // Tables related: None directly — reaches TBL_USERS through UserService.cs
 // =====================================================================================
@@ -19,5 +20,4 @@ public class CompanyCreateManagerRequest
     public string LastName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string? Phone { get; set; }
-    public string Password { get; set; } = string.Empty;
 }

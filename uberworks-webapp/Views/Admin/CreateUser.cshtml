@@ -1,82 +1,133 @@
+@* =====================================================================================
+   FILE SUMMARY
+   What it does: The "Register a user" form — reachable by MasterAdmin, Admin, or Manager
+                 (see AdminController's [Authorize]), each seeing only the roles
+                 RoleHierarchy.cs says they're allowed to create. Restyled to match the
+                 Tailwind/glass-card language used everywhere else in the app (was plain
+                 unstyled Bootstrap before). No Password/ConfirmPassword fields — the new
+                 account is created with IsPasswordSet=false and the API emails a real
+                 "set your password" link, since nobody but that person should ever know
+                 their own password (see AdminCreateUserViewModel.cs). "Atrás" goes back to
+                 Dashboard/LandingPage, which redirects to whichever dashboard fits the
+                 caller's own role — this page is reachable from all 3 roles that can use it,
+                 so it can't hardcode one specific dashboard to return to.
+   Entities connected: None — this project has no database entities
+   Tables related: None — reaches TBL_USERS only indirectly, through the API
+   ===================================================================================== *@
 @using Microsoft.AspNetCore.Mvc.Rendering
 @model uberworks_webapp.Models.ViewModels.AdminCreateUserViewModel
 @{
-    ViewData["Title"] = "Register Users";
+    ViewData["Title"] = "Registrar Usuario";
+    Layout = "_LandingLayout";
     var roleOptions = (List<SelectListItem>)ViewData["RoleOptions"]!;
 }
 
-<h1>Register a user</h1>
-<p class="text-muted">The roles available below depend on your own role.</p>
+<partial name="_LandingHeader" />
 
-@if (TempData["SuccessMessage"] is string successMessage)
-{
-    <div class="alert alert-success">@successMessage</div>
-}
+<main class="relative min-h-screen bg-slate-50 pt-28 pb-8 px-4 sm:px-6 lg:px-8 z-10">
+    <div class="max-w-xl mx-auto space-y-6">
 
-<div class="row">
-    <div class="col-md-6">
-        <form asp-controller="Admin" asp-action="CreateUser" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-            <div class="form-group mb-3">
-                <label asp-for="Username" class="form-label"></label>
-                <input asp-for="Username" class="form-control" autocomplete="username" />
-                <span asp-validation-for="Username" class="text-danger"></span>
+        <div class="glass-card rounded-3xl border border-slate-200 p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-user-plus"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black text-slate-900">Registrar Usuario</h1>
+                    <p class="text-sm text-slate-500 mt-0.5">Las opciones de rol dependen de tu propio rol.</p>
+                </div>
             </div>
+            <a asp-controller="Dashboard" asp-action="LandingPage" class="btn-alive relative overflow-hidden inline-flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-colors self-start sm:self-auto">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>Atrás — Volver al Panel</span>
+            </a>
+        </div>
 
-            <div class="form-group mb-3">
-                <label asp-for="FirstName" class="form-label"></label>
-                <input asp-for="FirstName" class="form-control" />
-                <span asp-validation-for="FirstName" class="text-danger"></span>
-            </div>
+        <div class="glass-card rounded-3xl border border-slate-200 p-6 sm:p-8">
+            <div asp-validation-summary="ModelOnly" class="text-red-600 text-sm mb-4"></div>
 
-            <div class="form-group mb-3">
-                <label asp-for="LastName" class="form-label"></label>
-                <input asp-for="LastName" class="form-control" />
-                <span asp-validation-for="LastName" class="text-danger"></span>
-            </div>
+            <form asp-controller="Admin" asp-action="CreateUser" method="post" class="space-y-4">
+                @Html.AntiForgeryToken()
 
-            <div class="form-group mb-3">
-                <label asp-for="Email" class="form-label"></label>
-                <input asp-for="Email" class="form-control" autocomplete="email" />
-                <span asp-validation-for="Email" class="text-danger"></span>
-            </div>
+                <div>
+                    <label asp-for="Username" class="block text-xs font-bold text-slate-700 mb-1">Username</label>
+                    <input asp-for="Username" autocomplete="username" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                    <span asp-validation-for="Username" class="text-red-600 text-xs"></span>
+                </div>
 
-            <div class="form-group mb-3">
-                <label asp-for="Phone" class="form-label"></label>
-                <input asp-for="Phone" class="form-control" />
-                <span asp-validation-for="Phone" class="text-danger"></span>
-            </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label asp-for="FirstName" class="block text-xs font-bold text-slate-700 mb-1">Nombre</label>
+                        <input asp-for="FirstName" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                        <span asp-validation-for="FirstName" class="text-red-600 text-xs"></span>
+                    </div>
+                    <div>
+                        <label asp-for="LastName" class="block text-xs font-bold text-slate-700 mb-1">Apellido</label>
+                        <input asp-for="LastName" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                        <span asp-validation-for="LastName" class="text-red-600 text-xs"></span>
+                    </div>
+                </div>
 
-            <div class="form-group mb-3">
-                <label asp-for="Password" class="form-label"></label>
-                <input asp-for="Password" class="form-control" autocomplete="new-password" />
-                <span asp-validation-for="Password" class="text-danger"></span>
-            </div>
+                <div>
+                    <label asp-for="Email" class="block text-xs font-bold text-slate-700 mb-1">Email</label>
+                    <input asp-for="Email" autocomplete="email" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                    <span asp-validation-for="Email" class="text-red-600 text-xs"></span>
+                </div>
 
-            <div class="form-group mb-3">
-                <label asp-for="ConfirmPassword" class="form-label"></label>
-                <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" />
-                <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
-            </div>
+                <div>
+                    <label asp-for="Phone" class="block text-xs font-bold text-slate-700 mb-1">Teléfono</label>
+                    <input asp-for="Phone" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                    <span asp-validation-for="Phone" class="text-red-600 text-xs"></span>
+                </div>
 
-            <div class="form-group mb-3">
-                <label asp-for="Role" class="form-label"></label>
-                <!-- Options come from AdminController.BuildRoleOptions(), which only
-                     offers what RoleHierarchy.cs says the CURRENT caller's role is allowed
-                     to create — a Manager never even sees "Admin" as a choice. MasterAdmin
-                     is never offered to anyone — there's only ever one, seeded on API
-                     startup. This is UI convenience only; the API enforces the real rule
-                     independently either way. -->
-                <select asp-for="Role" class="form-select" asp-items="roleOptions"></select>
-                <span asp-validation-for="Role" class="text-danger"></span>
-            </div>
+                <div>
+                    <label asp-for="Role" class="block text-xs font-bold text-slate-700 mb-1">Tipo de Cuenta</label>
+                    <!-- Options come from AdminController.BuildRoleOptions(), which only
+                         offers what RoleHierarchy.cs says the CURRENT caller's role is
+                         allowed to create — a Manager never even sees "Admin" as a choice.
+                         MasterAdmin is never offered to anyone — there's only ever one,
+                         seeded on API startup. This is UI convenience only; the API enforces
+                         the real rule independently either way. -->
+                    <select asp-for="Role" asp-items="roleOptions" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"></select>
+                    <span asp-validation-for="Role" class="text-red-600 text-xs"></span>
+                </div>
 
-            <button type="submit" class="btn btn-primary">Create user</button>
-        </form>
+                <div class="rounded-2xl bg-blue-50 border border-blue-100 p-4 flex items-start gap-3">
+                    <i class="fa-solid fa-circle-info text-blue-500 mt-0.5"></i>
+                    <p class="text-xs text-blue-700">No se define una contraseña aquí. Al crear la cuenta, se le enviará un correo a la persona con un enlace para que ella misma elija su contraseña.</p>
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button type="submit" class="btn-alive relative overflow-hidden bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-colors">
+                        <i class="fa-solid fa-user-plus mr-1"></i> Crear Usuario
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+
+<partial name="_LandingFooter" />
+
+<div id="toast" class="fixed bottom-6 right-6 z-50 glass-card px-5 py-4 rounded-2xl border border-brand-500/50 text-slate-900 shadow-2xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300">
+    <div class="w-8 h-8 rounded-xl bg-brand-500 text-white flex items-center justify-center font-bold">
+        <i class="fa-solid fa-check"></i>
+    </div>
+    <div>
+        <p id="toastMessage" class="text-xs font-bold text-slate-900"></p>
+        <p class="text-[10px] text-slate-500">Notificación de ServiGo</p>
     </div>
 </div>
 
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}
+<script src="~/js/landing-common.js" asp-append-version="true"></script>
+<script>
+    @if (TempData["SuccessMessage"] is string successMessage)
+    {
+        <text>document.addEventListener('DOMContentLoaded', () => showToast(@Html.Raw(Json.Serialize(successMessage))));</text>
+    }
+</script>
+
+@* _LandingLayout.cshtml has no @RenderSection at all (only @RenderBody) — unlike _Layout.cshtml,
+   it never supported @section. This used to be "@section Scripts { <partial .../> }", which threw
+   "sections have been defined but have not been rendered" on every single load of this page. *@
+<partial name="_ValidationScriptsPartial" />

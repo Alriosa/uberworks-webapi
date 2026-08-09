@@ -156,6 +156,26 @@ public class ServiceProfessionalRepository : IServiceProfessionalRepository
         return names.ToList();
     }
 
+    // Every Service this professional has been ACCEPTED, IN PROGRESS, or COMPLETED on — i.e.
+    // real jobs they've actually been hired for, most recent first. Backs the Professional
+    // dashboard's "Trabajos Realizados" panel (see FILE SUMMARY on the interface).
+    public async Task<IReadOnlyList<int>> GetAcceptedServiceIdsAsync(int professionalId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        var ids = await connection.QueryAsync<int>(
+            """
+            SELECT sp.PK_SERVICE_ID
+            FROM TBL_SERVICE_PROFESSIONALS sp
+            INNER JOIN TBL_SERVICES s ON s.PK_SERVICE_ID = sp.PK_SERVICE_ID
+            WHERE sp.PK_PROFESSIONAL_ID = @ProfessionalId
+              AND sp.CL_STATUS IN ('ACCEPTED', 'IN PROGRESS', 'COMPLETED')
+            ORDER BY s.CL_REQUEST_DATE DESC
+            """,
+            new { ProfessionalId = professionalId });
+
+        return ids.ToList();
+    }
+
     public async Task<bool> ExistsProposalAsync(int serviceId, int professionalId)
     {
         using var connection = _connectionFactory.CreateConnection();

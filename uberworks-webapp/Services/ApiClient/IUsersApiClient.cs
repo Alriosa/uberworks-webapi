@@ -31,6 +31,9 @@ public interface IUsersApiClient
     /// <summary>Soft delete (Status=Deleted) — backs the Admin dashboard's user CRUD panel.</summary>
     Task DeleteAsync(string accessToken, int id);
 
+    /// <summary>Full edit of ANY user (Username/Email/Role/Status included) — Admin dashboard's "Editar Usuario" modal.</summary>
+    Task<UserResponse> AdminUpdateAsync(string accessToken, int id, AdminUpdateUserRequest request);
+
     /// <summary>Company/Manager dashboard's "Crear Manager" button.</summary>
     Task<UserResponse> CreateManagerAsync(string accessToken, CompanyCreateManagerRequest request);
 

@@ -295,6 +295,12 @@ public class UserService : IUserService
             throw new ConflictException($"The username '{request.Username}' is already taken.");
         }
 
+        // No password comes from the actor creating this account — nobody but the person
+        // themselves should ever know it. A random, unknown hash goes in for now
+        // (IsPasswordSet=false, same idea as Google/Facebook signup) and
+        // SendPasswordSetupLinkAsync emails them a real "set your password" link.
+        var randomPassword = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
+
         var user = new User
         {
             Username = request.Username,
@@ -302,11 +308,13 @@ public class UserService : IUserService
             LastName = request.LastName,
             Email = request.Email,
             Phone = request.Phone,
-            PasswordHash = PasswordHasher.Hash(request.Password),
-            Role = request.Role
+            PasswordHash = PasswordHasher.Hash(randomPassword),
+            Role = request.Role,
+            IsPasswordSet = false
         };
 
         await _userRepository.AddAsync(user);
+        await SendPasswordSetupLinkAsync(user, isNewAccount: true);
 
         await _auditLogService.LogAdminActionAsync(
             actorUserId: actorUserId,
@@ -321,10 +329,12 @@ public class UserService : IUserService
     }
 
     // "No existe manager sin su empresa" — the new Manager's ManagedByCompanyUserId is always
-    // resolved server-side, never taken from the request: a Company creates one linked to
-    // itself; an existing Manager creates one linked to the SAME company it already belongs
-    // to (so a chain of Managers can onboard each other without ever detaching from the
-    // company that originally brought them in).
+    // resolved server-side, never taken from the request. Company-only, per explicit
+    // request: a Manager must never be able to create another Manager (only invite
+    // professionals and manage the team) — [Authorize(Roles = nameof(UserRole.Company))] on
+    // the controller already blocks a Manager JWT from reaching this method at all, so
+    // ResolveCompanyUserIdAsync's Manager branch below is unreachable from here now; it's
+    // still used by ProfessionalService/EventService, which is why it stays generic.
     public async Task<UserResponse> CreateManagerAsync(int callerUserId, UserRole callerRole, CompanyCreateManagerRequest request)
     {
         var companyUserId = await ResolveCompanyUserIdAsync(callerUserId, callerRole);
@@ -339,6 +349,9 @@ public class UserService : IUserService
             throw new ConflictException($"The username '{request.Username}' is already taken.");
         }
 
+        // Same "no password from the creator" rule as CreateByAdminAsync.
+        var randomPassword = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
+
         var manager = new User
         {
             Username = request.Username,
@@ -346,12 +359,14 @@ public class UserService : IUserService
             LastName = request.LastName,
             Email = request.Email,
             Phone = request.Phone,
-            PasswordHash = PasswordHasher.Hash(request.Password),
+            PasswordHash = PasswordHasher.Hash(randomPassword),
             Role = UserRole.Manager,
-            ManagedByCompanyUserId = companyUserId
+            ManagedByCompanyUserId = companyUserId,
+            IsPasswordSet = false
         };
 
         await _userRepository.AddAsync(manager);
+        await SendPasswordSetupLinkAsync(manager, isNewAccount: true);
 
         await _auditLogService.LogAdminActionAsync(
             actorUserId: callerUserId,
@@ -471,6 +486,58 @@ public class UserService : IUserService
         return MapToResponse(user);
     }
 
+    public async Task<UserResponse> AdminUpdateAsync(int id, int callerUserId, string callerUsername, UserRole callerRole, AdminUpdateUserRequest request)
+    {
+        var user = await _userRepository.GetByIdAsync(id)
+            ?? throw new NotFoundException($"User with id {id} was not found.");
+
+        if (user.Role == UserRole.MasterAdmin)
+        {
+            throw new ForbiddenException("The MasterAdmin account cannot be edited this way.");
+        }
+
+        if (request.Role == UserRole.MasterAdmin)
+        {
+            throw new ForbiddenException("Cannot assign the MasterAdmin role — there can only ever be one, seeded on API startup.");
+        }
+
+        if (!string.Equals(user.Email, request.Email, StringComparison.OrdinalIgnoreCase)
+            && await _userRepository.ExistsByEmailAsync(request.Email))
+        {
+            throw new ConflictException($"A user with the email '{request.Email}' already exists.");
+        }
+
+        if (!string.Equals(user.Username, request.Username, StringComparison.OrdinalIgnoreCase)
+            && await _userRepository.ExistsByUsernameAsync(request.Username))
+        {
+            throw new ConflictException($"The username '{request.Username}' is already taken.");
+        }
+
+        var details = $"Before: [Username={user.Username}, Email={user.Email}, Role={user.Role}, Status={user.Status}]. " +
+                       $"After: [Username={request.Username}, Email={request.Email}, Role={request.Role}, Status={request.Status}].";
+
+        user.Username = request.Username;
+        user.FirstName = request.FirstName;
+        user.LastName = request.LastName;
+        user.Email = request.Email;
+        user.Phone = request.Phone;
+        user.Role = request.Role;
+        user.Status = request.Status;
+
+        await _userRepository.UpdateAsync(user);
+
+        await _auditLogService.LogAdminActionAsync(
+            actorUserId: callerUserId,
+            actorUsername: callerUsername,
+            actorRole: callerRole,
+            action: "USER_FULL_EDIT_BY_ADMIN",
+            targetEntityType: "User",
+            targetEntityId: id,
+            details: details);
+
+        return MapToResponse(user);
+    }
+
     // Soft-delete: sets Status=Deleted instead of a real SQL DELETE — see UserStatus.cs for
     // why (foreign keys from Professional/Service/Review/Chat/Penalty/PasswordResetToken all
     // point at TBL_USERS, so a hard delete would either fail outright or silently erase real
@@ -529,6 +596,37 @@ public class UserService : IUserService
             return;
         }
 
+        await SendPasswordSetupLinkAsync(user, isNewAccount: false);
+
+        await _auditLogService.LogUserActionAsync(
+            actorUserId: user.Id,
+            actorUsername: user.Username,
+            action: "PASSWORD_RESET_REQUESTED",
+            targetEntityType: "User",
+            targetEntityId: user.Id);
+    }
+
+    /// <summary>
+    /// Lets a third party (ProfessionalService.CreateByCompanyAsync, when a Company creates
+    /// a brand-new worker) trigger the same "set your password" email that
+    /// CreateByAdminAsync/CreateManagerAsync send for themselves — the new account has no
+    /// session yet, so this is the only way for that person to ever set a real password.
+    /// </summary>
+    public async Task SendPasswordSetupEmailAsync(int userId)
+    {
+        var user = await _userRepository.GetByIdAsync(userId)
+            ?? throw new NotFoundException($"User with id {userId} was not found.");
+
+        await SendPasswordSetupLinkAsync(user, isNewAccount: true);
+    }
+
+    // Shared by ForgotPasswordAsync (isNewAccount: false — "someone requested a reset") and
+    // every account-creation-by-a-third-party path (isNewAccount: true — "welcome, pick a
+    // password"). Both reuse the exact same PasswordResetToken + ResetPassword link, since a
+    // freshly created account has no session to use SetPasswordAsync with (that one is only
+    // for an already-authenticated Google/Facebook signup completing its first real password).
+    private async Task SendPasswordSetupLinkAsync(User user, bool isNewAccount)
+    {
         var rawToken = SecureTokenHelper.GenerateToken();
 
         await _passwordResetTokenRepository.AddAsync(new PasswordResetToken
@@ -542,22 +640,23 @@ public class UserService : IUserService
             ?? throw new InvalidOperationException("WebApp:BaseUrl is not configured in appsettings.");
         var resetLink = $"{webAppBaseUrl}/Account/ResetPassword?token={Uri.EscapeDataString(rawToken)}";
 
+        var subject = isNewAccount ? "Welcome to Uberworks — set your password" : "Reset your Uberworks password";
+        var intro = isNewAccount
+            ? $"<p>Hi {user.FirstName},</p><p>An account was just created for you on Uberworks.</p>"
+            : $"<p>Hi {user.FirstName},</p><p>Someone (hopefully you) requested to reset your Uberworks password.</p>";
+        var actionText = isNewAccount ? "Click here to set your password" : "Click here to choose a new password";
+        var footer = isNewAccount
+            ? string.Empty
+            : "<p>If you didn't request this, you can safely ignore this email — your password won't change.</p>";
+
         await _emailSender.SendAsync(
             user.Email,
-            "Reset your Uberworks password",
+            subject,
             $"""
-             <p>Hi {user.FirstName},</p>
-             <p>Someone (hopefully you) requested to reset your Uberworks password.</p>
-             <p><a href="{resetLink}">Click here to choose a new password</a>. This link expires in 1 hour and can only be used once.</p>
-             <p>If you didn't request this, you can safely ignore this email — your password won't change.</p>
+             {intro}
+             <p><a href="{resetLink}">{actionText}</a>. This link expires in 1 hour and can only be used once.</p>
+             {footer}
              """);
-
-        await _auditLogService.LogUserActionAsync(
-            actorUserId: user.Id,
-            actorUsername: user.Username,
-            action: "PASSWORD_RESET_REQUESTED",
-            targetEntityType: "User",
-            targetEntityId: user.Id);
     }
 
     public async Task ResetPasswordAsync(ResetPasswordRequest request)

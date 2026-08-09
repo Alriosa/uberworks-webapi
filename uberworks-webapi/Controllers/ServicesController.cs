@@ -1,7 +1,9 @@
 // =====================================================================================
 // FILE SUMMARY
 // What it does: Exposes the HTTP endpoints for the "Work Post" (create, list open ones,
-//               list mine, view detail). GetById is the only one that can be called without
+//               list mine, view detail). GetMineAsProfessional backs the Professional
+//               dashboard's "Trabajos Realizados" panel — every job this professional has
+//               been accepted/in-progress/completed on. GetById is the only one that can be called without
 //               being logged in (that's why it has no [Authorize]) — the exact address's
 //               privacy is decided internally by IServiceService based on
 //               _currentUserService.UserId (which can be null here if no one is logged in).
@@ -55,6 +57,16 @@ public class ServicesController : ControllerBase
     {
         var clientId = _currentUserService.UserId!.Value;
         var result = await _serviceService.GetMyServicesAsync(clientId);
+        return Ok(result);
+    }
+
+    /// <summary>Backs the Professional dashboard's "Trabajos Realizados" panel.</summary>
+    [HttpGet("mine-as-professional")]
+    [Authorize(Roles = nameof(UserRole.Professional))]
+    public async Task<IActionResult> GetMineAsProfessional()
+    {
+        var userId = _currentUserService.UserId!.Value;
+        var result = await _serviceService.GetMyCompletedJobsAsProfessionalAsync(userId);
         return Ok(result);
     }
 

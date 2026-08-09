@@ -2,7 +2,9 @@
 // FILE SUMMARY
 // What it does: Mirrors uberworks-webapi's Models/DTOs/Requests/CompanyCreateManagerRequest.cs
 //               — the body POST /api/users/company-create-manager expects. Backs the
-//               Company/Manager dashboard's "Crear Manager" form.
+//               Company dashboard's "Crear Manager" form (Company-only — see
+//               Views/Dashboard/Company.cshtml). No Password field — the new Manager gets a
+//               "set your password" email instead.
 // Entities connected: None — this project has no database entities, only API contracts
 // Tables related: None
 // =====================================================================================
@@ -15,5 +17,4 @@ public class CompanyCreateManagerRequest
     public string LastName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string? Phone { get; set; }
-    public string Password { get; set; } = string.Empty;
 }

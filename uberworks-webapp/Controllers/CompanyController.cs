@@ -59,14 +59,13 @@ public class CompanyController : Controller
                 LastName = model.LastName,
                 Email = model.Email,
                 Phone = model.Phone,
-                Password = model.Password,
                 Description = model.Description,
                 Experience = model.Experience,
                 Availability = model.Availability,
                 Location = model.Location
             });
 
-            TempData["SuccessMessage"] = $"Worker '{model.Username}' was created successfully.";
+            TempData["SuccessMessage"] = $"Worker '{model.Username}' was created. We've emailed them a link to set their password.";
             return RedirectToAction(nameof(MyWorkers));
         }
         catch (ApiException ex)

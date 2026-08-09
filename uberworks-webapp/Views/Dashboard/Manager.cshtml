@@ -10,8 +10,10 @@
                  (just the list + accept/decline/pending tally, no create form). Model.CompanyName
                  comes from GET /api/users/my-company (a Manager isn't itself the company, so
                  it can't just show its own name like Company.cshtml does).
-                 "Ver Todos mis Profesionales" (invite by contact / remove) and "Crear Manager"
-                 (linked to the SAME company) work identically to Company.cshtml.
+                 "Ver Todos mis Profesionales" (invite by contact / remove) works identically
+                 to Company.cshtml. "Crear Manager" is deliberately NOT here — per explicit
+                 request, a Manager must never be able to create another Manager (only the
+                 Company itself can); see Company.cshtml for that card/modal.
    Entities connected: None — this project has no database entities
    Tables related: None — Model.Workers/Model.Events reach TBL_PROFESSIONALS/TBL_EVENTS only
                    indirectly, through the API
@@ -52,7 +54,7 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
             <button onclick="openModal('eventsModal')" class="glass-card text-left rounded-3xl border border-slate-200 p-6 relative overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
                 <div class="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-emerald-50"></div>
@@ -78,18 +80,6 @@
                 <h3 class="relative text-xl font-black text-slate-900 mb-1">Ver Todos mis Profesionales</h3>
                 <p class="relative text-sm text-slate-500 mb-4 max-w-md">Invita profesionales existentes por teléfono, correo o username, o quítalos del equipo.</p>
                 <span class="relative text-blue-600 font-bold text-sm inline-flex items-center gap-1.5">Gestionar Equipo <i class="fa-solid fa-arrow-right text-xs"></i></span>
-            </button>
-
-            <button onclick="openModal('createManagerModal')" class="glass-card text-left rounded-3xl border border-slate-200 p-6 relative overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
-                <div class="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-amber-50"></div>
-                <div class="relative flex items-start justify-between mb-6">
-                    <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl">
-                        <i class="fa-solid fa-user-plus"></i>
-                    </div>
-                </div>
-                <h3 class="relative text-xl font-black text-slate-900 mb-1">Crear Manager</h3>
-                <p class="relative text-sm text-slate-500 mb-4 max-w-md">Registra otro administrador para la misma empresa.</p>
-                <span class="relative text-amber-600 font-bold text-sm inline-flex items-center gap-1.5">Crear Manager <i class="fa-solid fa-arrow-right text-xs"></i></span>
             </button>
 
         </div>
@@ -213,50 +203,6 @@
                 </table>
             }
         </div>
-    </div>
-</div>
-
-@* ===== Create Manager modal — identical to Company.cshtml ===== *@
-<div id="createManagerModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
-    <div class="glass-card w-full max-w-md rounded-3xl border border-slate-200 shadow-2xl relative transform scale-95 transition-transform duration-300 p-6 sm:p-8" id="createManagerModalBox">
-        <button type="button" onclick="closeModal('createManagerModal')" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
-            <i class="fa-solid fa-xmark"></i>
-        </button>
-        <h3 class="text-xl font-black text-slate-900 mb-1">Crear Manager</h3>
-        <p class="text-sm text-slate-500 mb-6">Quedará enlazado a @Model.CompanyName.</p>
-        <form asp-action="CreateManager" method="post" class="space-y-3">
-            @Html.AntiForgeryToken()
-            <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Username</label>
-                <input type="text" name="username" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Nombre</label>
-                    <input type="text" name="firstName" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Apellido</label>
-                    <input type="text" name="lastName" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
-                </div>
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Email</label>
-                <input type="email" name="email" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Teléfono</label>
-                <input type="text" name="phone" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Contraseña</label>
-                <input type="password" name="password" required minlength="8" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
-            </div>
-            <div class="flex items-center justify-end gap-3 pt-2">
-                <button type="button" onclick="closeModal('createManagerModal')" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors">Cancelar</button>
-                <button type="submit" class="btn-alive relative overflow-hidden bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-colors">Crear Manager</button>
-            </div>
-        </form>
     </div>
 </div>
 

@@ -1,0 +1,106 @@
+@* =====================================================================================
+   FILE SUMMARY
+   What it does: The Client dashboard's real "Contactar con Soporte" self-service view, per
+                 explicit request ("debe crearse una vista que va a tener título, la
+                 información como texto, como un cuadro de texto, y va a tener para ingresar
+                 imágenes. Va a tener, si está asociado o no un caso y se agrega el número de
+                 caso"). Own page (not a modal), same reasoning as EventInvitations.cshtml/
+                 Finances.cshtml. The "¿Es sobre un trabajo en particular?" dropdown is
+                 populated from Model.MyServices (the client's own request history, same data
+                 the "Histórico de Trabajos" modal on Client.cshtml uses) so the case is tied
+                 to a REAL job id, not a number typed blind — matches the explicit requirement
+                 that every job have an id Support can look up. Posts to
+                 DashboardController.ContactSupport, which forwards to the ALREADY-EXISTING
+                 (as of this feature) POST /api/reports/contact-support — a real Report gets
+                 filed, landing in the Support dashboard's "en vivo" bucket just like any other.
+   Entities connected: None — this project has no database entities
+   Tables related: None — Model reaches TBL_REPORTS/TBL_SERVICES only indirectly, through the API
+   ===================================================================================== *@
+@model uberworks_webapp.Models.ViewModels.ContactSupportViewModel
+@{
+    ViewData["Title"] = "Contactar con Soporte";
+    Layout = "_LandingLayout";
+}
+
+<partial name="_LandingHeader" />
+
+<main class="relative min-h-screen bg-slate-50 pt-28 pb-8 px-4 sm:px-6 lg:px-8 z-10">
+    <div class="max-w-2xl mx-auto space-y-6">
+
+        <div class="glass-card rounded-3xl border border-slate-200 p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-headset"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black text-slate-900">Contactar con Soporte</h1>
+                    <p class="text-sm text-slate-500 mt-0.5">¿Tienes un problema? Cuéntanos qué pasó.</p>
+                </div>
+            </div>
+            <a asp-controller="Dashboard" asp-action="LandingPage" class="btn-alive relative overflow-hidden inline-flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-colors self-start sm:self-auto">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>Atrás — Volver al Panel</span>
+            </a>
+        </div>
+
+        <div class="glass-card rounded-3xl border border-slate-200 p-6 sm:p-8">
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="rounded-xl bg-red-50 border border-red-100 text-red-700 text-sm px-4 py-3 mb-5">
+                    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <p>@error.ErrorMessage</p>
+                    }
+                </div>
+            }
+
+            <form asp-controller="Dashboard" asp-action="ContactSupport" method="post" enctype="multipart/form-data" class="space-y-4">
+                @Html.AntiForgeryToken()
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Título</label>
+                    <input type="text" name="Title" value="@Model.Title" required maxlength="200"
+                           placeholder="Ej: El profesional nunca llegó"
+                           class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">¿Es sobre un trabajo en particular? (opcional)</label>
+                    <select name="ServiceId" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+                        <option value="">No está asociado a un trabajo específico</option>
+                        @foreach (var service in Model.MyServices)
+                        {
+                            <option value="@service.Id" selected="@(Model.ServiceId == service.Id)">
+                                #@service.Id — @service.WorkTypeName (@service.RequestDate.ToString("dd/MM/yyyy"))
+                            </option>
+                        }
+                    </select>
+                    <p class="text-[11px] text-slate-400 mt-1">Si tu problema es sobre un trabajo específico, elígelo aquí — Soporte lo verá asociado a tu caso.</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Cuéntanos qué pasó</label>
+                    <textarea name="Description" rows="6" required
+                              placeholder="Describe tu problema con el mayor detalle posible..."
+                              class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none">@Model.Description</textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Adjuntar una imagen (opcional)</label>
+                    <input type="file" name="Image" accept=".jpg,.jpeg,.png,.webp"
+                           class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-bold" />
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-2">
+                    <a asp-controller="Dashboard" asp-action="LandingPage" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors">Cancelar</a>
+                    <button type="submit" class="btn-alive relative overflow-hidden bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-colors">
+                        <i class="fa-solid fa-paper-plane mr-1"></i> Enviar a Soporte
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</main>
+
+<partial name="_LandingFooter" />

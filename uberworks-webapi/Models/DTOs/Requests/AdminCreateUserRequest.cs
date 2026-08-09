@@ -10,7 +10,11 @@
 //               account-creation pyramid documented on UserRole.cs), not by this DTO. It's
 //               a "transport" class (DTO = Data Transfer Object) — never saved directly to
 //               the database; UserService.CreateByAdminAsync reads it and builds a User.cs
-//               from this data (plus the hashed password).
+//               from this data. No Password field on purpose — nobody but the new account's
+//               real owner should ever know their own password, so
+//               UserService.CreateByAdminAsync creates the account with a random, unknown
+//               one (IsPasswordSet=false) and emails a "set your password" link instead
+//               (see UserService.SendPasswordSetupLinkAsync).
 // Entities connected: User.cs (UserService.CreateByAdminAsync converts this into a User)
 // Tables related: None directly — only reaches TBL_USERS after passing through UserService.cs
 // =====================================================================================
@@ -25,6 +29,5 @@ public class AdminCreateUserRequest
     public string LastName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string? Phone { get; set; }
-    public string Password { get; set; } = string.Empty;
     public UserRole Role { get; set; }
 }

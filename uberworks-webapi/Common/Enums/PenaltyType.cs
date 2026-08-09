@@ -1,9 +1,10 @@
 // =====================================================================================
 // FILE SUMMARY
 // What it does: Defines the type of penalty that can be applied to a user (temporary or
-//               permanent). Exists from the original diagram; the Penalty.cs entity doesn't
-//               have a Repository/Service/Controller built yet.
-// Entities connected: Penalty.cs (pending implementation)
+//               permanent). See PenaltyService.CreateAsync for how Permanent penalties get a
+//               far-future EndDate sentinel instead of a real null, since
+//               TBL_PENALTIES.CL_END_DATE is NOT NULL.
+// Entities connected: Penalty.cs
 // Tables related: TBL_PENALTIES.CL_TYPE
 // =====================================================================================
 namespace uberworks_webapi.Common.Enums;

@@ -4,7 +4,11 @@
 //               model binding and validation attributes. Controllers/AdminController.cs maps
 //               this into an ApiContracts.AdminCreateUserRequest before calling the API.
 //               Unlike RegisterViewModel.cs, Role here also offers Admin — MasterAdmin still
-//               never appears (there's only ever one, seeded on API startup).
+//               never appears (there's only ever one, seeded on API startup). No
+//               Password/ConfirmPassword fields — nobody but the new account's real owner
+//               should ever know their own password, so the API creates the account and
+//               emails them a "set your password" link instead (see
+//               AdminController.CreateUser's success message).
 // Entities connected: None — this project has no database entities
 // Tables related: None
 // =====================================================================================
@@ -33,16 +37,6 @@ public class AdminCreateUserViewModel
 
     [Phone(ErrorMessage = "Enter a valid phone number.")]
     public string? Phone { get; set; }
-
-    [Required(ErrorMessage = "Password is required.")]
-    [DataType(DataType.Password)]
-    [StringLength(100, MinimumLength = 8, ErrorMessage = "Password must be at least 8 characters long.")]
-    public string Password { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Please confirm your password.")]
-    [DataType(DataType.Password)]
-    [Compare(nameof(Password), ErrorMessage = "Passwords do not match.")]
-    public string ConfirmPassword { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Select an account type.")]
     public UserRole Role { get; set; } = UserRole.Client;

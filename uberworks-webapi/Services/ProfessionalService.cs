@@ -34,6 +34,7 @@ public class ProfessionalService : IProfessionalService
     private readonly IUserRepository _userRepository;
     private readonly IAuditLogService _auditLogService;
     private readonly IServiceProfessionalRepository _serviceProfessionalRepository;
+    private readonly IUserService _userService;
 
     // Capped to 3 per the "trabajos que puede realizar" section design — see
     // GetAcceptedWorkTypesAsync below.
@@ -43,12 +44,14 @@ public class ProfessionalService : IProfessionalService
         IProfessionalRepository professionalRepository,
         IUserRepository userRepository,
         IAuditLogService auditLogService,
-        IServiceProfessionalRepository serviceProfessionalRepository)
+        IServiceProfessionalRepository serviceProfessionalRepository,
+        IUserService userService)
     {
         _professionalRepository = professionalRepository;
         _userRepository = userRepository;
         _auditLogService = auditLogService;
         _serviceProfessionalRepository = serviceProfessionalRepository;
+        _userService = userService;
     }
 
     public async Task<ProfessionalResponse> CreateAsync(int userId, CreateProfessionalRequest request)
@@ -134,6 +137,11 @@ public class ProfessionalService : IProfessionalService
             throw new ConflictException($"The username '{request.Username}' is already taken.");
         }
 
+        // No password comes from the Company creating this worker — same rule as
+        // UserService.CreateByAdminAsync/CreateManagerAsync — a random, unknown hash goes
+        // in and the new worker gets a real "set your password" email instead.
+        var randomPassword = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
+
         var user = new User
         {
             Username = request.Username,
@@ -141,11 +149,13 @@ public class ProfessionalService : IProfessionalService
             LastName = request.LastName,
             Email = request.Email,
             Phone = request.Phone,
-            PasswordHash = PasswordHasher.Hash(request.Password),
-            Role = UserRole.Professional
+            PasswordHash = PasswordHasher.Hash(randomPassword),
+            Role = UserRole.Professional,
+            IsPasswordSet = false
         };
 
         await _userRepository.AddAsync(user);
+        await _userService.SendPasswordSetupEmailAsync(user.Id);
 
         var professional = new Professional
         {

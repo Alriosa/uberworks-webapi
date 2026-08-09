@@ -11,14 +11,18 @@
 //               its real average rating AND the real list of open Work Posts (GET
 //               /api/services/open — not filtered by skill/category yet, since Professional.cs
 //               has no WorkTypes relationship in the schema), a Client sees its real request
-//               history (GET /api/services/mine) and its real profile data, a MasterAdmin sees
-//               the real, full user directory (GET /api/users) — everyone else gets a welcome
-//               + quick links to what they can actually do. Everything without a real backing
-//               entity yet (Payment/Penalty-based numbers on the Professional dashboard, the
-//               MasterAdmin dashboard's "Trabajos"/"Reportes" panels) stays decorative — see
-//               each view's own FILE SUMMARY for exactly what's real vs. mock.
+//               history (GET /api/services/mine) and its real profile data, a MasterAdmin
+//               renders the SAME Admin.cshtml view as Role=Admin (see the UserRole.MasterAdmin
+//               case below and AdminDashboardViewModel.IsMasterAdmin) — full CRUD parity plus
+//               one extra "Finanzas" card — everyone else gets a welcome + quick links to what
+//               they can actually do. Everything without a real backing entity yet
+//               (Payment/Penalty-based numbers on the Professional dashboard) stays
+//               decorative — see each view's own FILE SUMMARY for exactly what's real vs. mock.
 //               UpdateProfile backs the Client dashboard's "Editar mi perfil" modal — posts
 //               here, which forwards to PUT /api/users/{id} via IUsersApiClient.UpdateAsync.
+//               ClientServiceProfessional is a small JSON (not view) endpoint the Client
+//               dashboard's job-detail modal calls on demand to find out which professional
+//               (if any) was accepted for one of the client's own Services.
 //               Finances() is MasterAdmin-only — its own page (Views/Dashboard/Finances.cshtml)
 //               for the "Finanzas" card, with still-decorative daily/monthly earnings charts
 //               (no Payment system exists yet).
@@ -50,6 +54,9 @@ public class DashboardController : Controller
     private readonly IServicesApiClient _servicesApiClient;
     private readonly IReportsApiClient _reportsApiClient;
     private readonly IEventsApiClient _eventsApiClient;
+    private readonly IServiceProfessionalsApiClient _serviceProfessionalsApiClient;
+    private readonly IPenaltiesApiClient _penaltiesApiClient;
+    private readonly IChatsApiClient _chatsApiClient;
     private readonly IConfiguration _configuration;
 
     public DashboardController(
@@ -58,6 +65,9 @@ public class DashboardController : Controller
         IServicesApiClient servicesApiClient,
         IReportsApiClient reportsApiClient,
         IEventsApiClient eventsApiClient,
+        IServiceProfessionalsApiClient serviceProfessionalsApiClient,
+        IPenaltiesApiClient penaltiesApiClient,
+        IChatsApiClient chatsApiClient,
         IConfiguration configuration)
     {
         _reportsApiClient = reportsApiClient;
@@ -66,6 +76,9 @@ public class DashboardController : Controller
         _servicesApiClient = servicesApiClient;
         _configuration = configuration;
         _eventsApiClient = eventsApiClient;
+        _serviceProfessionalsApiClient = serviceProfessionalsApiClient;
+        _penaltiesApiClient = penaltiesApiClient;
+        _chatsApiClient = chatsApiClient;
     }
 
     public async Task<IActionResult> LandingPage()
@@ -82,11 +95,15 @@ public class DashboardController : Controller
             case UserRole.Professional:
                 var professional = await _professionalsApiClient.GetByUserIdAsync(userId);
                 var openJobOffers = await _servicesApiClient.GetOpenAsync();
+                var myPenalties = await _penaltiesApiClient.GetMineAsync(accessToken);
+                var myCompletedJobs = await _servicesApiClient.GetMineAsProfessionalAsync(accessToken);
                 return View("Professional", new ProfessionalDashboardViewModel
                 {
                     DisplayName = displayName,
                     AverageRating = professional.AverageRating,
-                    OpenJobOffers = openJobOffers
+                    OpenJobOffers = openJobOffers,
+                    Penalties = myPenalties,
+                    CompletedJobs = myCompletedJobs
                 });
 
             case UserRole.Company:
@@ -130,8 +147,21 @@ public class DashboardController : Controller
                 return View("Support", new SupportDashboardViewModel { DisplayName = displayName, Reports = supportReports });
 
             case UserRole.MasterAdmin:
-                var allUsers = await _usersApiClient.GetAllUsersAsync(accessToken);
-                return View("MasterAdmin", new MasterAdminDashboardViewModel { DisplayName = displayName, Users = allUsers });
+                // MasterAdmin gets the exact same real-CRUD dashboard as Admin (see
+                // AdminDashboardViewModel.IsMasterAdmin) plus the one extra "Finanzas" card —
+                // full parity was an explicit requirement ("el master admin tiene que ser
+                // capaz de hacer todo lo que los demás pueden hacer").
+                var masterAdminUsers = await _usersApiClient.GetAllUsersAsync(accessToken);
+                var masterAdminServices = await _servicesApiClient.GetAllForAdminAsync(accessToken);
+                var masterAdminReports = await _reportsApiClient.GetAllAsync(accessToken);
+                return View("Admin", new AdminDashboardViewModel
+                {
+                    DisplayName = displayName,
+                    Users = masterAdminUsers,
+                    Services = masterAdminServices,
+                    Reports = masterAdminReports,
+                    IsMasterAdmin = true
+                });
 
             default:
                 var myServices = await _servicesApiClient.GetMineAsync(accessToken);
@@ -194,23 +224,169 @@ public class DashboardController : Controller
         return RedirectToAction(nameof(LandingPage));
     }
 
-    // ===== Admin dashboard's "Ver Todos los Usuarios" CRUD panel =====
-
-    /// <summary>Only FirstName/LastName/Phone are editable — same as UpdateProfile above.</summary>
-    [HttpPost]
-    [Authorize(Roles = "MasterAdmin,Admin")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> UpdateUserAdmin(int id, string firstName, string lastName, string? phone)
+    /// <summary>
+    /// Backs the Client dashboard's "Histórico de Trabajos" detail modal — "quién lo hizo"
+    /// (which professional was accepted, if any) isn't on ServiceResponse itself (a Service
+    /// can have many competing proposals; only one gets Accepted), so this looks it up
+    /// on-demand via GET /api/services/{serviceId}/proposals, which is Client-only and
+    /// already checks that the caller owns the Service. Returns JSON instead of a view since
+    /// it's called from JS (fetch) only when the client opens a specific job's detail, not
+    /// eagerly for every row in the history table.
+    /// </summary>
+    [HttpGet]
+    [Authorize(Roles = "Client")]
+    public async Task<IActionResult> ClientServiceProfessional(int serviceId)
     {
         var accessToken = User.FindFirst("access_token")!.Value;
 
         try
         {
-            await _usersApiClient.UpdateAsync(accessToken, id, new UpdateUserRequest
+            var proposals = await _serviceProfessionalsApiClient.GetProposalsAsync(accessToken, serviceId);
+            var accepted = proposals.FirstOrDefault(p => p.Status == ServiceProfessionalStatus.Accepted);
+
+            if (accepted is null)
             {
+                return Json(new { found = false });
+            }
+
+            return Json(new
+            {
+                found = true,
+                name = $"{accepted.ProfessionalFirstName} {accepted.ProfessionalLastName}",
+                rating = accepted.ProfessionalAverageRating,
+                negotiatedPrice = accepted.NegotiatedPrice
+            });
+        }
+        catch (ApiException)
+        {
+            // A Service the client doesn't own, or one with no proposals table entry yet —
+            // either way, the detail modal just shows "sin profesional asignado".
+            return Json(new { found = false });
+        }
+    }
+
+    /// <summary>
+    /// The Client dashboard's real "Contactar con Soporte" view (own page, not a modal — the
+    /// same reasoning as EventInvitations/Finances) — per explicit request. GET loads the
+    /// client's own service history so the case-picker dropdown shows real job ids, not a
+    /// blind text field.
+    /// </summary>
+    [Authorize(Roles = "Client")]
+    public async Task<IActionResult> ContactSupport()
+    {
+        var accessToken = User.FindFirst("access_token")!.Value;
+        var myServices = await _servicesApiClient.GetMineAsync(accessToken);
+        return View(new ContactSupportViewModel { MyServices = myServices });
+    }
+
+    [HttpPost]
+    [Authorize(Roles = "Client")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ContactSupport(ContactSupportViewModel model)
+    {
+        var accessToken = User.FindFirst("access_token")!.Value;
+
+        if (!ModelState.IsValid)
+        {
+            model.MyServices = await _servicesApiClient.GetMineAsync(accessToken);
+            return View(model);
+        }
+
+        try
+        {
+            await _reportsApiClient.ContactSupportAsync(
+                accessToken,
+                model.Title,
+                model.Description,
+                model.ServiceId,
+                model.Image is null ? null : new List<IFormFile> { model.Image });
+
+            TempData["EditProfileSuccess"] = "Tu caso fue enviado a Soporte. Te contactaremos pronto.";
+            return RedirectToAction(nameof(LandingPage));
+        }
+        catch (ApiException ex)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
+            model.MyServices = await _servicesApiClient.GetMineAsync(accessToken);
+            return View(model);
+        }
+    }
+
+    /// <summary>
+    /// The real conversation view between a Client and the Professional accepted on their
+    /// Service — "iniciar chat con la persona cliente, para hablar sobre el trabajo", per
+    /// explicit request. Reachable from both the Professional dashboard's "Trabajos
+    /// Realizados" detail and the Client dashboard's "Histórico de Trabajos" detail — either
+    /// party can open it once a proposal has been accepted (see
+    /// IChatService.ResolvePartiesAsync on the API side, which is what actually enforces this
+    /// — the [Authorize(Roles=...)] here only checks the caller is A Client or Professional,
+    /// not that they're one of THESE TWO specific people).
+    /// </summary>
+    [Authorize(Roles = "Client,Professional")]
+    public async Task<IActionResult> Chat(int serviceId)
+    {
+        var accessToken = User.FindFirst("access_token")!.Value;
+        var role = Enum.Parse<UserRole>(User.FindFirstValue(ClaimTypes.Role)!);
+
+        try
+        {
+            var messages = await _chatsApiClient.GetConversationAsync(accessToken, serviceId);
+            return View(new ChatViewModel { ServiceId = serviceId, Messages = messages, ViewerRole = role });
+        }
+        catch (ApiException ex)
+        {
+            TempData["EditProfileError"] = ex.Message;
+            return RedirectToAction(nameof(LandingPage));
+        }
+    }
+
+    [HttpPost]
+    [Authorize(Roles = "Client,Professional")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SendChatMessage(int serviceId, string message)
+    {
+        var accessToken = User.FindFirst("access_token")!.Value;
+
+        if (!string.IsNullOrWhiteSpace(message))
+        {
+            try
+            {
+                await _chatsApiClient.SendMessageAsync(accessToken, serviceId, message);
+            }
+            catch (ApiException ex)
+            {
+                TempData["EditProfileError"] = ex.Message;
+            }
+        }
+
+        return RedirectToAction(nameof(Chat), new { serviceId });
+    }
+
+    // ===== Admin dashboard's "Ver Todos los Usuarios" CRUD panel =====
+
+    /// <summary>
+    /// Every field is editable here (Username/Email/Role/Status included) — per explicit
+    /// request ("editarlo absolutamente todo"). Calls the dedicated admin-update endpoint,
+    /// not the self-service one UpdateProfile above uses.
+    /// </summary>
+    [HttpPost]
+    [Authorize(Roles = "MasterAdmin,Admin")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateUserAdmin(int id, string username, string firstName, string lastName, string email, string? phone, UserRole role, UserStatus status)
+    {
+        var accessToken = User.FindFirst("access_token")!.Value;
+
+        try
+        {
+            await _usersApiClient.AdminUpdateAsync(accessToken, id, new AdminUpdateUserRequest
+            {
+                Username = username,
                 FirstName = firstName,
                 LastName = lastName,
-                Phone = phone
+                Email = email,
+                Phone = phone,
+                Role = role,
+                Status = status
             });
 
             TempData["AdminActionSuccess"] = "The user was updated.";
@@ -466,12 +642,13 @@ public class DashboardController : Controller
         return RedirectToAction(nameof(LandingPage));
     }
 
-    // ===== Company/Manager dashboard's "Crear Manager" button =====
+    // ===== Company dashboard's "Crear Manager" button (Company-only — a Manager must never
+    // be able to create another Manager, per explicit request) =====
 
     [HttpPost]
-    [Authorize(Roles = "Company,Manager")]
+    [Authorize(Roles = "Company")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> CreateManager(string username, string firstName, string lastName, string email, string? phone, string password)
+    public async Task<IActionResult> CreateManager(string username, string firstName, string lastName, string email, string? phone)
     {
         var accessToken = User.FindFirst("access_token")!.Value;
 
@@ -483,11 +660,10 @@ public class DashboardController : Controller
                 FirstName = firstName,
                 LastName = lastName,
                 Email = email,
-                Phone = phone,
-                Password = password
+                Phone = phone
             });
 
-            TempData["CompanyActionSuccess"] = $"Manager '{username}' was created.";
+            TempData["CompanyActionSuccess"] = $"Manager '{username}' was created. We've emailed them a link to set their password.";
         }
         catch (ApiException ex)
         {
@@ -528,6 +704,38 @@ public class DashboardController : Controller
         }
 
         return RedirectToAction(nameof(EventInvitations));
+    }
+
+    /// <summary>
+    /// Backs the Professional dashboard's job-offer detail modal — "un cuadro especial donde
+    /// el profesional dictará el monto del por el cual haría ese trabajo", per explicit
+    /// request. Calls the ALREADY-EXISTING POST /api/services/{serviceId}/proposals (no new
+    /// API work was needed for this — see ServiceProfessionalsController.cs on the API side).
+    /// negotiatedPrice is optional (a professional can propose to negotiate arrival first and
+    /// name a price later), but estimatedArrivalMinutes is always required by the API.
+    /// </summary>
+    [HttpPost]
+    [Authorize(Roles = "Professional")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateProposal(int serviceId, decimal? negotiatedPrice, int estimatedArrivalMinutes)
+    {
+        var accessToken = User.FindFirst("access_token")!.Value;
+
+        try
+        {
+            await _serviceProfessionalsApiClient.CreateProposalAsync(accessToken, serviceId, new CreateServiceProfessionalRequest
+            {
+                NegotiatedPrice = negotiatedPrice,
+                EstimatedArrivalMinutes = estimatedArrivalMinutes
+            });
+            TempData["EditProfileSuccess"] = "Your proposal was sent to the client.";
+        }
+        catch (ApiException ex)
+        {
+            TempData["EditProfileError"] = ex.Message;
+        }
+
+        return RedirectToAction(nameof(LandingPage));
     }
 
     // ===== Support dashboard =====
