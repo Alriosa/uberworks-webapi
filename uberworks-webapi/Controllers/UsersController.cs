@@ -1,9 +1,11 @@
 // =====================================================================================
 // FILE SUMMARY
-// What it does: Exposes the HTTP endpoints for registration, login, lookup, and update of
-//               users. The Controller only receives/validates shape and delegates all real
-//               logic to IUserService — it never decides business rules or touches the
-//               database. GetById/Update require [Authorize] and pass the caller's identity
+// What it does: Exposes the HTTP endpoints for registration, login, lookup, listing, and
+//               update of users. The Controller only receives/validates shape and delegates
+//               all real logic to IUserService — it never decides business rules or touches
+//               the database. GetAll requires [Authorize(Roles = "MasterAdmin,Admin,Manager")]
+//               and returns every user's full (non-sensitive) attributes — no per-row
+//               ownership check, unlike GetById below. GetById/Update require [Authorize] and pass the caller's identity
 //               down to the Service, which enforces that only the profile owner or an
 //               Admin/MasterAdmin can view/edit it (see UserService.EnsureSelfOrAdmin) —
 //               this is what stops anyone from scraping every user's email/phone by id.
@@ -12,6 +14,9 @@
 //               action even runs — and which roles the caller can actually create from
 //               there is enforced by UserService.CreateByAdminAsync's account-creation
 //               pyramid (see UserRole.cs), not by this Controller.
+//               Delete requires [Authorize(Roles = "MasterAdmin,Admin")] and is a SOFT
+//               delete (Status=Deleted, see UserService.DeleteAsync/UserStatus.cs) — backs
+//               the Admin dashboard's user CRUD panel.
 //               ExternalLogin backs Google AND Facebook sign-in and is guarded by
 //               [RequireInternalSecret] instead of [Authorize], since the caller doesn't have
 //               a JWT yet. SetPassword DOES require [Authorize] — it's for someone who
@@ -118,6 +123,42 @@ public class UsersController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
+    /// <summary>
+    /// Company dashboard's "Crear Manager" button — also usable by an existing Manager
+    /// (linked to the SAME company, see UserService.CreateManagerAsync).
+    /// </summary>
+    [HttpPost("company-create-manager")]
+    [Authorize(Roles = "Company,Manager")]
+    public async Task<IActionResult> CreateManager([FromBody] CompanyCreateManagerRequest request)
+    {
+        var callerUserId = _currentUserService.UserId!.Value;
+        var callerRole = _currentUserService.Role!.Value;
+        var result = await _userService.CreateManagerAsync(callerUserId, callerRole, request);
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+    }
+
+    /// <summary>Manager dashboard's "nombre de la empresa" display.</summary>
+    [HttpGet("my-company")]
+    [Authorize(Roles = "Manager")]
+    public async Task<IActionResult> GetMyCompany()
+    {
+        var managerUserId = _currentUserService.UserId!.Value;
+        var result = await _userService.GetMyCompanyAsync(managerUserId);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// The full user directory — every account, every non-sensitive attribute. Backs the
+    /// WebApp's MasterAdmin dashboard "Ver Todos los Usuarios" panel.
+    /// </summary>
+    [HttpGet]
+    [Authorize(Roles = "MasterAdmin,Admin,Manager")]
+    public async Task<IActionResult> GetAll()
+    {
+        var result = await _userService.GetAllForAdminAsync();
+        return Ok(result);
+    }
+
     /// <summary>Only the profile owner or an Admin/MasterAdmin can view the full record.</summary>
     [HttpGet("{id:int}")]
     [Authorize]
@@ -139,5 +180,20 @@ public class UsersController : ControllerBase
         var callerRole = _currentUserService.Role!.Value;
         var result = await _userService.UpdateAsync(id, callerId, callerUsername, callerRole, request);
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Soft-deletes a user (see UserService.DeleteAsync — sets Status=Deleted, not a real
+    /// SQL DELETE). Backs the WebApp's Admin dashboard "Ver Todos los Usuarios" CRUD panel.
+    /// </summary>
+    [HttpDelete("{id:int}")]
+    [Authorize(Roles = "MasterAdmin,Admin")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var callerId = _currentUserService.UserId!.Value;
+        var callerUsername = _currentUserService.Username!;
+        var callerRole = _currentUserService.Role!.Value;
+        await _userService.DeleteAsync(id, callerId, callerUsername, callerRole);
+        return NoContent();
     }
 }

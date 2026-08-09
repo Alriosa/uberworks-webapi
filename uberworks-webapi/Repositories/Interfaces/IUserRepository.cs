@@ -16,6 +16,11 @@ public interface IUserRepository
 {
     Task<User?> GetByIdAsync(int id);
     Task<User?> GetByEmailAsync(string email);
+
+    /// <summary>Matches on email, username, OR phone — see ProfessionalService's "link existing worker" flow.</summary>
+    Task<User?> FindByContactAsync(string contact);
+
+    Task<IReadOnlyList<User>> GetAllAsync();
     Task<bool> ExistsByEmailAsync(string email);
     Task<bool> ExistsByUsernameAsync(string username);
     Task AddAsync(User user);

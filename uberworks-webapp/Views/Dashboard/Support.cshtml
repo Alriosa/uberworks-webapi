@@ -1,0 +1,98 @@
+@* =====================================================================================
+   FILE SUMMARY
+   What it does: Support's dashboard — the landing page after login for Role=Support (see
+                 DashboardController.LandingPage). "Lo primero que te recibe es una sección
+                 de reportes en vivo, reportes terminados, reportes en espera/no resueltos",
+                 per explicit request: 3 REAL buckets built by filtering Model.Reports (from
+                 GET /api/reports) by ReportStatus in Razor — Open="en vivo", Pending="en
+                 espera/no resueltos", Resolved="terminados". Cancelled reports are excluded
+                 from all 3 (see ReportStatus.cs). Clicking any report card navigates to its
+                 own page, Views/Dashboard/SupportReportDetail.cshtml, per explicit request
+                 ("cuando haces click en uno de ellos te abre una vista").
+   Entities connected: None — this project has no database entities
+   Tables related: None — Model.Reports reaches TBL_REPORTS only indirectly, through the API
+   ===================================================================================== *@
+@model uberworks_webapp.Models.ViewModels.SupportDashboardViewModel
+@using uberworks_webapp.Models.ApiContracts
+@{
+    ViewData["Title"] = "Panel de Soporte";
+    Layout = "_LandingLayout";
+
+    var liveReports = Model.Reports.Where(r => r.Status == ReportStatus.Open).ToList();
+    var pendingReports = Model.Reports.Where(r => r.Status == ReportStatus.Pending).ToList();
+    var resolvedReports = Model.Reports.Where(r => r.Status == ReportStatus.Resolved).ToList();
+}
+
+<partial name="_LandingHeader" />
+
+<main class="relative min-h-screen bg-slate-50 pt-28 pb-8 px-4 sm:px-6 lg:px-8 z-10">
+    <div class="max-w-6xl mx-auto space-y-6">
+
+        <div class="glass-card rounded-3xl border border-slate-200 p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-red-600 text-white flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-headset"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black text-slate-900">Panel de Soporte</h1>
+                    <p class="text-sm text-slate-500 mt-0.5">Hola, @Model.DisplayName — @Model.Reports.Count.ToString("N0") reportes en el sistema</p>
+                </div>
+            </div>
+            <div class="flex flex-col gap-2 self-start sm:self-auto">
+                <button onclick="location.reload()" class="btn-alive relative overflow-hidden inline-flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-colors">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>Actualizar</span>
+                </button>
+                <form asp-controller="Account" asp-action="Logout" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn-alive relative overflow-hidden w-full inline-flex items-center justify-center gap-2 bg-slate-900 text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-slate-800 transition-colors">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                        <span>Log out</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+            @{
+                async Task RenderColumn(string title, string icon, string colorClasses, List<ReportResponse> reports)
+                {
+                    <div class="glass-card rounded-3xl border border-slate-200 p-5">
+                        <div class="flex items-center gap-2 mb-4">
+                            <div class="w-9 h-9 rounded-xl @colorClasses flex items-center justify-center text-sm">
+                                <i class="@icon"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-sm font-black text-slate-900">@title</h2>
+                                <p class="text-[11px] text-slate-500">@reports.Count.ToString("N0") reportes</p>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            @if (reports.Count == 0)
+                            {
+                                <p class="text-xs text-slate-400 text-center py-6">Nada aquí.</p>
+                            }
+                            else
+                            {
+                                foreach (var report in reports)
+                                {
+                                    <a asp-action="SupportReportDetail" asp-route-id="@report.Id" class="block rounded-2xl border border-slate-200 p-3 hover:bg-slate-50/70 hover:border-brand-500/40 transition-colors">
+                                        <p class="text-xs font-black text-slate-900">#@report.Id — @report.Title</p>
+                                        <p class="text-[11px] text-slate-500 mt-0.5">@report.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                                    </a>
+                                }
+                            }
+                        </div>
+                    </div>
+                }
+                await RenderColumn("En Vivo", "fa-solid fa-bolt", "bg-red-100 text-red-600", liveReports);
+                await RenderColumn("En Espera / No Resueltos", "fa-solid fa-hourglass-half", "bg-amber-100 text-amber-600", pendingReports);
+                await RenderColumn("Terminados", "fa-solid fa-check-double", "bg-emerald-100 text-emerald-600", resolvedReports);
+            }
+
+        </div>
+    </div>
+</main>
+
+<partial name="_LandingFooter" />

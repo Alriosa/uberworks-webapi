@@ -34,6 +34,15 @@ public class Professional
     public decimal AverageRating { get; set; }
 
     /// <summary>
+    /// Relative URL to the professional's profile photo (e.g. "/uploads/professional-photos/
+    /// 7-3f2c1e.jpg"), set via POST /api/professionals/{id}/photo. Null until they upload one.
+    /// Stored on local disk under wwwroot/uploads/professional-photos for now — see
+    /// ProfessionalsController.UploadPhoto's FILE SUMMARY for the plan to move this to
+    /// external storage later.
+    /// </summary>
+    public string? PhotoUrl { get; set; }
+
+    /// <summary>
     /// Optional FK to the User (Role=Company) that created this worker. Null for
     /// Professionals not managed by any company.
     /// </summary>

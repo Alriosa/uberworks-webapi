@@ -1,9 +1,10 @@
 // =====================================================================================
 // FILE SUMMARY
-// What it does: Exposes the "suggest a service" contact form endpoint. No [Authorize] on
-//               purpose — anyone visiting the public site (logged in or not) can submit
-//               this. Binds via [FromForm] instead of the usual [FromBody] because the
-//               request includes a file (ServiceSuggestionRequest.Attachment), which needs
+// What it does: Exposes the "suggest a service" contact form endpoint AND the general
+//               "Contáctanos" page's message endpoint (linked from the site footer). Neither
+//               has [Authorize] — anyone visiting the public site (logged in or not) can
+//               submit either. Both bind via [FromForm] instead of the usual [FromBody]
+//               because each request includes an optional file, which needs
 //               multipart/form-data, not JSON.
 // Entities connected: None — this project has no database entities
 // Tables related: None
@@ -30,5 +31,13 @@ public class ContactController : ControllerBase
     {
         await _contactService.SuggestServiceAsync(request);
         return Ok(new { message = "Thanks! We've received your suggestion." });
+    }
+
+    /// <summary>The general "Contáctanos" page (footer link) — no [Authorize], same as SuggestService above.</summary>
+    [HttpPost("message")]
+    public async Task<IActionResult> SendMessage([FromForm] ContactUsRequest request)
+    {
+        await _contactService.SendContactMessageAsync(request);
+        return Ok(new { message = "Thanks! We've received your message." });
     }
 }

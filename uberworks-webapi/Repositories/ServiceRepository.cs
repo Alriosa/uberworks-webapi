@@ -123,6 +123,17 @@ public class ServiceRepository : IServiceRepository
         return results.ToList();
     }
 
+    public async Task<IReadOnlyList<Service>> GetAllAsync()
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        var results = await connection.QueryAsync<ServiceRow, WorkType, Service>(
+            $"{SelectWithWorkTypeJoin} ORDER BY s.CL_REQUEST_DATE DESC",
+            MapRow,
+            splitOn: "Id");
+
+        return results.ToList();
+    }
+
     public async Task<IReadOnlyList<Service>> GetByClientIdAsync(int clientId)
     {
         using var connection = _connectionFactory.CreateConnection();

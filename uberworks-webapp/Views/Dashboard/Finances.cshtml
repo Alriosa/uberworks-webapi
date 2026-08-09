@@ -1,0 +1,210 @@
+@* =====================================================================================
+   FILE SUMMARY
+   What it does: Standalone "Finanzas" page for the MasterAdmin dashboard (linked from the
+                 "Finanzas" big card on Views/Dashboard/MasterAdmin.cshtml) — a real page with
+                 its own URL and its own "Atrás" back button, NOT a modal, per explicit
+                 request (a chart-heavy view didn't belong trapped in the dashboard's modal
+                 layer). Same Spanish-language exception and _LandingLayout.cshtml Tailwind
+                 reuse as MasterAdmin.cshtml. Renders two charts via Chart.js (loaded from
+                 CDN, the one external script on this page) — daily earnings for the last 14
+                 days and monthly earnings for the last 12 months. ALL of the numbers here are
+                 decorative/mock, generated inline in the <script> block below: there is no
+                 real Payment/earnings system in the app yet (Service requests are still
+                 decorative everywhere else too — see LandingPage.cshtml). Swap the two arrays
+                 in the script for real numbers once a real payments/earnings source exists.
+   Entities connected: None — this project has no database entities
+   Tables related: None
+                 The "Ingresos por Trabajos" chart ranks every service category (same 24
+                 categories as wwwroot/js/service-catalog.js) by decorative/mock revenue, to
+                 answer "which job types actually generate the most money" — once real Job/
+                 Service-with-Payment data exists, the categoryRevenue array should be
+                 replaced with a real per-category revenue aggregation from that source.
+   ===================================================================================== *@
+@{
+    ViewData["Title"] = "Finanzas - Panel de Master Admin";
+    Layout = "_LandingLayout";
+}
+
+<partial name="_LandingHeader" />
+
+<main class="relative min-h-screen bg-slate-50 pt-28 pb-8 px-4 sm:px-6 lg:px-8 z-10">
+    <div class="max-w-6xl mx-auto space-y-6">
+
+        <a asp-controller="Dashboard" asp-action="LandingPage" class="btn-alive relative overflow-hidden inline-flex items-center gap-2 bg-white border border-slate-200 text-slate-700 font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-colors">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Atrás — Volver al Panel de Admin</span>
+        </a>
+
+        <div class="glass-card rounded-3xl border border-slate-200 p-6 flex items-center gap-4">
+            <div class="w-14 h-14 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-chart-column"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-black text-slate-900">Finanzas</h1>
+                <p class="text-sm text-slate-500 mt-0.5">Ganancias por día y por mes — datos de muestra, todavía no existe un sistema real de pagos</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div class="glass-card rounded-2xl border border-slate-200 p-4">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Ingresos Hoy</p>
+                <p class="text-2xl font-black text-slate-900 mt-1">$1,450.00</p>
+            </div>
+            <div class="glass-card rounded-2xl border border-slate-200 p-4">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Últimos 14 Días</p>
+                <p class="text-2xl font-black text-slate-900 mt-1" id="last14Total">—</p>
+            </div>
+            <div class="glass-card rounded-2xl border border-slate-200 p-4">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Este Mes</p>
+                <p class="text-2xl font-black text-slate-900 mt-1" id="thisMonthTotal">—</p>
+            </div>
+        </div>
+
+        <div class="glass-card rounded-3xl border border-slate-200 p-6">
+            <h2 class="text-sm font-black text-slate-900 mb-4">Ganancias por Día (últimos 14 días)</h2>
+            <div class="h-72">
+                <canvas id="dailyChart"></canvas>
+            </div>
+        </div>
+
+        <div class="glass-card rounded-3xl border border-slate-200 p-6">
+            <h2 class="text-sm font-black text-slate-900 mb-4">Ganancias por Mes (últimos 12 meses)</h2>
+            <div class="h-72">
+                <canvas id="monthlyChart"></canvas>
+            </div>
+        </div>
+
+        <div class="glass-card rounded-3xl border border-slate-200 p-6">
+            <h2 class="text-sm font-black text-slate-900 mb-1">Ingresos por Trabajos</h2>
+            <p class="text-xs text-slate-500 mb-4">Qué categorías de servicio generan más ganancias — ordenado de mayor a menor.</p>
+            <div class="h-[520px]">
+                <canvas id="jobRevenueChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<partial name="_LandingFooter" />
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+    // ===== Decorative/mock data — see FILE SUMMARY. Replace with a real API call once a
+    // Payment/earnings source exists. =====
+    const dailyLabels = [];
+    const dailyValues = [];
+    const today = new Date();
+    for (let i = 13; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        dailyLabels.push(d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }));
+        // Deterministic-looking pseudo-random wave so the chart doesn't look perfectly flat.
+        const base = 900 + Math.sin(i / 2) * 250;
+        dailyValues.push(Math.round(base + (i * 37 % 213)));
+    }
+
+    const monthlyLabels = [];
+    const monthlyValues = [];
+    for (let i = 11; i >= 0; i--) {
+        const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+        monthlyLabels.push(d.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' }));
+        const base = 22000 + Math.sin(i / 3) * 6000;
+        monthlyValues.push(Math.round(base + (i * 613 % 4200)));
+    }
+
+    // Same 24 categories as wwwroot/js/service-catalog.js — revenue per category is mock
+    // data, deterministically generated (not random) so the ranking stays stable on reload.
+    // Sorted descending so the top-earning job types show first.
+    const categoryRevenue = [
+        { name: 'Mudanzas', revenue: 18420 },
+        { name: 'Limpieza', revenue: 16980 },
+        { name: 'Reajustes y Remodelaciones', revenue: 15650 },
+        { name: 'Electricista', revenue: 14200 },
+        { name: 'Fontanero', revenue: 13100 },
+        { name: 'Staff para Eventos', revenue: 11840 },
+        { name: 'Carpintería', revenue: 10990 },
+        { name: 'Cocineros', revenue: 9870 },
+        { name: 'Jardinería', revenue: 8930 },
+        { name: 'Coordinador del Evento', revenue: 8420 },
+        { name: 'Bartenders', revenue: 7660 },
+        { name: 'Mesero', revenue: 7120 },
+        { name: 'DJ', revenue: 6580 },
+        { name: 'Pet Grooming', revenue: 5940 },
+        { name: 'Fumigación', revenue: 5410 },
+        { name: 'Pasea Perros', revenue: 4870 },
+        { name: 'Tapicería', revenue: 4390 },
+        { name: 'Ayudante de Cocina', revenue: 3980 },
+        { name: 'Promotoras', revenue: 3540 },
+        { name: 'Hotel de Perros', revenue: 3120 },
+        { name: 'Animadores Infantiles', revenue: 2760 },
+        { name: 'Ayudante de Caja', revenue: 2310 },
+        { name: 'Lava Platos', revenue: 1890 },
+        { name: 'Asistente de Ventas', revenue: 1450 }
+    ].sort((a, b) => b.revenue - a.revenue);
+
+    document.getElementById('last14Total').innerText =
+        '$' + dailyValues.reduce((a, b) => a + b, 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+    document.getElementById('thisMonthTotal').innerText =
+        '$' + monthlyValues[monthlyValues.length - 1].toLocaleString('en-US', { minimumFractionDigits: 2 });
+
+    const sharedOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { beginAtZero: true, ticks: { callback: (v) => '$' + v.toLocaleString('en-US') } }
+        }
+    };
+
+    new Chart(document.getElementById('dailyChart'), {
+        type: 'bar',
+        data: {
+            labels: dailyLabels,
+            datasets: [{
+                label: 'Ganancias',
+                data: dailyValues,
+                backgroundColor: 'rgba(147, 51, 234, 0.55)',
+                borderRadius: 6
+            }]
+        },
+        options: sharedOptions
+    });
+
+    new Chart(document.getElementById('monthlyChart'), {
+        type: 'bar',
+        data: {
+            labels: monthlyLabels,
+            datasets: [{
+                label: 'Ganancias',
+                data: monthlyValues,
+                backgroundColor: 'rgba(16, 185, 129, 0.55)',
+                borderRadius: 6
+            }]
+        },
+        options: sharedOptions
+    });
+
+    // Horizontal ranking (indexAxis: 'y') — reads top-to-bottom as highest-to-lowest earner,
+    // which is the natural way to scan a "which job type makes the most money" ranking.
+    new Chart(document.getElementById('jobRevenueChart'), {
+        type: 'bar',
+        data: {
+            labels: categoryRevenue.map(c => c.name),
+            datasets: [{
+                label: 'Ingresos',
+                data: categoryRevenue.map(c => c.revenue),
+                backgroundColor: 'rgba(37, 99, 235, 0.55)',
+                borderRadius: 6
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { beginAtZero: true, ticks: { callback: (v) => '$' + v.toLocaleString('en-US') } }
+            }
+        }
+    });
+</script>

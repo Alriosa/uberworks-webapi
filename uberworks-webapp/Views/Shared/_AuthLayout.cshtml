@@ -1,9 +1,13 @@
 @* =====================================================================================
    FILE SUMMARY
-   What it does: Dedicated layout for Login.cshtml/Register.cshtml — a full-screen dark
-                 background with a centered card, no site navbar/footer. Kept separate from
-                 _Layout.cshtml (used by every other page) because auth screens intentionally
-                 look nothing like the rest of the app, matching a design the user provided.
+   What it does: Dedicated layout for Login.cshtml/Register.cshtml/ForgotPassword.cshtml/
+                 ResetPassword.cshtml — a full-screen dark background with a centered card.
+                 Kept separate from _Layout.cshtml (used by every other page) because auth
+                 screens intentionally look nothing like the rest of the app, matching a
+                 design the user provided. Still carries a minimal ServiGo brand link (top,
+                 goes to the public LandingPage) and a one-line footer so these screens are
+                 never a dead end / unbranded island — every page in the app needs some way
+                 back to the landing page, per explicit requirement.
    Entities connected: None
    Tables related: None
    ===================================================================================== *@
@@ -16,9 +20,15 @@
     <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
 </head>
 <body class="auth-body">
+    <a asp-controller="Home" asp-action="LandingPage" class="auth-brand">
+        Servi<span>Go</span>
+    </a>
     <main class="auth-shell">
         @RenderBody()
     </main>
+    <footer class="auth-footer">
+        &copy; @DateTime.Now.Year ServiGo
+    </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

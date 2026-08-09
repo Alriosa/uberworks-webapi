@@ -13,4 +13,7 @@ namespace uberworks_webapi.Services.Interfaces;
 public interface IContactService
 {
     Task SuggestServiceAsync(ServiceSuggestionRequest request);
+
+    /// <summary>Backs the general "Contáctanos" page (footer link), distinct from SuggestServiceAsync.</summary>
+    Task SendContactMessageAsync(ContactUsRequest request);
 }

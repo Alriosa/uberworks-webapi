@@ -1,0 +1,381 @@
+@* =====================================================================================
+   FILE SUMMARY
+   What it does: Professional's own profile page (renamed from Professional.cshtml). Same
+                 Spanish-language exception and _LandingLayout.cshtml Tailwind/glass-card
+                 reuse as the rest of the dashboards (MasterAdmin/Finances/Professional
+                 dashboard/Client dashboard), per explicit request to keep every page in this
+                 area visually consistent. "Atrás" (back to the dashboard) and "Log out" cover
+                 navigation continuity — this page has no natural "next" step, so it must
+                 never be a dead end. "Editar"/"Guardar" opens a modal (openModal/closeModal
+                 from wwwroot/js/landing-common.js) that posts to
+                 ProfileController.UpdateProfessionalProfile, which updates BOTH the User
+                 (FirstName/LastName/Phone) and the Professional (Description/Experience/
+                 Availability/Location) in one call. "Trabajos que Puede Realizar" is REAL
+                 data (Model.AcceptedWorkTypes, from GET /api/professionals/
+                 my-accepted-worktypes) — up to 3 WorkType categories this professional has
+                 actually had a proposal accepted/completed on (see
+                 IServiceProfessionalRepository.GetAcceptedWorkTypeNamesAsync on the API side)
+                 — NOT an editable free-text list, since it reflects real job history rather
+                 than a self-declared skill set. The profile photo (Model.PhotoUrl) is REAL —
+                 uploaded via a SEPARATE small multipart form (own enctype, can't share the
+                 main JSON-ish "Editar" modal) that posts to
+                 ProfileController.UploadProfessionalPhoto → POST /api/professionals/{id}/photo,
+                 which saves the file to LOCAL disk for now (see that endpoint's FILE SUMMARY
+                 on the API side for the plan to move to external storage later) — Model.PhotoUrl
+                 is only a path on the API's own host, so Model.ApiBaseUrl gets prepended to
+                 actually load the image. "Ubicación" in the edit modal is a cascading
+                 País → Provincia → Cantón picker (locationData below is a small STARTER
+                 dataset — 3 countries, a few provinces/cantones each — meant to be replaced
+                 by a real geography source later) instead of a free-text box, joined into one
+                 string largest-to-smallest ("País, Provincia, Cantón") on save, same shape
+                 UpdateProfessionalRequest.Location already expects.
+   Entities connected: None — this project has no database entities
+   Tables related: None — Model.AcceptedWorkTypes reaches TBL_SERVICE_PROFESSIONALS only
+                   indirectly, through the API
+   ===================================================================================== *@
+@model uberworks_webapp.Models.ViewModels.ProfessionalProfileViewModel
+@{
+    ViewData["Title"] = "Mi Perfil";
+    Layout = "_LandingLayout";
+}
+
+<partial name="_LandingHeader" />
+
+<main class="relative min-h-screen bg-slate-50 pt-28 pb-8 px-4 sm:px-6 lg:px-8 z-10">
+    <div class="max-w-4xl mx-auto space-y-6">
+
+        <div class="glass-card rounded-3xl border border-slate-200 p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-brand-500 text-white flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-id-card"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black text-slate-900">Mi Perfil</h1>
+                    <p class="text-sm text-slate-500 mt-0.5">@Model.FirstName @Model.LastName — @@@Model.Username</p>
+                </div>
+            </div>
+            <div class="flex flex-col gap-2 self-start sm:self-auto">
+                <a asp-controller="Dashboard" asp-action="LandingPage" class="btn-alive relative overflow-hidden inline-flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-colors">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>Atrás — Volver al Panel</span>
+                </a>
+                <form asp-controller="Account" asp-action="Logout" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn-alive relative overflow-hidden w-full inline-flex items-center justify-center gap-2 bg-slate-900 text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-slate-800 transition-colors">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                        <span>Log out</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="glass-card rounded-3xl border border-slate-200 p-6 flex flex-col sm:flex-row items-center gap-6">
+            <div class="w-28 h-28 rounded-full overflow-hidden bg-slate-100 border-4 border-white shadow-lg flex items-center justify-center shrink-0">
+                @if (!string.IsNullOrEmpty(Model.PhotoUrl))
+                {
+                    <img src="@(Model.ApiBaseUrl.TrimEnd('/'))@Model.PhotoUrl" alt="Foto de perfil" class="w-full h-full object-cover" />
+                }
+                else
+                {
+                    <i class="fa-solid fa-user text-4xl text-slate-300"></i>
+                }
+            </div>
+            <div class="flex-1 text-center sm:text-left">
+                <h2 class="text-sm font-black text-slate-900 mb-1">Foto de Perfil</h2>
+                <p class="text-xs text-slate-500 mb-3">JPG, PNG o WEBP — máximo 5 MB.</p>
+                <form asp-controller="Profile" asp-action="UploadProfessionalPhoto" method="post" enctype="multipart/form-data" class="flex flex-col sm:flex-row items-center gap-3">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="professionalId" value="@Model.ProfessionalId" />
+                    <input type="file" name="photo" accept=".jpg,.jpeg,.png,.webp" required
+                           class="text-xs text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-brand-50 file:text-brand-600 hover:file:bg-brand-100" />
+                    <button type="submit" class="btn-alive relative overflow-hidden shrink-0 bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors">
+                        <i class="fa-solid fa-upload mr-1.5"></i>
+                        Subir Foto
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="glass-card rounded-3xl border border-slate-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-sm font-black text-slate-900">Información de la Cuenta</h2>
+                <button onclick="openModal('editProfileModal')" class="btn-alive relative overflow-hidden inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs px-4 py-2 rounded-xl transition-colors">
+                    <i class="fa-solid fa-pen"></i>
+                    <span>Editar</span>
+                </button>
+            </div>
+            <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                <div><dt class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Username</dt><dd class="text-slate-900 font-bold">@Model.Username</dd></div>
+                <div><dt class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Email</dt><dd class="text-slate-900">@Model.Email</dd></div>
+                <div><dt class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Nombre</dt><dd class="text-slate-900">@Model.FirstName @Model.LastName</dd></div>
+                <div><dt class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Teléfono</dt><dd class="text-slate-900">@(Model.Phone ?? "—")</dd></div>
+                <div><dt class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Rol</dt><dd class="text-slate-900 font-bold">Professional</dd></div>
+                <div><dt class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Estado</dt><dd><span class="bg-emerald-50 text-emerald-600 text-[11px] font-bold px-2 py-0.5 rounded-full">@Model.Status</span></dd></div>
+                <div><dt class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Miembro desde</dt><dd class="text-slate-900">@Model.RegistrationDate.ToString("dd/MM/yyyy")</dd></div>
+                @if (Model.CompanyUserId is not null)
+                {
+                    <div><dt class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Gestionado por</dt><dd class="text-slate-900">Empresa (Usuario #@Model.CompanyUserId)</dd></div>
+                }
+            </dl>
+        </div>
+
+        <div class="glass-card rounded-3xl border border-slate-200 p-6">
+            <h2 class="text-sm font-black text-slate-900 mb-4">Detalles Profesionales</h2>
+            <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                <div class="sm:col-span-2"><dt class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Descripción</dt><dd class="text-slate-900">@(Model.Description ?? "—")</dd></div>
+                <div><dt class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Experiencia</dt><dd class="text-slate-900">@(Model.Experience ?? "—")</dd></div>
+                <div><dt class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Disponibilidad</dt><dd class="text-slate-900">@(Model.Availability ?? "—")</dd></div>
+                <div><dt class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Ubicación</dt><dd class="text-slate-900">@(Model.Location ?? "—")</dd></div>
+                <div><dt class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Calificación Promedio</dt><dd class="text-slate-900 font-bold">@Model.AverageRating.ToString("0.0") <i class="fa-solid fa-star text-amber-400 text-xs"></i></dd></div>
+            </dl>
+        </div>
+
+        <div class="glass-card rounded-3xl border border-slate-200 p-6">
+            <h2 class="text-sm font-black text-slate-900 mb-1">Trabajos que Has Realizado</h2>
+            <p class="text-xs text-slate-500 mb-4">
+                Categorías reales en las que ya has tenido una propuesta aceptada — máximo 3, ejemplo: Plomería, DJ, Carpintería.
+            </p>
+            @if (Model.AcceptedWorkTypes.Count == 0)
+            {
+                <p class="text-sm text-slate-400 py-4 text-center">Todavía no tienes trabajos aceptados en ninguna categoría.</p>
+            }
+            else
+            {
+                <div class="flex flex-wrap gap-2">
+                    @foreach (var workType in Model.AcceptedWorkTypes)
+                    {
+                        <span class="bg-brand-50 text-brand-700 border border-brand-500/20 text-sm font-bold px-4 py-2 rounded-full flex items-center gap-2">
+                            <i class="fa-solid fa-hammer text-xs"></i>
+                            @workType
+                        </span>
+                    }
+                </div>
+            }
+        </div>
+
+    </div>
+</main>
+
+<partial name="_LandingFooter" />
+
+@* ===== Editar modal — updates BOTH User and Professional fields in one save ===== *@
+<div id="editProfileModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-card w-full max-w-lg max-h-[85vh] rounded-3xl border border-slate-200 shadow-2xl relative transform scale-95 transition-transform duration-300 flex flex-col" id="editProfileModalBox">
+        <button type="button" onclick="closeModal('editProfileModal')" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <div class="p-6 sm:p-8 overflow-y-auto">
+            <h3 class="text-xl font-black text-slate-900 mb-1">Editar Mi Perfil</h3>
+            <p class="text-sm text-slate-500 mb-6">Username y Email no se pueden editar aquí.</p>
+
+            <form asp-controller="Profile" asp-action="UpdateProfessionalProfile" method="post" class="space-y-4">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="professionalId" value="@Model.ProfessionalId" />
+
+                <div>
+                    <label asp-for="EditProfile.FirstName" class="block text-xs font-bold text-slate-700 mb-1">Nombre</label>
+                    <input asp-for="EditProfile.FirstName" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                </div>
+
+                <div>
+                    <label asp-for="EditProfile.LastName" class="block text-xs font-bold text-slate-700 mb-1">Apellido</label>
+                    <input asp-for="EditProfile.LastName" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                </div>
+
+                <div>
+                    <label asp-for="EditProfile.Phone" class="block text-xs font-bold text-slate-700 mb-1">Teléfono</label>
+                    <input asp-for="EditProfile.Phone" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                </div>
+
+                <div>
+                    <label asp-for="EditProfile.Description" class="block text-xs font-bold text-slate-700 mb-1">Descripción</label>
+                    <textarea asp-for="EditProfile.Description" rows="3" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"></textarea>
+                </div>
+
+                <div>
+                    <label asp-for="EditProfile.Experience" class="block text-xs font-bold text-slate-700 mb-1">Experiencia</label>
+                    <input asp-for="EditProfile.Experience" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Disponibilidad</label>
+                    <p class="text-[11px] text-slate-400 mb-2">Actual: @(Model.EditProfile.Availability is { Length: > 0 } ? Model.EditProfile.Availability : "sin definir")</p>
+                    <p class="text-[11px] font-bold text-slate-500 mb-1">Días</p>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mb-3" id="availabilityDays">
+                        @{
+                            var days = new[] { "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo" };
+                        }
+                        @foreach (var day in days)
+                        {
+                            <label class="flex items-center gap-1.5 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 cursor-pointer">
+                                <input type="checkbox" class="availability-day" value="@day" onchange="updateAvailabilityHiddenField()" />
+                                @day
+                            </label>
+                        }
+                    </div>
+                    <p class="text-[11px] font-bold text-slate-500 mb-1">Horario</p>
+                    <div class="grid grid-cols-3 gap-1.5">
+                        @{
+                            var periods = new[] { "Mañana", "Tarde", "Noche" };
+                        }
+                        @foreach (var period in periods)
+                        {
+                            <label class="flex items-center gap-1.5 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 cursor-pointer">
+                                <input type="checkbox" class="availability-period" value="@period" onchange="updateAvailabilityHiddenField()" />
+                                @period
+                            </label>
+                        }
+                    </div>
+                    <input type="hidden" id="availabilityHidden" asp-for="EditProfile.Availability" />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Ubicación</label>
+                    <p class="text-[11px] text-slate-400 mb-2">Actual: @(Model.EditProfile.Location is { Length: > 0 } ? Model.EditProfile.Location : "sin definir")</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <select id="editCountry" onchange="onLocationCountryChange()" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+                            <option value="">País</option>
+                        </select>
+                        <select id="editProvince" onchange="onLocationProvinceChange()" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+                            <option value="">Provincia</option>
+                        </select>
+                        <select id="editCanton" onchange="updateLocationHiddenField()" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+                            <option value="">Cantón</option>
+                        </select>
+                    </div>
+                    <input type="hidden" id="editLocationHidden" asp-for="EditProfile.Location" />
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeModal('editProfileModal')" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn-alive relative overflow-hidden bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-colors">
+                        Guardar Información
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="fixed bottom-6 right-6 z-50 glass-card px-5 py-4 rounded-2xl border border-brand-500/50 text-slate-900 shadow-2xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300">
+    <div class="w-8 h-8 rounded-xl bg-brand-500 text-white flex items-center justify-center font-bold">
+        <i class="fa-solid fa-check"></i>
+    </div>
+    <div>
+        <p id="toastMessage" class="text-xs font-bold text-slate-900"></p>
+        <p class="text-[10px] text-slate-500">Notificación de ServiGo</p>
+    </div>
+</div>
+
+<script src="~/js/landing-common.js" asp-append-version="true"></script>
+<script>
+    // ===== "País → Provincia → Cantón" cascading picker =====
+    // Small STARTER dataset (3 countries, a few provinces/cantones each) — meant to be
+    // replaced by a real geography source later, not a complete world database. See FILE
+    // SUMMARY at the top of this file.
+    const locationData = {
+        'República Dominicana': {
+            'Santo Domingo': ['Santo Domingo Este', 'Santo Domingo Oeste', 'Santo Domingo Norte'],
+            'Santiago': ['Santiago', 'Tamboril'],
+            'La Vega': ['La Vega', 'Jarabacoa']
+        },
+        'Costa Rica': {
+            'San José': ['Escazú', 'Desamparados', 'San José Centro'],
+            'Alajuela': ['San Ramón', 'Grecia', 'Alajuela Centro']
+        },
+        'Ecuador': {
+            'Pichincha': ['Quito', 'Cayambe'],
+            'Guayas': ['Guayaquil', 'Durán']
+        }
+    };
+
+    function fillSelect(select, options, placeholder) {
+        select.innerHTML = `<option value="">${placeholder}</option>`;
+        options.forEach(value => {
+            const opt = document.createElement('option');
+            opt.value = value;
+            opt.textContent = value;
+            select.appendChild(opt);
+        });
+    }
+
+    function onLocationCountryChange() {
+        const country = document.getElementById('editCountry').value;
+        fillSelect(document.getElementById('editProvince'), country ? Object.keys(locationData[country]) : [], 'Provincia');
+        fillSelect(document.getElementById('editCanton'), [], 'Cantón');
+        updateLocationHiddenField();
+    }
+
+    function onLocationProvinceChange() {
+        const country = document.getElementById('editCountry').value;
+        const province = document.getElementById('editProvince').value;
+        const cantons = (country && province) ? locationData[country][province] : [];
+        fillSelect(document.getElementById('editCanton'), cantons, 'Cantón');
+        updateLocationHiddenField();
+    }
+
+    function updateLocationHiddenField() {
+        const country = document.getElementById('editCountry').value;
+        const province = document.getElementById('editProvince').value;
+        const canton = document.getElementById('editCanton').value;
+        // Order: País, Provincia, Cantón — largest-to-smallest, as requested.
+        const parts = [country, province, canton].filter(Boolean);
+        if (parts.length > 0) {
+            document.getElementById('editLocationHidden').value = parts.join(', ');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        fillSelect(document.getElementById('editCountry'), Object.keys(locationData), 'País');
+    });
+
+    // ===== "Disponibilidad" checkbox lists (Días + Horario) → one composed sentence =====
+    // All 7 days checked -> "Todos los días" instead of listing every day.
+    // All 3 periods checked -> "a cualquier hora" instead of listing every period.
+    // Otherwise: "Lunes, Martes y Miércoles en las tardes" style composition.
+    const ALL_DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    const ALL_PERIODS = ['Mañana', 'Tarde', 'Noche'];
+    const PERIOD_PHRASES = { 'Mañana': 'mañanas', 'Tarde': 'tardes', 'Noche': 'noches' };
+
+    function joinWithY(items) {
+        if (items.length <= 1) {
+            return items.join('');
+        }
+        return `${items.slice(0, -1).join(', ')} y ${items[items.length - 1]}`;
+    }
+
+    function updateAvailabilityHiddenField() {
+        const checkedDays = Array.from(document.querySelectorAll('.availability-day:checked')).map(el => el.value);
+        const checkedPeriods = Array.from(document.querySelectorAll('.availability-period:checked')).map(el => el.value);
+
+        if (checkedDays.length === 0 && checkedPeriods.length === 0) {
+            document.getElementById('availabilityHidden').value = '';
+            return;
+        }
+
+        const daysText = checkedDays.length === ALL_DAYS.length
+            ? 'Todos los días'
+            : joinWithY(checkedDays);
+
+        let periodsText = '';
+        if (checkedPeriods.length === ALL_PERIODS.length) {
+            periodsText = 'a cualquier hora';
+        }
+        else if (checkedPeriods.length > 0) {
+            periodsText = `en las ${joinWithY(checkedPeriods.map(p => PERIOD_PHRASES[p]))}`;
+        }
+
+        document.getElementById('availabilityHidden').value = [daysText, periodsText].filter(Boolean).join(' ');
+    }
+
+    @if (TempData["EditProfileSuccess"] is string editProfileSuccess)
+    {
+        <text>document.addEventListener('DOMContentLoaded', () => showToast(@Html.Raw(Json.Serialize(editProfileSuccess))));</text>
+    }
+    @if (TempData["EditProfileError"] is string editProfileError)
+    {
+        <text>document.addEventListener('DOMContentLoaded', () => { showToast(@Html.Raw(Json.Serialize(editProfileError))); openModal('editProfileModal'); });</text>
+    }
+</script>

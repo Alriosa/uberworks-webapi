@@ -1,19 +1,658 @@
+@* =====================================================================================
+   FILE SUMMARY
+   What it does: Admin's dashboard — the landing page after login for Role=Admin (see
+                 DashboardController.LandingPage). Same _LandingLayout.cshtml Tailwind/
+                 glass-card language as MasterAdmin.cshtml, but UNLIKE that page's "Ver Todos
+                 los Trabajos"/"Ver Todos los Reportes" panels (still decorative mockups
+                 there), every one of this page's 3 big CRUD panels is REAL end-to-end:
+                 "Ver Todos los Usuarios" (GET /api/users, edit via PUT /api/users/{id},
+                 soft-delete via DELETE /api/users/{id}), "Ver Todos los Trabajos"
+                 (GET /api/services admin listing, edit/cancel via PUT+DELETE
+                 /api/services/{id} — Create is deliberately NOT here, see
+                 DashboardController.UpdateServiceAdmin's comment for why), and "Ver Todos
+                 los Reportes" (full CRUD against the new Report system — GET/POST/PUT
+                 /api/reports, cancel via POST /api/reports/{id}/cancel). The 4th big card,
+                 "Crear Usuarios", links to the existing Admin/CreateUser page rather than
+                 duplicating a role-creation form here — RoleHierarchy.cs already lists
+                 Manager/Company/Support/Professional/Client as creatable by Admin, so
+                 nothing new was needed there beyond adding Support to that list (see
+                 Common/RoleHierarchy.cs).
+                 Every edit modal is a SINGLE shared modal per panel (editUserModal/
+                 editJobModal/editReportModal), populated via JS reading data-* attributes off
+                 the row's "Editar" button (openEditUserModal(this) etc.) instead of one modal
+                 per row — keeps the DOM small no matter how many rows exist. TempData
+                 ["ReopenModal"] tells the page which modal to re-open after a redirect if an
+                 action failed (see DashboardController's UpdateXAdmin/DeleteXAdmin/
+                 CreateReport/CancelReportAdmin actions).
+                 "Log out" (not "Atrás") is this page's navigation-continuity requirement —
+                 same reasoning as MasterAdmin.cshtml: this dashboard has no natural parent
+                 page.
+   Entities connected: None — this project has no database entities
+   Tables related: None — Model.Users/Services/Reports reach TBL_USERS/TBL_SERVICES/
+                   TBL_REPORTS only indirectly, through the API
+   ===================================================================================== *@
 @model uberworks_webapp.Models.ViewModels.AdminDashboardViewModel
+@using uberworks_webapp.Models.ApiContracts
 @{
-    ViewData["Title"] = "Dashboard";
+    ViewData["Title"] = "Panel de Admin";
+    Layout = "_LandingLayout";
+
+    var openOrPendingReports = Model.Reports.Count(r => r.Status is ReportStatus.Open or ReportStatus.Pending);
 }
 
-<h1>Welcome back, @Model.DisplayName!</h1>
-<p class="text-muted">Here's your Uberworks dashboard.</p>
+<partial name="_LandingHeader" />
 
-<div class="row g-3 mt-2">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Register users</h5>
-                <p class="card-text">Create Manager, Company, Professional, or Client accounts.</p>
-                <a asp-controller="Admin" asp-action="CreateUser" class="btn btn-primary">Register a user</a>
+<main class="relative min-h-screen bg-slate-50 pt-28 pb-8 px-4 sm:px-6 lg:px-8 z-10">
+    <div class="max-w-7xl mx-auto space-y-6">
+
+        <div class="glass-card rounded-3xl border border-slate-200 p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-slate-900 text-white flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-user-tie"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black text-slate-900">Panel de Admin</h1>
+                    <p class="text-sm text-slate-500 mt-0.5">Hola, @Model.DisplayName — gestión de usuarios, trabajos y reportes</p>
+                </div>
             </div>
+            <div class="flex flex-col gap-2 self-start sm:self-auto">
+                <button onclick="location.reload()" class="btn-alive relative overflow-hidden inline-flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-colors">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>Actualizar</span>
+                </button>
+                <form asp-controller="Account" asp-action="Logout" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn-alive relative overflow-hidden w-full inline-flex items-center justify-center gap-2 bg-slate-900 text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-slate-800 transition-colors">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                        <span>Log out</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="glass-card rounded-2xl border border-slate-200 p-4 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Usuarios Totales</p>
+                    <p class="text-lg font-black text-slate-900">@Model.Users.Count.ToString("N0")</p>
+                </div>
+            </div>
+            <div class="glass-card rounded-2xl border border-slate-200 p-4 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                    <i class="fa-solid fa-briefcase"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Trabajos Registrados</p>
+                    <p class="text-lg font-black text-slate-900">@Model.Services.Count.ToString("N0")</p>
+                </div>
+            </div>
+            <div class="glass-card rounded-2xl border border-slate-200 p-4 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Reportes Abiertos</p>
+                    <p class="text-lg font-black text-slate-900">@openOrPendingReports.ToString("N0")</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            <button onclick="openModal('usersModal')" class="glass-card text-left rounded-3xl border border-slate-200 p-6 relative overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
+                <div class="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-blue-50"></div>
+                <div class="relative flex items-start justify-between mb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-users-gear"></i>
+                    </div>
+                    <span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2.5 py-1 rounded-full">@Model.Users.Count.ToString("N0") REGISTRADOS</span>
+                </div>
+                <h3 class="relative text-xl font-black text-slate-900 mb-1">Ver Todos los Usuarios</h3>
+                <p class="relative text-sm text-slate-500 mb-4 max-w-md">Editar datos, revisar rol/estado, y eliminar cuentas.</p>
+                <span class="relative text-blue-600 font-bold text-sm inline-flex items-center gap-1.5">Gestionar Usuarios <i class="fa-solid fa-arrow-right text-xs"></i></span>
+            </button>
+
+            <button onclick="openModal('jobsModal')" class="glass-card text-left rounded-3xl border border-slate-200 p-6 relative overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
+                <div class="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-amber-50"></div>
+                <div class="relative flex items-start justify-between mb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2.5 py-1 rounded-full">@Model.Services.Count.ToString("N0") EN TOTAL</span>
+                </div>
+                <h3 class="relative text-xl font-black text-slate-900 mb-1">Ver Todos los Trabajos</h3>
+                <p class="relative text-sm text-slate-500 mb-4 max-w-md">Editar precio/estado/zona, o cancelar un trabajo publicado.</p>
+                <span class="relative text-amber-600 font-bold text-sm inline-flex items-center gap-1.5">Ver Lista de Trabajos <i class="fa-solid fa-arrow-right text-xs"></i></span>
+            </button>
+
+            <button onclick="openModal('reportsModal')" class="glass-card text-left rounded-3xl border border-slate-200 p-6 relative overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
+                <div class="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-red-50"></div>
+                <div class="relative flex items-start justify-between mb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-flag"></i>
+                    </div>
+                    <span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2.5 py-1 rounded-full">@openOrPendingReports.ToString("N0") ABIERTOS</span>
+                </div>
+                <h3 class="relative text-xl font-black text-slate-900 mb-1">Ver Todos los Reportes</h3>
+                <p class="relative text-sm text-slate-500 mb-4 max-w-md">Crear, editar o cancelar reportes de disputas/incidentes.</p>
+                <span class="relative text-red-600 font-bold text-sm inline-flex items-center gap-1.5">Revisar Incidencias <i class="fa-solid fa-arrow-right text-xs"></i></span>
+            </button>
+
+            <a asp-controller="Admin" asp-action="CreateUser" class="glass-card text-left rounded-3xl border border-slate-200 p-6 relative overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300 block">
+                <div class="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-emerald-50"></div>
+                <div class="relative flex items-start justify-between mb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-user-plus"></i>
+                    </div>
+                    <span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2.5 py-1 rounded-full">MANAGER · COMPANY · SUPPORT</span>
+                </div>
+                <h3 class="relative text-xl font-black text-slate-900 mb-1">Crear Usuarios</h3>
+                <p class="relative text-sm text-slate-500 mb-4 max-w-md">Registrar cuentas de Manager, Company, Support, Professional o Client.</p>
+                <span class="relative text-emerald-600 font-bold text-sm inline-flex items-center gap-1.5">Registrar un Usuario <i class="fa-solid fa-arrow-right text-xs"></i></span>
+            </a>
+
+        </div>
+    </div>
+</main>
+
+<partial name="_LandingFooter" />
+
+@* ===== Users modal — REAL CRUD ===== *@
+<div id="usersModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-card w-full max-w-6xl max-h-[85vh] rounded-3xl border border-slate-200 shadow-2xl relative transform scale-95 transition-transform duration-300 flex flex-col" id="usersModalBox">
+        <div class="flex items-start justify-between p-6 pb-4 border-b border-slate-100">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-users-gear"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-black text-slate-900">Directorio General de Usuarios</h3>
+                    <p class="text-xs text-slate-500">@Model.Users.Count.ToString("N0") usuarios registrados</p>
+                </div>
+            </div>
+            <button onclick="closeModal('usersModal')" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="overflow-auto p-6 pt-4">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left text-[10px] uppercase tracking-wide text-slate-400 border-b border-slate-100">
+                        <th class="py-2 pr-4">ID</th>
+                        <th class="py-2 pr-4">Username</th>
+                        <th class="py-2 pr-4">Nombre</th>
+                        <th class="py-2 pr-4">Email</th>
+                        <th class="py-2 pr-4">Teléfono</th>
+                        <th class="py-2 pr-4">Rol</th>
+                        <th class="py-2 pr-4">Estado</th>
+                        <th class="py-2 pr-4">Registrado</th>
+                        <th class="py-2 pr-4">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model.Users)
+                    {
+                        <tr class="border-b border-slate-50 hover:bg-slate-50/70">
+                            <td class="py-2.5 pr-4 text-slate-500">#@user.Id</td>
+                            <td class="py-2.5 pr-4 font-bold text-slate-900">@user.Username</td>
+                            <td class="py-2.5 pr-4 text-slate-700">@user.FirstName @user.LastName</td>
+                            <td class="py-2.5 pr-4 text-slate-500">@user.Email</td>
+                            <td class="py-2.5 pr-4 text-slate-500">@(user.Phone ?? "—")</td>
+                            <td class="py-2.5 pr-4"><span class="bg-slate-100 text-slate-600 text-[11px] font-bold px-2 py-0.5 rounded-full">@user.Role</span></td>
+                            <td class="py-2.5 pr-4">
+                                @{
+                                    var statusClass = user.Status == UserStatus.Active ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600";
+                                }
+                                <span class="@statusClass text-[11px] font-bold px-2 py-0.5 rounded-full">@user.Status</span>
+                            </td>
+                            <td class="py-2.5 pr-4 text-slate-500">@user.RegistrationDate.ToString("dd/MM/yyyy")</td>
+                            <td class="py-2.5 pr-4">
+                                <div class="flex items-center gap-2">
+                                    <button type="button"
+                                            class="text-blue-600 hover:text-blue-700 text-xs font-bold"
+                                            data-id="@user.Id" data-firstname="@user.FirstName" data-lastname="@user.LastName" data-phone="@user.Phone"
+                                            onclick="openEditUserModal(this)">
+                                        <i class="fa-solid fa-pen"></i> Editar
+                                    </button>
+                                    @if (user.Role != UserRole.MasterAdmin && user.Status != UserStatus.Deleted)
+                                    {
+                                        <form asp-action="DeleteUserAdmin" method="post" onsubmit="return confirm('¿Eliminar a @user.Username? Esta cuenta ya no podrá iniciar sesión.');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@user.Id" />
+                                            <button type="submit" class="text-red-600 hover:text-red-700 text-xs font-bold">
+                                                <i class="fa-solid fa-trash"></i> Eliminar
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
+
+@* ===== Jobs ("Trabajos") modal — REAL CRUD (Read/Update/Delete) ===== *@
+<div id="jobsModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-card w-full max-w-6xl max-h-[85vh] rounded-3xl border border-slate-200 shadow-2xl relative transform scale-95 transition-transform duration-300 flex flex-col" id="jobsModalBox">
+        <div class="flex items-start justify-between p-6 pb-4 border-b border-slate-100">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-list-check"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-black text-slate-900">Listado Central de Trabajos</h3>
+                    <p class="text-xs text-slate-500">@Model.Services.Count.ToString("N0") trabajos registrados, todos los estados</p>
+                </div>
+            </div>
+            <button onclick="closeModal('jobsModal')" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="overflow-auto p-6 pt-4">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left text-[10px] uppercase tracking-wide text-slate-400 border-b border-slate-100">
+                        <th class="py-2 pr-4">ID</th>
+                        <th class="py-2 pr-4">Categoría</th>
+                        <th class="py-2 pr-4">Cliente</th>
+                        <th class="py-2 pr-4">Estado</th>
+                        <th class="py-2 pr-4">Precio</th>
+                        <th class="py-2 pr-4">Zona</th>
+                        <th class="py-2 pr-4">Fecha</th>
+                        <th class="py-2 pr-4">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var job in Model.Services)
+                    {
+                        <tr class="border-b border-slate-50 hover:bg-slate-50/70">
+                            <td class="py-2.5 pr-4 font-bold text-slate-900">#@job.Id</td>
+                            <td class="py-2.5 pr-4 text-slate-700">@job.WorkTypeName</td>
+                            <td class="py-2.5 pr-4 text-slate-500">@job.ClientUsername</td>
+                            <td class="py-2.5 pr-4">
+                                @{
+                                    var jobStatusClass = job.Status switch
+                                    {
+                                        ServiceStatus.Completed => "bg-emerald-50 text-emerald-600",
+                                        ServiceStatus.Accepted => "bg-amber-50 text-amber-600",
+                                        ServiceStatus.Cancelled => "bg-slate-100 text-slate-500",
+                                        _ => "bg-blue-50 text-blue-600"
+                                    };
+                                }
+                                <span class="@jobStatusClass text-[11px] font-bold px-2 py-0.5 rounded-full">@job.Status</span>
+                            </td>
+                            <td class="py-2.5 pr-4 text-slate-900 font-bold">@(job.ProposedPrice is { } price ? price.ToString("C") : "—")</td>
+                            <td class="py-2.5 pr-4 text-slate-500">@job.Zone</td>
+                            <td class="py-2.5 pr-4 text-slate-500">@job.RequestDate.ToString("dd/MM/yyyy")</td>
+                            <td class="py-2.5 pr-4">
+                                <div class="flex items-center gap-2">
+                                    <button type="button"
+                                            class="text-blue-600 hover:text-blue-700 text-xs font-bold"
+                                            data-id="@job.Id" data-description="@job.Description" data-price="@job.ProposedPrice" data-status="@((int)job.Status)" data-zone="@job.Zone"
+                                            onclick="openEditJobModal(this)">
+                                        <i class="fa-solid fa-pen"></i> Editar
+                                    </button>
+                                    @if (job.Status != ServiceStatus.Cancelled)
+                                    {
+                                        <form asp-action="DeleteServiceAdmin" method="post" onsubmit="return confirm('¿Cancelar el trabajo #@job.Id?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@job.Id" />
+                                            <button type="submit" class="text-red-600 hover:text-red-700 text-xs font-bold">
+                                                <i class="fa-solid fa-ban"></i> Cancelar
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@* ===== Reports modal — REAL CRUD (Create/Read/Update/Cancel) ===== *@
+<div id="reportsModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-card w-full max-w-6xl max-h-[85vh] rounded-3xl border border-slate-200 shadow-2xl relative transform scale-95 transition-transform duration-300 flex flex-col" id="reportsModalBox">
+        <div class="flex items-start justify-between p-6 pb-4 border-b border-slate-100">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-flag"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-black text-slate-900">Incidencias y Reportes</h3>
+                    <p class="text-xs text-slate-500">@Model.Reports.Count.ToString("N0") reportes en total</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="openModal('createReportModal')" class="btn-alive relative overflow-hidden bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors">
+                    <i class="fa-solid fa-plus mr-1"></i> Nuevo Reporte
+                </button>
+                <button onclick="closeModal('reportsModal')" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+        <div class="overflow-auto p-6 pt-4">
+            @if (Model.Reports.Count == 0)
+            {
+                <p class="text-sm text-slate-400 py-4 text-center">Todavía no hay reportes.</p>
+            }
+            else
+            {
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-left text-[10px] uppercase tracking-wide text-slate-400 border-b border-slate-100">
+                            <th class="py-2 pr-4">ID</th>
+                            <th class="py-2 pr-4">Título</th>
+                            <th class="py-2 pr-4">Estado</th>
+                            <th class="py-2 pr-4">Cliente</th>
+                            <th class="py-2 pr-4">Profesional</th>
+                            <th class="py-2 pr-4">Trabajo</th>
+                            <th class="py-2 pr-4">Fecha</th>
+                            <th class="py-2 pr-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var report in Model.Reports)
+                        {
+                            <tr class="border-b border-slate-50 hover:bg-slate-50/70">
+                                <td class="py-2.5 pr-4 font-bold text-slate-900">#@report.Id</td>
+                                <td class="py-2.5 pr-4 text-slate-700">@report.Title</td>
+                                <td class="py-2.5 pr-4">
+                                    @{
+                                        var reportStatusClass = report.Status switch
+                                        {
+                                            ReportStatus.Resolved => "bg-emerald-50 text-emerald-600",
+                                            ReportStatus.Pending => "bg-amber-50 text-amber-600",
+                                            ReportStatus.Cancelled => "bg-slate-100 text-slate-500",
+                                            _ => "bg-red-50 text-red-600"
+                                        };
+                                    }
+                                    <span class="@reportStatusClass text-[11px] font-bold px-2 py-0.5 rounded-full">@report.Status</span>
+                                </td>
+                                <td class="py-2.5 pr-4 text-slate-500">@(report.ClientUsername ?? "—")</td>
+                                <td class="py-2.5 pr-4 text-slate-500">@(report.ProfessionalUsername ?? "—")</td>
+                                <td class="py-2.5 pr-4 text-slate-500">@(report.ServiceId is { } sid ? $"#{sid}" : "—")</td>
+                                <td class="py-2.5 pr-4 text-slate-500">@report.CreatedAt.ToString("dd/MM/yyyy")</td>
+                                <td class="py-2.5 pr-4">
+                                    <div class="flex items-center gap-2">
+                                        @if (report.Status != ReportStatus.Cancelled)
+                                        {
+                                            <button type="button"
+                                                    class="text-blue-600 hover:text-blue-700 text-xs font-bold"
+                                                    data-id="@report.Id" data-title="@report.Title" data-description="@report.Description"
+                                                    data-serviceid="@report.ServiceId" data-clientid="@report.ClientUserId" data-professionalid="@report.ProfessionalUserId"
+                                                    data-incidentdate="@(report.IncidentDate?.ToString("yyyy-MM-dd"))"
+                                                    onclick="openEditReportModal(this)">
+                                                <i class="fa-solid fa-pen"></i> Editar
+                                            </button>
+                                            <button type="button" class="text-red-600 hover:text-red-700 text-xs font-bold" data-id="@report.Id" onclick="openCancelReportModal(this)">
+                                                <i class="fa-solid fa-ban"></i> Borrar
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+</div>
+
+@* ===== Edit User modal (shared, populated via JS) ===== *@
+<div id="editUserModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-[60] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-card w-full max-w-md rounded-3xl border border-slate-200 shadow-2xl relative transform scale-95 transition-transform duration-300 p-6 sm:p-8" id="editUserModalBox">
+        <button type="button" onclick="closeModal('editUserModal')" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <h3 class="text-xl font-black text-slate-900 mb-6">Editar Usuario</h3>
+        <form asp-action="UpdateUserAdmin" method="post" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="editUserId" />
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Nombre</label>
+                <input type="text" name="firstName" id="editUserFirstName" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Apellido</label>
+                <input type="text" name="lastName" id="editUserLastName" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Teléfono</label>
+                <input type="text" name="phone" id="editUserPhone" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+            </div>
+            <div class="flex items-center justify-end gap-3 pt-2">
+                <button type="button" onclick="closeModal('editUserModal')" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors">Cancelar</button>
+                <button type="submit" class="btn-alive relative overflow-hidden bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-colors">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@* ===== Edit Job modal (shared, populated via JS) ===== *@
+<div id="editJobModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-[60] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-card w-full max-w-md rounded-3xl border border-slate-200 shadow-2xl relative transform scale-95 transition-transform duration-300 p-6 sm:p-8" id="editJobModalBox">
+        <button type="button" onclick="closeModal('editJobModal')" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <h3 class="text-xl font-black text-slate-900 mb-6">Editar Trabajo</h3>
+        <form asp-action="UpdateServiceAdmin" method="post" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="editJobId" />
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Descripción</label>
+                <textarea name="description" id="editJobDescription" rows="2" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"></textarea>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Precio Propuesto</label>
+                <input type="number" step="0.01" name="proposedPrice" id="editJobPrice" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Estado</label>
+                <select name="status" id="editJobStatus" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+                    <option value="0">Pending</option>
+                    <option value="1">Accepted</option>
+                    <option value="2">Cancelled</option>
+                    <option value="3">Completed</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Zona</label>
+                <input type="text" name="zone" id="editJobZone" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+            </div>
+            <div class="flex items-center justify-end gap-3 pt-2">
+                <button type="button" onclick="closeModal('editJobModal')" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors">Cancelar</button>
+                <button type="submit" class="btn-alive relative overflow-hidden bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-colors">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@* ===== Create Report modal ===== *@
+<div id="createReportModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-[60] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-card w-full max-w-lg max-h-[85vh] rounded-3xl border border-slate-200 shadow-2xl relative transform scale-95 transition-transform duration-300 flex flex-col" id="createReportModalBox">
+        <button type="button" onclick="closeModal('createReportModal')" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <div class="p-6 sm:p-8 overflow-y-auto">
+            <h3 class="text-xl font-black text-slate-900 mb-6">Nuevo Reporte</h3>
+            <form asp-action="CreateReport" method="post" enctype="multipart/form-data" class="space-y-4">
+                @Html.AntiForgeryToken()
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Título</label>
+                    <input type="text" name="title" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Descripción</label>
+                    <textarea name="description" rows="3" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"></textarea>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">ID Trabajo</label>
+                        <input type="number" name="serviceId" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">ID Cliente</label>
+                        <input type="number" name="clientUserId" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">ID Profesional</label>
+                        <input type="number" name="professionalUserId" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                    </div>
+                </div>
+                <p class="text-[11px] text-slate-400 -mt-2">Los IDs son opcionales — llena los que ya conozcas (ver la tabla de Usuarios/Trabajos para consultarlos).</p>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Fecha del Incidente</label>
+                    <input type="date" name="incidentDate" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Imágenes (opcional)</label>
+                    <input type="file" name="images" multiple accept=".jpg,.jpeg,.png,.webp"
+                           class="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-brand-50 file:text-brand-600 hover:file:bg-brand-100" />
+                </div>
+                <div class="flex items-center justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeModal('createReportModal')" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors">Cancelar</button>
+                    <button type="submit" class="btn-alive relative overflow-hidden bg-red-600 hover:bg-red-700 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-colors">Crear Reporte</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* ===== Edit Report modal (shared, populated via JS) ===== *@
+<div id="editReportModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-[60] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-card w-full max-w-lg max-h-[85vh] rounded-3xl border border-slate-200 shadow-2xl relative transform scale-95 transition-transform duration-300 flex flex-col" id="editReportModalBox">
+        <button type="button" onclick="closeModal('editReportModal')" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <div class="p-6 sm:p-8 overflow-y-auto">
+            <h3 class="text-xl font-black text-slate-900 mb-6">Editar Reporte</h3>
+            <form asp-action="UpdateReportAdmin" method="post" class="space-y-4">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="editReportId" />
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Título</label>
+                    <input type="text" name="title" id="editReportTitle" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Descripción</label>
+                    <textarea name="description" id="editReportDescription" rows="3" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"></textarea>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">ID Trabajo</label>
+                        <input type="number" name="serviceId" id="editReportServiceId" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">ID Cliente</label>
+                        <input type="number" name="clientUserId" id="editReportClientId" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">ID Profesional</label>
+                        <input type="number" name="professionalUserId" id="editReportProfessionalId" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Fecha del Incidente</label>
+                    <input type="date" name="incidentDate" id="editReportIncidentDate" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                </div>
+                <div class="flex items-center justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeModal('editReportModal')" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors">Cancelar</button>
+                    <button type="submit" class="btn-alive relative overflow-hidden bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-colors">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* ===== Cancel Report modal (shared) — always requires a reason ===== *@
+<div id="cancelReportModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-[60] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-card w-full max-w-md rounded-3xl border border-slate-200 shadow-2xl relative transform scale-95 transition-transform duration-300 p-6 sm:p-8" id="cancelReportModalBox">
+        <button type="button" onclick="closeModal('cancelReportModal')" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <h3 class="text-xl font-black text-slate-900 mb-1">Borrar Reporte</h3>
+        <p class="text-sm text-slate-500 mb-6">Explica por qué se elimina este reporte.</p>
+        <form asp-action="CancelReportAdmin" method="post" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="cancelReportId" />
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Motivo</label>
+                <textarea name="reason" rows="3" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"></textarea>
+            </div>
+            <div class="flex items-center justify-end gap-3 pt-2">
+                <button type="button" onclick="closeModal('cancelReportModal')" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors">Cancelar</button>
+                <button type="submit" class="btn-alive relative overflow-hidden bg-red-600 hover:bg-red-700 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-colors">Borrar Reporte</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="toast" class="fixed bottom-6 right-6 z-50 glass-card px-5 py-4 rounded-2xl border border-brand-500/50 text-slate-900 shadow-2xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300">
+    <div class="w-8 h-8 rounded-xl bg-brand-500 text-white flex items-center justify-center font-bold">
+        <i class="fa-solid fa-check"></i>
+    </div>
+    <div>
+        <p id="toastMessage" class="text-xs font-bold text-slate-900"></p>
+        <p class="text-[10px] text-slate-500">Notificación de ServiGo</p>
+    </div>
+</div>
+
+<script src="~/js/landing-common.js" asp-append-version="true"></script>
+<script>
+    function openEditUserModal(btn) {
+        document.getElementById('editUserId').value = btn.dataset.id;
+        document.getElementById('editUserFirstName').value = btn.dataset.firstname || '';
+        document.getElementById('editUserLastName').value = btn.dataset.lastname || '';
+        document.getElementById('editUserPhone').value = btn.dataset.phone || '';
+        openModal('editUserModal');
+    }
+
+    function openEditJobModal(btn) {
+        document.getElementById('editJobId').value = btn.dataset.id;
+        document.getElementById('editJobDescription').value = btn.dataset.description || '';
+        document.getElementById('editJobPrice').value = btn.dataset.price || '';
+        document.getElementById('editJobStatus').value = btn.dataset.status;
+        document.getElementById('editJobZone').value = btn.dataset.zone || '';
+        openModal('editJobModal');
+    }
+
+    function openEditReportModal(btn) {
+        document.getElementById('editReportId').value = btn.dataset.id;
+        document.getElementById('editReportTitle').value = btn.dataset.title || '';
+        document.getElementById('editReportDescription').value = btn.dataset.description || '';
+        document.getElementById('editReportServiceId').value = btn.dataset.serviceid || '';
+        document.getElementById('editReportClientId').value = btn.dataset.clientid || '';
+        document.getElementById('editReportProfessionalId').value = btn.dataset.professionalid || '';
+        document.getElementById('editReportIncidentDate').value = btn.dataset.incidentdate || '';
+        openModal('editReportModal');
+    }
+
+    function openCancelReportModal(btn) {
+        document.getElementById('cancelReportId').value = btn.dataset.id;
+        openModal('cancelReportModal');
+    }
+
+    @if (TempData["AdminActionSuccess"] is string adminActionSuccess)
+    {
+        <text>document.addEventListener('DOMContentLoaded', () => showToast(@Html.Raw(Json.Serialize(adminActionSuccess))));</text>
+    }
+    @if (TempData["AdminActionError"] is string adminActionError)
+    {
+        <text>document.addEventListener('DOMContentLoaded', () => showToast(@Html.Raw(Json.Serialize(adminActionError))));</text>
+    }
+    @if (TempData["ReopenModal"] is string reopenModal)
+    {
+        <text>document.addEventListener('DOMContentLoaded', () => openModal(@Html.Raw(Json.Serialize(reopenModal))));</text>
+    }
+</script>

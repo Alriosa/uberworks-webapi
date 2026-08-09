@@ -5,6 +5,9 @@
 //               being logged in (that's why it has no [Authorize]) — the exact address's
 //               privacy is decided internally by IServiceService based on
 //               _currentUserService.UserId (which can be null here if no one is logged in).
+//               GetAllForAdmin/UpdateForAdmin/DeleteForAdmin require
+//               [Authorize(Roles = "MasterAdmin,Admin")] and back the Admin dashboard's job
+//               CRUD panel — DeleteForAdmin is a soft delete (Status=Cancelled).
 // Entities connected: Service.cs (indirectly, via IServiceService)
 // Tables related: TBL_SERVICES (indirectly, through all the layers)
 // =====================================================================================
@@ -64,5 +67,31 @@ public class ServicesController : ControllerBase
     {
         var result = await _serviceService.GetByIdAsync(id, _currentUserService.UserId);
         return Ok(result);
+    }
+
+    /// <summary>Every job, every status, full detail. Backs the Admin dashboard's job CRUD panel.</summary>
+    [HttpGet]
+    [Authorize(Roles = "MasterAdmin,Admin")]
+    public async Task<IActionResult> GetAllForAdmin()
+    {
+        var result = await _serviceService.GetAllForAdminAsync();
+        return Ok(result);
+    }
+
+    [HttpPut("{id:int}")]
+    [Authorize(Roles = "MasterAdmin,Admin")]
+    public async Task<IActionResult> UpdateForAdmin(int id, [FromBody] UpdateServiceAdminRequest request)
+    {
+        var result = await _serviceService.UpdateForAdminAsync(id, request);
+        return Ok(result);
+    }
+
+    /// <summary>Soft delete (Status=Cancelled) — see IServiceService.DeleteForAdminAsync.</summary>
+    [HttpDelete("{id:int}")]
+    [Authorize(Roles = "MasterAdmin,Admin")]
+    public async Task<IActionResult> DeleteForAdmin(int id)
+    {
+        await _serviceService.DeleteForAdminAsync(id);
+        return NoContent();
     }
 }

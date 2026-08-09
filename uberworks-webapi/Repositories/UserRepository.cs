@@ -47,7 +47,8 @@ public class UserRepository : IUserRepository
             CL_STATUS AS Status,
             CL_REGISTRATION_DATE AS RegistrationDate,
             CL_FACEBOOK_ID AS FacebookId,
-            CL_IS_PASSWORD_SET AS IsPasswordSet
+            CL_IS_PASSWORD_SET AS IsPasswordSet,
+            CL_MANAGED_BY_COMPANY_USER_ID AS ManagedByCompanyUserId
         FROM TBL_USERS
         """;
 
@@ -67,6 +68,25 @@ public class UserRepository : IUserRepository
             $"{SelectColumns} WHERE CL_EMAIL = @Email", new { Email = email });
 
         return row?.ToUser();
+    }
+
+    // Powers the Company/Manager dashboard's "invitar profesional" search box — one input,
+    // matched against email/username/phone so the caller doesn't need to know which one they have.
+    public async Task<User?> FindByContactAsync(string contact)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        var row = await connection.QuerySingleOrDefaultAsync<UserRow>(
+            $"{SelectColumns} WHERE CL_EMAIL = @Contact OR CL_USERNAME = @Contact OR CL_PHONE = @Contact", new { Contact = contact });
+
+        return row?.ToUser();
+    }
+
+    public async Task<IReadOnlyList<User>> GetAllAsync()
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        var rows = await connection.QueryAsync<UserRow>($"{SelectColumns} ORDER BY PK_USER_ID");
+
+        return rows.Select(row => row.ToUser()).ToList();
     }
 
     public async Task<bool> ExistsByEmailAsync(string email)
@@ -93,9 +113,9 @@ public class UserRepository : IUserRepository
         // identity PK_USER_ID, and CL_REGISTRATION_DATE's DEFAULT GETDATE()) in the same
         // round trip as the INSERT — no separate "SELECT SCOPE_IDENTITY()" call needed.
         const string sql = """
-            INSERT INTO TBL_USERS (CL_USERNAME, CL_FIRST_NAME, CL_LAST_NAME, CL_EMAIL, CL_PHONE, CL_PASSWORD, CL_ROLE, CL_STATUS, CL_FACEBOOK_ID, CL_IS_PASSWORD_SET)
+            INSERT INTO TBL_USERS (CL_USERNAME, CL_FIRST_NAME, CL_LAST_NAME, CL_EMAIL, CL_PHONE, CL_PASSWORD, CL_ROLE, CL_STATUS, CL_FACEBOOK_ID, CL_IS_PASSWORD_SET, CL_MANAGED_BY_COMPANY_USER_ID)
             OUTPUT INSERTED.PK_USER_ID AS Id, INSERTED.CL_REGISTRATION_DATE AS RegistrationDate
-            VALUES (@Username, @FirstName, @LastName, @Email, @Phone, @PasswordHash, @Role, @Status, @FacebookId, @IsPasswordSet)
+            VALUES (@Username, @FirstName, @LastName, @Email, @Phone, @PasswordHash, @Role, @Status, @FacebookId, @IsPasswordSet, @ManagedByCompanyUserId)
             """;
 
         var generated = await connection.QuerySingleAsync(sql, new
@@ -109,7 +129,8 @@ public class UserRepository : IUserRepository
             Role = UserRoleMapper.ToDb(user.Role),
             Status = UserStatusMapper.ToDb(user.Status),
             user.FacebookId,
-            user.IsPasswordSet
+            user.IsPasswordSet,
+            user.ManagedByCompanyUserId
         });
 
         user.Id = (int)generated.Id;
@@ -131,7 +152,8 @@ public class UserRepository : IUserRepository
                 CL_ROLE = @Role,
                 CL_STATUS = @Status,
                 CL_FACEBOOK_ID = @FacebookId,
-                CL_IS_PASSWORD_SET = @IsPasswordSet
+                CL_IS_PASSWORD_SET = @IsPasswordSet,
+                CL_MANAGED_BY_COMPANY_USER_ID = @ManagedByCompanyUserId
             WHERE PK_USER_ID = @Id
             """;
 
@@ -146,6 +168,7 @@ public class UserRepository : IUserRepository
             user.PasswordHash,
             Role = UserRoleMapper.ToDb(user.Role),
             Status = UserStatusMapper.ToDb(user.Status),
+            user.ManagedByCompanyUserId,
             user.FacebookId,
             user.IsPasswordSet
         });

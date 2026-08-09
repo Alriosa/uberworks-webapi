@@ -29,3 +29,14 @@ obj/
 # Local secrets (in case a .env ever gets used instead of user-secrets).
 .env
 .env.local
+
+# Uploaded professional profile photos (local-disk storage for now — see
+# ProfessionalsController.UploadPhoto's FILE SUMMARY for the plan to move this to external
+# storage later). Keep the folder itself tracked via .gitkeep, not the actual uploaded files.
+uberworks-webapi/wwwroot/uploads/professional-photos/*
+!uberworks-webapi/wwwroot/uploads/professional-photos/.gitkeep
+
+# Uploaded report/dispute images (same local-disk-for-now plan — see
+# ReportsController.Create's FILE SUMMARY).
+uberworks-webapi/wwwroot/uploads/report-images/*
+!uberworks-webapi/wwwroot/uploads/report-images/.gitkeep

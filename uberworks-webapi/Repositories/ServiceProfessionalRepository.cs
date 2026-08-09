@@ -135,6 +135,27 @@ public class ServiceProfessionalRepository : IServiceProfessionalRepository
         return results.FirstOrDefault();
     }
 
+    // Distinct WorkType names this professional has an ACCEPTED, IN PROGRESS, or COMPLETED
+    // proposal on — i.e. real jobs they've actually been hired for, not just bid on. Ordered
+    // by the most recent proposal first, capped to `limit` (see FILE SUMMARY on the interface).
+    public async Task<IReadOnlyList<string>> GetAcceptedWorkTypeNamesAsync(int professionalId, int limit)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        var names = await connection.QueryAsync<string>(
+            """
+            SELECT DISTINCT TOP (@Limit) wt.CL_NAME
+            FROM TBL_SERVICE_PROFESSIONALS sp
+            INNER JOIN TBL_SERVICES s ON s.PK_SERVICE_ID = sp.PK_SERVICE_ID
+            INNER JOIN TBL_WORKTYPES wt ON wt.PK_WORK_TYPE_ID = s.PK_WORK_TYPE_ID
+            WHERE sp.PK_PROFESSIONAL_ID = @ProfessionalId
+              AND sp.CL_STATUS IN ('ACCEPTED', 'IN PROGRESS', 'COMPLETED')
+            ORDER BY wt.CL_NAME
+            """,
+            new { ProfessionalId = professionalId, Limit = limit });
+
+        return names.ToList();
+    }
+
     public async Task<bool> ExistsProposalAsync(int serviceId, int professionalId)
     {
         using var connection = _connectionFactory.CreateConnection();

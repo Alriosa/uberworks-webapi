@@ -33,4 +33,7 @@ public class ProfessionalResponse
 
     /// <summary>Set only for workers created by a Company (see Professional.CompanyUserId).</summary>
     public int? CompanyUserId { get; set; }
+
+    /// <summary>Relative URL (e.g. "/uploads/professional-photos/7-3f2c1e.jpg"), null until set.</summary>
+    public string? PhotoUrl { get; set; }
 }

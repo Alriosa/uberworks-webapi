@@ -31,6 +31,13 @@ public class UserRow
     public string? FacebookId { get; set; }
     public bool IsPasswordSet { get; set; }
 
+    /// <summary>
+    /// Only present when the SELECT that fills this row explicitly includes it
+    /// (UserRepository.cs does; the JOIN-based repos that reuse this class don't need it and
+    /// simply leave it null/default) — see User.ManagedByCompanyUserId.
+    /// </summary>
+    public int? ManagedByCompanyUserId { get; set; }
+
     public User ToUser() => new()
     {
         Id = Id,
@@ -44,6 +51,7 @@ public class UserRow
         Status = UserStatusMapper.FromDb(Status),
         RegistrationDate = RegistrationDate,
         FacebookId = FacebookId,
-        IsPasswordSet = IsPasswordSet
+        IsPasswordSet = IsPasswordSet,
+        ManagedByCompanyUserId = ManagedByCompanyUserId
     };
 }

@@ -50,6 +50,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Serves wwwroot/uploads/professional-photos back out at /uploads/professional-photos/... —
+// see ProfessionalsController.UploadPhoto's FILE SUMMARY for why this is local disk for now.
+app.UseStaticFiles();
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();

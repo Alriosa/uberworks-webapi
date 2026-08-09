@@ -63,6 +63,16 @@ public class User
     /// </summary>
     public bool IsPasswordSet { get; set; } = true;
 
+    /// <summary>
+    /// Only meaningful when Role=Manager: the Company User this Manager was created by/
+    /// belongs to. Every Manager must have one — "no existe manager sin su empresa", per
+    /// explicit request — see UserService.CreateManagerAsync, the only place this gets set.
+    /// Self-referencing FK onto TBL_USERS itself, same idea as Professional.CompanyUserId
+    /// but living directly on User since Manager (unlike Professional) has no separate
+    /// profile table of its own.
+    /// </summary>
+    public int? ManagedByCompanyUserId { get; set; }
+
     // Navigation properties
     public Professional? Professional { get; set; }
 

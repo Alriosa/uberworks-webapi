@@ -18,4 +18,16 @@ public interface IServiceService
     Task<IReadOnlyList<ServiceResponse>> GetOpenAsync();
     Task<IReadOnlyList<ServiceResponse>> GetMyServicesAsync(int clientId);
     Task<ServiceResponse> GetByIdAsync(int serviceId, int? callerUserId);
+
+    /// <summary>Every Service, full detail, regardless of status — Admin dashboard CRUD panel.</summary>
+    Task<IReadOnlyList<AdminServiceListItemResponse>> GetAllForAdminAsync();
+
+    Task<ServiceResponse> UpdateForAdminAsync(int serviceId, UpdateServiceAdminRequest request);
+
+    /// <summary>
+    /// "Deletes" a job from the Admin dashboard — sets Status=Cancelled rather than a real
+    /// SQL DELETE, since ServiceProfessional/Review/Payment rows reference TBL_SERVICES (same
+    /// reasoning as UserService.DeleteAsync).
+    /// </summary>
+    Task DeleteForAdminAsync(int serviceId);
 }

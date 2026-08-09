@@ -1,36 +1,209 @@
+@* =====================================================================================
+   FILE SUMMARY
+   What it does: Professional's dashboard — landing page after login for Role=Professional
+                 (see DashboardController.LandingPage). Same Spanish-language exception and
+                 _LandingLayout.cshtml Tailwind reuse as MasterAdmin.cshtml/Finances.cshtml,
+                 for the same "big cards" visual language the user asked for across every
+                 dashboard. REAL data: Calificación Promedio (Model.AverageRating, from
+                 GET /api/professionals/by-user/{userId}) and "Ofertas de Trabajo Disponibles"
+                 (Model.OpenJobOffers, from GET /api/services/open) — every open Work Post
+                 site-wide, NOT filtered to this professional's own categories, because
+                 Professional.cs has no WorkTypes relationship in the schema yet (a
+                 professional can only bid on a Service one at a time via
+                 ServiceProfessional.cs, there's no "these are the job types I do" list to
+                 filter by — a real gap, not an oversight). Everything else on this page
+                 (Ingresos Este Mes, Monto No Desembolsado, Trabajos Realizados, Clientes
+                 Atendidos, Reporte Activo, Advertencias, and the per-category review
+                 breakdown) is DECORATIVE/mock: Payment.cs and Penalty.cs both exist as
+                 entities but have no Repository/Service/Controller built yet, and Review.cs
+                 has no per-category aggregation endpoint either — wiring these up is real
+                 backend work for later, not just a WebApp change. "Log out" is this page's
+                 navigation "back", same reasoning as MasterAdmin.cshtml.
+   Entities connected: None — this project has no database entities
+   Tables related: None — Model.OpenJobOffers reaches TBL_SERVICES only indirectly, through the API
+   ===================================================================================== *@
 @model uberworks_webapp.Models.ViewModels.ProfessionalDashboardViewModel
 @{
-    ViewData["Title"] = "Dashboard";
+    ViewData["Title"] = "Panel Profesional";
+    Layout = "_LandingLayout";
 }
 
-<h1>Welcome back, @Model.DisplayName!</h1>
-<p class="text-muted">Here's your Uberworks dashboard.</p>
+<partial name="_LandingHeader" />
 
-<div class="row g-3 mt-2">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Average rating</h5>
-                <p class="display-6 mb-0">@Model.AverageRating</p>
+<main class="relative min-h-screen bg-slate-50 pt-28 pb-8 px-4 sm:px-6 lg:px-8 z-10">
+    <div class="max-w-6xl mx-auto space-y-6">
+
+        <div class="glass-card rounded-3xl border border-slate-200 p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-brand-500 text-white flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-toolbox"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black text-slate-900">Panel Profesional</h1>
+                    <p class="text-sm text-slate-500 mt-0.5">Hola, @Model.DisplayName — aquí está el resumen de tu actividad</p>
+                </div>
+            </div>
+            <div class="flex flex-col gap-2 self-start sm:self-auto">
+                <a asp-controller="Dashboard" asp-action="EventInvitations" class="btn-alive relative overflow-hidden inline-flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-colors">
+                    <i class="fa-solid fa-envelope-open-text"></i>
+                    <span>Invitaciones a Eventos</span>
+                </a>
+                <button onclick="location.reload()" class="btn-alive relative overflow-hidden inline-flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-colors">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>Actualizar</span>
+                </button>
+                <form asp-controller="Account" asp-action="Logout" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn-alive relative overflow-hidden w-full inline-flex items-center justify-center gap-2 bg-slate-900 text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-slate-800 transition-colors">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                        <span>Log out</span>
+                    </button>
+                </form>
             </div>
         </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">My profile</h5>
-                <p class="card-text">Update your description, experience, availability, and location.</p>
-                <a asp-controller="Profile" asp-action="Index" class="btn btn-outline-primary">View profile</a>
+
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="glass-card rounded-2xl border border-slate-200 p-4 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                    <i class="fa-solid fa-star"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Calificación Promedio</p>
+                    <p class="text-lg font-black text-slate-900">@Model.AverageRating.ToString("0.0") / 5.0</p>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl border border-slate-200 p-4 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <i class="fa-solid fa-sack-dollar"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Ingresos Este Mes</p>
+                    <p class="text-lg font-black text-slate-900">$680.00</p>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl border border-slate-200 p-4 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <i class="fa-solid fa-hourglass-half"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Monto No Desembolsado</p>
+                    <p class="text-lg font-black text-slate-900">$120.00</p>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl border border-slate-200 p-4 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                    <i class="fa-solid fa-briefcase"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Trabajos Realizados</p>
+                    <p class="text-lg font-black text-slate-900">27</p>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl border border-slate-200 p-4 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center">
+                    <i class="fa-solid fa-people-group"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Clientes Atendidos</p>
+                    <p class="text-lg font-black text-slate-900">19</p>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl border border-slate-200 p-4 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center">
+                    <i class="fa-solid fa-flag"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Reporte Activo</p>
+                    <p class="text-lg font-black text-slate-900">Ninguno</p>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl border border-slate-200 p-4 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Advertencias</p>
+                    <p class="text-lg font-black text-slate-900">0</p>
+                </div>
+            </div>
+
+            <a asp-controller="Profile" asp-action="LandingPage" class="glass-card rounded-2xl border border-slate-200 p-4 flex items-center gap-3 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300">
+                <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
+                    <i class="fa-solid fa-id-card"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Mi Perfil</p>
+                    <p class="text-sm font-black text-slate-900">Ver / Editar</p>
+                </div>
+            </a>
+        </div>
+
+        <div class="glass-card rounded-3xl border border-slate-200 p-6">
+            <div class="flex items-center justify-between mb-1">
+                <h2 class="text-sm font-black text-slate-900">Ofertas de Trabajo Disponibles</h2>
+                <span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2.5 py-1 rounded-full">@Model.OpenJobOffers.Count.ToString("N0") ABIERTAS</span>
+            </div>
+            <p class="text-xs text-slate-500 mb-4">
+                Todas las solicitudes abiertas del sitio — todavía no existe una relación de "categorías que yo hago" en el sistema para filtrar solo las tuyas.
+            </p>
+
+            @if (Model.OpenJobOffers.Count == 0)
+            {
+                <p class="text-sm text-slate-400 py-6 text-center">No hay ofertas de trabajo abiertas en este momento.</p>
+            }
+            else
+            {
+                <div class="space-y-3">
+                    @foreach (var job in Model.OpenJobOffers)
+                    {
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="bg-brand-50 text-brand-700 text-[11px] font-bold px-2 py-0.5 rounded-full">@job.WorkTypeName</span>
+                                    <span class="text-[11px] text-slate-400">Zona: @job.Zone</span>
+                                </div>
+                                <p class="text-sm text-slate-700 mt-1">@(job.Description ?? "Sin descripción adicional.")</p>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Publicado: @job.RequestDate.ToString("yyyy-MM-dd")</p>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <p class="text-lg font-black text-slate-900">@(job.ProposedPrice.HasValue ? $"${job.ProposedPrice.Value:0.00}" : "A negociar")</p>
+                                <span class="text-[11px] font-bold text-emerald-600">@job.Status</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="glass-card rounded-3xl border border-slate-200 p-6">
+            <h2 class="text-sm font-black text-slate-900 mb-1">Reseñas por Categoría</h2>
+            <p class="text-xs text-slate-500 mb-4">Datos de muestra — todavía no existe un desglose real de reseñas por tipo de trabajo.</p>
+            <div class="space-y-2">
+                @{
+                    var sampleReviewBreakdown = new (string Category, decimal Rating, int Count)[]
+                    {
+                        ("Carpintería", 4.8m, 9),
+                        ("Electricista", 4.6m, 7),
+                        ("Limpieza", 4.9m, 11)
+                    };
+                }
+                @foreach (var (category, rating, count) in sampleReviewBreakdown)
+                {
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-slate-700 font-bold">@category</span>
+                        <span class="text-slate-500">@rating.ToString("0.0") <i class="fa-solid fa-star text-amber-400 text-xs"></i> · @count reseñas</span>
+                    </div>
+                }
             </div>
         </div>
+
     </div>
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Job offers</h5>
-                <p class="card-text text-muted">Coming soon.</p>
-                <button class="btn btn-outline-secondary" disabled>View offers</button>
-            </div>
-        </div>
-    </div>
-</div>
+</main>
+
+<partial name="_LandingFooter" />

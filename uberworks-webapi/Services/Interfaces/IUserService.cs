@@ -33,8 +33,27 @@ public interface IUserService
     Task<UserResponse> RegisterAsync(RegisterUserRequest request);
     Task<AuthResponse> LoginAsync(LoginRequest request);
     Task<UserResponse> GetByIdAsync(int id, int callerUserId, UserRole callerRole);
+    Task<IReadOnlyList<AdminUserListItemResponse>> GetAllForAdminAsync();
     Task<UserResponse> UpdateAsync(int id, int callerUserId, string callerUsername, UserRole callerRole, UpdateUserRequest request);
+
+    /// <summary>
+    /// Soft-deletes a user (sets Status=Deleted, see UserStatus.cs for why this isn't a real
+    /// SQL DELETE). Admin/MasterAdmin only — enforced both here (can't delete yourself, can't
+    /// delete the MasterAdmin) and by [Authorize(Roles = "MasterAdmin,Admin")] on the controller.
+    /// </summary>
+    Task DeleteAsync(int id, int callerUserId, string callerUsername, UserRole callerRole);
+
     Task<UserResponse> CreateByAdminAsync(int actorUserId, string actorUsername, UserRole actorRole, AdminCreateUserRequest request);
+
+    /// <summary>
+    /// Company/Manager dashboard's "Crear Manager" button. The new Manager is always linked
+    /// to the SAME company as the caller — see UserService.CreateManagerAsync for how that
+    /// company is resolved depending on whether the caller is a Company or an existing Manager.
+    /// </summary>
+    Task<UserResponse> CreateManagerAsync(int callerUserId, UserRole callerRole, CompanyCreateManagerRequest request);
+
+    /// <summary>Lets a Manager fetch basic info (name/username) about the company it belongs to.</summary>
+    Task<UserResponse> GetMyCompanyAsync(int managerUserId);
     Task<AuthResponse> ExternalLoginAsync(ExternalLoginRequest request);
     Task SetPasswordAsync(int userId, SetPasswordRequest request);
     Task ForgotPasswordAsync(ForgotPasswordRequest request);

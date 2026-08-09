@@ -51,6 +51,9 @@ void ConfigureApiClient(HttpClient client)
 builder.Services.AddHttpClient<IUsersApiClient, UsersApiClient>(ConfigureApiClient);
 builder.Services.AddHttpClient<IProfessionalsApiClient, ProfessionalsApiClient>(ConfigureApiClient);
 builder.Services.AddHttpClient<IContactApiClient, ContactApiClient>(ConfigureApiClient);
+builder.Services.AddHttpClient<IServicesApiClient, ServicesApiClient>(ConfigureApiClient);
+builder.Services.AddHttpClient<IReportsApiClient, ReportsApiClient>(ConfigureApiClient);
+builder.Services.AddHttpClient<IEventsApiClient, EventsApiClient>(ConfigureApiClient);
 
 var authenticationBuilder = builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>

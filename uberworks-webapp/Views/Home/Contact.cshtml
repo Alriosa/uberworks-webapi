@@ -1,0 +1,113 @@
+@* =====================================================================================
+   FILE SUMMARY
+   What it does: The general "Contáctanos" page, linked from every page's footer
+                 (_LandingFooter.cshtml) — a third deliberate Spanish-language exception to
+                 the project's English-UI rule (alongside LandingPage.cshtml/
+                 AllServices.cshtml/the Master-Admin-area dashboards), since this is public
+                 marketing-site surface, same reasoning as those. Distinct from
+                 AllServices.cshtml's "¿No encontraste el servicio que buscabas?" modal — this
+                 is a general contact form (título, cuerpo, imagen, quién escribe, si viene de
+                 una compañía), posting to HomeController.Contact → a REAL email via
+                 IContactApiClient.SendMessageAsync → POST /api/contact/message, not decorative.
+                 "Cancelar" just clears back to the empty form (there's nowhere modal-like to
+                 close since this is its own page, reached from the footer on every page).
+   Entities connected: None — this project has no database entities
+   Tables related: None
+   ===================================================================================== *@
+@model uberworks_webapp.Models.ViewModels.ContactViewModel
+@{
+    ViewData["Title"] = "Contáctanos - ServiGo";
+    Layout = "_LandingLayout";
+}
+
+<div class="fixed top-0 left-1/4 w-[600px] h-[600px] bg-glow-1 pointer-events-none rounded-full z-0"></div>
+<div class="fixed bottom-0 right-1/4 w-[700px] h-[700px] bg-glow-2 pointer-events-none rounded-full z-0"></div>
+
+<partial name="_LandingHeader" />
+
+<main class="relative pt-32 pb-20 z-10">
+    <section class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+        <a asp-controller="Home" asp-action="LandingPage" class="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-brand-600 transition-colors mb-6">
+            <i class="fa-solid fa-arrow-left text-xs"></i>
+            <span>Volver al inicio</span>
+        </a>
+
+        <h1 class="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 mb-2">Contáctanos</h1>
+        <p class="text-slate-600 mb-8">¿Tienes una pregunta, un problema o una idea? Escríbenos y te responderemos pronto.</p>
+
+        <div class="glass-card rounded-3xl border border-slate-200 p-6 sm:p-8">
+            <form asp-controller="Home" asp-action="Contact" method="post" enctype="multipart/form-data" class="space-y-4">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="text-red-600 text-sm"></div>
+
+                <div>
+                    <label asp-for="Title" class="block text-xs font-bold text-slate-700 mb-1">Título</label>
+                    <input asp-for="Title" placeholder="¿De qué se trata tu mensaje?" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                </div>
+
+                <div>
+                    <label asp-for="Message" class="block text-xs font-bold text-slate-700 mb-1">Mensaje</label>
+                    <textarea asp-for="Message" rows="5" placeholder="Cuéntanos con detalle..." class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label asp-for="Name" class="block text-xs font-bold text-slate-700 mb-1">Tu nombre</label>
+                        <input asp-for="Name" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                    </div>
+                    <div>
+                        <label asp-for="Email" class="block text-xs font-bold text-slate-700 mb-1">Tu correo</label>
+                        <input asp-for="Email" type="email" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <input asp-for="IsFromCompany" type="checkbox" id="isFromCompanyCheck" onchange="document.getElementById('companyNameField').classList.toggle('hidden', !this.checked)" class="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
+                    <label for="isFromCompanyCheck" class="text-sm text-slate-700">Escribo en nombre de una compañía</label>
+                </div>
+
+                <div id="companyNameField" class="hidden">
+                    <label asp-for="CompanyName" class="block text-xs font-bold text-slate-700 mb-1">Nombre de la compañía</label>
+                    <input asp-for="CompanyName" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                </div>
+
+                <div>
+                    <label asp-for="Image" class="block text-xs font-bold text-slate-700 mb-1">Imagen (opcional)</label>
+                    <input asp-for="Image" type="file" accept=".jpg,.jpeg,.png,.webp"
+                           class="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-brand-50 file:text-brand-600 hover:file:bg-brand-100" />
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-2">
+                    <a asp-controller="Home" asp-action="Contact" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors">Cancelar</a>
+                    <button type="submit" class="btn-alive relative overflow-hidden bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-colors">
+                        <i class="fa-solid fa-paper-plane mr-1"></i> Enviar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
+</main>
+
+<partial name="_LandingFooter" />
+
+<div id="toast" class="fixed bottom-6 right-6 z-50 glass-card px-5 py-4 rounded-2xl border border-brand-500/50 text-slate-900 shadow-2xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300">
+    <div class="w-8 h-8 rounded-xl bg-brand-500 text-white flex items-center justify-center font-bold">
+        <i class="fa-solid fa-check"></i>
+    </div>
+    <div>
+        <p id="toastMessage" class="text-xs font-bold text-slate-900"></p>
+        <p class="text-[10px] text-slate-500">Notificación de ServiGo</p>
+    </div>
+</div>
+
+<script src="~/js/landing-common.js" asp-append-version="true"></script>
+<script>
+    @if (TempData["ContactSuccess"] is string contactSuccess)
+    {
+        <text>document.addEventListener('DOMContentLoaded', () => showToast(@Html.Raw(Json.Serialize(contactSuccess))));</text>
+    }
+    @if (TempData["ContactError"] is string contactError)
+    {
+        <text>document.addEventListener('DOMContentLoaded', () => showToast(@Html.Raw(Json.Serialize(contactError))));</text>
+    }
+</script>

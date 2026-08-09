@@ -21,4 +21,5 @@ public class ProfessionalResponse
     public string? Location { get; set; }
     public decimal AverageRating { get; set; }
     public int? CompanyUserId { get; set; }
+    public string? PhotoUrl { get; set; }
 }

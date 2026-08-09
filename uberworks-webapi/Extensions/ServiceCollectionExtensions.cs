@@ -91,6 +91,13 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IServiceProfessionalRepository, ServiceProfessionalRepository>();
         services.AddScoped<IServiceProfessionalService, ServiceProfessionalService>();
 
+        services.AddScoped<IReportRepository, ReportRepository>();
+        services.AddScoped<IReportService, ReportService>();
+
+        services.AddScoped<IEventRepository, EventRepository>();
+        services.AddScoped<IEventInvitationRepository, EventInvitationRepository>();
+        services.AddScoped<IEventService, EventService>();
+
         // Repositories/Services for the remaining entities are registered here
         // as they get implemented.
 

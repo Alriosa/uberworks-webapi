@@ -127,6 +127,23 @@ public class UserService : IUserService
             throw new InvalidCredentialsException("Invalid email or password.");
         }
 
+        // Suspended/Deleted accounts must not be able to log back in — otherwise an Admin
+        // "deleting" or suspending someone from the dashboard would do nothing real.
+        // Penalized is deliberately NOT blocked here: a penalty is a mark against the
+        // account, not a full lockout.
+        if (user.Status is UserStatus.Suspended or UserStatus.Deleted)
+        {
+            await _auditLogService.LogUserActionAsync(
+                actorUserId: user.Id,
+                actorUsername: user.Username,
+                action: "LOGIN_BLOCKED",
+                targetEntityType: "User",
+                targetEntityId: user.Id,
+                details: $"Status={user.Status}");
+
+            throw new InvalidCredentialsException("This account is no longer active. Contact support if you believe this is a mistake.");
+        }
+
         await _auditLogService.LogUserActionAsync(
             actorUserId: user.Id,
             actorUsername: user.Username,
@@ -256,8 +273,8 @@ public class UserService : IUserService
     // from creating another Manager or an Admin.
     private static readonly Dictionary<UserRole, UserRole[]> CreatableRolesByActor = new()
     {
-        [UserRole.MasterAdmin] = [UserRole.Admin, UserRole.Manager, UserRole.Company, UserRole.Professional, UserRole.Client],
-        [UserRole.Admin] = [UserRole.Manager, UserRole.Company, UserRole.Professional, UserRole.Client],
+        [UserRole.MasterAdmin] = [UserRole.Admin, UserRole.Manager, UserRole.Company, UserRole.Support, UserRole.Professional, UserRole.Client],
+        [UserRole.Admin] = [UserRole.Manager, UserRole.Company, UserRole.Support, UserRole.Professional, UserRole.Client],
         [UserRole.Manager] = [UserRole.Company, UserRole.Professional, UserRole.Client]
     };
 
@@ -303,6 +320,83 @@ public class UserService : IUserService
         return MapToResponse(user);
     }
 
+    // "No existe manager sin su empresa" — the new Manager's ManagedByCompanyUserId is always
+    // resolved server-side, never taken from the request: a Company creates one linked to
+    // itself; an existing Manager creates one linked to the SAME company it already belongs
+    // to (so a chain of Managers can onboard each other without ever detaching from the
+    // company that originally brought them in).
+    public async Task<UserResponse> CreateManagerAsync(int callerUserId, UserRole callerRole, CompanyCreateManagerRequest request)
+    {
+        var companyUserId = await ResolveCompanyUserIdAsync(callerUserId, callerRole);
+
+        if (await _userRepository.ExistsByEmailAsync(request.Email))
+        {
+            throw new ConflictException($"A user with the email '{request.Email}' already exists.");
+        }
+
+        if (await _userRepository.ExistsByUsernameAsync(request.Username))
+        {
+            throw new ConflictException($"The username '{request.Username}' is already taken.");
+        }
+
+        var manager = new User
+        {
+            Username = request.Username,
+            FirstName = request.FirstName,
+            LastName = request.LastName,
+            Email = request.Email,
+            Phone = request.Phone,
+            PasswordHash = PasswordHasher.Hash(request.Password),
+            Role = UserRole.Manager,
+            ManagedByCompanyUserId = companyUserId
+        };
+
+        await _userRepository.AddAsync(manager);
+
+        await _auditLogService.LogAdminActionAsync(
+            actorUserId: callerUserId,
+            actorUsername: request.Username,
+            actorRole: callerRole,
+            action: "MANAGER_CREATED_BY_COMPANY",
+            targetEntityType: "User",
+            targetEntityId: manager.Id,
+            details: $"CompanyUserId={companyUserId}, Email={manager.Email}");
+
+        return MapToResponse(manager);
+    }
+
+    public async Task<UserResponse> GetMyCompanyAsync(int managerUserId)
+    {
+        var manager = await _userRepository.GetByIdAsync(managerUserId)
+            ?? throw new NotFoundException($"User with id {managerUserId} was not found.");
+
+        var companyUserId = manager.ManagedByCompanyUserId
+            ?? throw new ForbiddenException("This Manager account has no company linked to it.");
+
+        var company = await _userRepository.GetByIdAsync(companyUserId)
+            ?? throw new NotFoundException($"Company with id {companyUserId} was not found.");
+
+        return MapToResponse(company);
+    }
+
+    // A Company is always linked to itself; a Manager is linked to whichever company it
+    // already belongs to. Throws if somehow a Manager exists with no company — should never
+    // happen (CreateManagerAsync always sets it), but this is what stops a null from silently
+    // orphaning a newly created Manager instead.
+    private async Task<int> ResolveCompanyUserIdAsync(int callerUserId, UserRole callerRole)
+    {
+        if (callerRole == UserRole.Company)
+        {
+            return callerUserId;
+        }
+
+        var caller = await _userRepository.GetByIdAsync(callerUserId)
+            ?? throw new NotFoundException($"User with id {callerUserId} was not found.");
+
+        return caller.ManagedByCompanyUserId
+            ?? throw new ForbiddenException("This Manager account has no company linked to it.");
+    }
+
     public async Task<UserResponse> GetByIdAsync(int id, int callerUserId, UserRole callerRole)
     {
         EnsureSelfOrAdmin(id, callerUserId, callerRole);
@@ -311,6 +405,29 @@ public class UserService : IUserService
             ?? throw new NotFoundException($"User with id {id} was not found.");
 
         return MapToResponse(user);
+    }
+
+    // No per-row ownership check here on purpose — [Authorize(Roles = "MasterAdmin,Admin,Manager")]
+    // on the controller already restricts who can call this at all; every field returned
+    // (still excluding PasswordHash) is meant to be visible to that audience.
+    public async Task<IReadOnlyList<AdminUserListItemResponse>> GetAllForAdminAsync()
+    {
+        var users = await _userRepository.GetAllAsync();
+
+        return users.Select(user => new AdminUserListItemResponse
+        {
+            Id = user.Id,
+            Username = user.Username,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Email = user.Email,
+            Phone = user.Phone,
+            Role = user.Role,
+            Status = user.Status,
+            RegistrationDate = user.RegistrationDate,
+            FacebookId = user.FacebookId,
+            IsPasswordSet = user.IsPasswordSet
+        }).ToList();
     }
 
     public async Task<UserResponse> UpdateAsync(int id, int callerUserId, string callerUsername, UserRole callerRole, UpdateUserRequest request)
@@ -352,6 +469,39 @@ public class UserService : IUserService
         }
 
         return MapToResponse(user);
+    }
+
+    // Soft-delete: sets Status=Deleted instead of a real SQL DELETE — see UserStatus.cs for
+    // why (foreign keys from Professional/Service/Review/Chat/Penalty/PasswordResetToken all
+    // point at TBL_USERS, so a hard delete would either fail outright or silently erase real
+    // history). LoginAsync already refuses Deleted accounts, so this is a genuine lockout,
+    // not just a cosmetic flag.
+    public async Task DeleteAsync(int id, int callerUserId, string callerUsername, UserRole callerRole)
+    {
+        var user = await _userRepository.GetByIdAsync(id)
+            ?? throw new NotFoundException($"User with id {id} was not found.");
+
+        if (user.Role == UserRole.MasterAdmin)
+        {
+            throw new ForbiddenException("The MasterAdmin account cannot be deleted.");
+        }
+
+        if (id == callerUserId)
+        {
+            throw new ForbiddenException("You cannot delete your own account.");
+        }
+
+        user.Status = UserStatus.Deleted;
+        await _userRepository.UpdateAsync(user);
+
+        await _auditLogService.LogAdminActionAsync(
+            actorUserId: callerUserId,
+            actorUsername: callerUsername,
+            actorRole: callerRole,
+            action: "USER_DELETED_BY_ADMIN",
+            targetEntityType: "User",
+            targetEntityId: id,
+            details: $"Role={user.Role}, Email={user.Email}");
     }
 
     // Only the profile owner or an Admin/MasterAdmin can view/edit a user's full record.

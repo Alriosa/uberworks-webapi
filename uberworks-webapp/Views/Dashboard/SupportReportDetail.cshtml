@@ -1,0 +1,228 @@
+@* =====================================================================================
+   FILE SUMMARY
+   What it does: The Support dashboard's own page for a single report (see
+                 DashboardController.SupportReportDetail) — every field the user asked for:
+                 hora en que se hizo (Model.CreatedAt), partes involucradas (Model.
+                 ClientUsername/ProfessionalUsername), trabajo relacionado (Model.ServiceId/
+                 ServiceDescription), fecha del incidente (Model.IncidentDate), título,
+                 descripción, imágenes (Model.Images — real uploaded URLs, see
+                 ReportsController.Create on the API side), and a "chat" button. That chat
+                 button is DECORATIVE (disabled, with an explanatory caption) — Chat.cs has no
+                 Repository/Service/Controller built yet (see the project backlog), so there
+                 is no real conversation to link to.
+                 The 3 action buttons are REAL: "Resolver" opens a modal (message + payment
+                 outcome) → POST /api/reports/{id}/resolve. "Fallo a favor de nadie" posts
+                 directly (after a confirm()) → POST /api/reports/{id}/no-fault. "Cancelar
+                 Reporte" opens a modal that always requires a reason → POST
+                 /api/reports/{id}/cancel. All 3 persist real, queryable state on the Report
+                 row (ResolutionMessage/PaymentOutcome/CancellationReason/ResolvedByUserId/
+                 ResolvedAt) — see ReportService.cs on the API side for the honest note on
+                 what's real (the record itself) vs. not yet wired up (delivering the message
+                 into a live chat, actually moving money — no Payment system exists either).
+                 Buttons are hidden once the report is already Resolved/Cancelled, since
+                 IReportService rejects acting on a closed report's terminal state a second
+                 time in spirit (nothing stops calling the API again, but there's nothing left
+                 to decide once ResolvedAt is set).
+   Entities connected: None — this project has no database entities
+   Tables related: None — Model reaches TBL_REPORTS only indirectly, through the API
+   ===================================================================================== *@
+@model uberworks_webapp.Models.ApiContracts.ReportResponse
+@using uberworks_webapp.Models.ApiContracts
+@{
+    ViewData["Title"] = $"Reporte #{Model.Id}";
+    Layout = "_LandingLayout";
+    var isOpenForAction = Model.Status is ReportStatus.Open or ReportStatus.Pending;
+}
+
+<partial name="_LandingHeader" />
+
+<main class="relative min-h-screen bg-slate-50 pt-28 pb-8 px-4 sm:px-6 lg:px-8 z-10">
+    <div class="max-w-4xl mx-auto space-y-6">
+
+        <div class="glass-card rounded-3xl border border-slate-200 p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-red-600 text-white flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-flag"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black text-slate-900">Reporte #@Model.Id</h1>
+                    <p class="text-sm text-slate-500 mt-0.5">Presentado el @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                </div>
+            </div>
+            <a asp-action="LandingPage" class="btn-alive relative overflow-hidden inline-flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-colors self-start sm:self-auto">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>Atrás — Volver al Panel</span>
+            </a>
+        </div>
+
+        <div class="glass-card rounded-3xl border border-slate-200 p-6">
+            <div class="flex items-start justify-between gap-4 mb-4">
+                <h2 class="text-lg font-black text-slate-900">@Model.Title</h2>
+                @{
+                    var badgeClass = Model.Status switch
+                    {
+                        ReportStatus.Resolved => "bg-emerald-50 text-emerald-600",
+                        ReportStatus.Pending => "bg-amber-50 text-amber-600",
+                        ReportStatus.Cancelled => "bg-slate-100 text-slate-500",
+                        _ => "bg-red-50 text-red-600"
+                    };
+                }
+                <span class="@badgeClass text-[11px] font-bold px-3 py-1 rounded-full shrink-0">@Model.Status</span>
+            </div>
+
+            <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm mb-6">
+                <div><dt class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Cliente</dt><dd class="text-slate-900">@(Model.ClientUsername ?? "—")</dd></div>
+                <div><dt class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Profesional</dt><dd class="text-slate-900">@(Model.ProfessionalUsername ?? "—")</dd></div>
+                <div><dt class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Trabajo Relacionado</dt><dd class="text-slate-900">@(Model.ServiceId is { } sid ? $"#{sid} — {Model.ServiceDescription}" : "—")</dd></div>
+                <div><dt class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Fecha del Incidente</dt><dd class="text-slate-900">@(Model.IncidentDate?.ToString("dd/MM/yyyy") ?? "—")</dd></div>
+                <div><dt class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Presentado por</dt><dd class="text-slate-900">@Model.CreatedByUsername</dd></div>
+            </dl>
+
+            <div class="mb-6">
+                <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Descripción del Problema</h3>
+                <p class="text-sm text-slate-900">@Model.Description</p>
+            </div>
+
+            @if (Model.Images.Count > 0)
+            {
+                <div class="mb-6">
+                    <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-2">Imágenes</h3>
+                    <div class="flex flex-wrap gap-3">
+                        @{
+                            var apiBaseUrl = (ViewData["ApiBaseUrl"] as string)?.TrimEnd('/') ?? string.Empty;
+                        }
+                        @foreach (var imageUrl in Model.Images)
+                        {
+                            <a href="@(apiBaseUrl + imageUrl)" target="_blank" rel="noopener" class="block w-24 h-24 rounded-xl overflow-hidden border border-slate-200">
+                                <img src="@(apiBaseUrl + imageUrl)" alt="Imagen del reporte" class="w-full h-full object-cover" />
+                            </a>
+                        }
+                    </div>
+                </div>
+            }
+
+            <div class="mb-2">
+                <button type="button" disabled title="El sistema de chat todavía no está implementado" class="inline-flex items-center gap-2 bg-slate-100 text-slate-400 text-sm font-bold px-4 py-2.5 rounded-xl cursor-not-allowed">
+                    <i class="fa-solid fa-comments"></i>
+                    <span>Ir al Chat (no disponible todavía)</span>
+                </button>
+            </div>
+
+            @if (Model.Status == ReportStatus.Resolved)
+            {
+                <div class="mt-4 rounded-2xl bg-emerald-50 border border-emerald-100 p-4">
+                    <p class="text-xs font-black text-emerald-700 mb-1">Resolución</p>
+                    <p class="text-sm text-emerald-900">@Model.ResolutionMessage</p>
+                    @if (Model.PaymentOutcome is not null)
+                    {
+                        <p class="text-xs text-emerald-700 mt-2">Decisión de pago: @Model.PaymentOutcome</p>
+                    }
+                </div>
+            }
+
+            @if (Model.Status == ReportStatus.Cancelled)
+            {
+                <div class="mt-4 rounded-2xl bg-slate-100 border border-slate-200 p-4">
+                    <p class="text-xs font-black text-slate-600 mb-1">Motivo de Cancelación</p>
+                    <p class="text-sm text-slate-700">@Model.CancellationReason</p>
+                </div>
+            }
+        </div>
+
+        @if (isOpenForAction)
+        {
+            <div class="glass-card rounded-3xl border border-slate-200 p-6 flex flex-col sm:flex-row items-center gap-3">
+                <button type="button" onclick="openModal('resolveModal')" class="btn-alive relative overflow-hidden w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-colors">
+                    <i class="fa-solid fa-check mr-1"></i> Resolver
+                </button>
+                <form asp-action="NoFaultReport" method="post" onsubmit="return confirm('¿Cerrar este reporte sin culpar a ninguna de las partes? El dinero en pausa se liberará con el flujo normal de pago.');" class="w-full sm:w-auto">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <button type="submit" class="btn-alive relative overflow-hidden w-full bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-colors">
+                        <i class="fa-solid fa-scale-balanced mr-1"></i> Fallo a Favor de Nadie
+                    </button>
+                </form>
+                <button type="button" onclick="openModal('cancelModal')" class="btn-alive relative overflow-hidden w-full sm:w-auto bg-white border border-slate-200 text-slate-700 text-sm font-bold px-6 py-2.5 rounded-xl hover:bg-slate-50 transition-colors">
+                    <i class="fa-solid fa-ban mr-1"></i> Cancelar Reporte
+                </button>
+            </div>
+        }
+    </div>
+</main>
+
+<partial name="_LandingFooter" />
+
+@* ===== Resolver modal ===== *@
+<div id="resolveModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-card w-full max-w-md rounded-3xl border border-slate-200 shadow-2xl relative transform scale-95 transition-transform duration-300 p-6 sm:p-8" id="resolveModalBox">
+        <button type="button" onclick="closeModal('resolveModal')" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <h3 class="text-xl font-black text-slate-900 mb-1">Resolver Reporte</h3>
+        <p class="text-sm text-slate-500 mb-6">El mensaje quedará como la resolución oficial del caso.</p>
+        <form asp-action="ResolveReport" method="post" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Mensaje de Resolución</label>
+                <textarea name="message" rows="4" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"></textarea>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">¿Qué pasa con el dinero en pausa?</label>
+                <select name="paymentOutcome" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+                    <option value="0">Liberar para el Profesional</option>
+                    <option value="1">Reembolsar al Cliente</option>
+                </select>
+            </div>
+            <div class="flex items-center justify-end gap-3 pt-2">
+                <button type="button" onclick="closeModal('resolveModal')" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors">Cancelar</button>
+                <button type="submit" class="btn-alive relative overflow-hidden bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-colors">Resolver</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@* ===== Cancelar Reporte modal — always requires a reason ===== *@
+<div id="cancelModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-card w-full max-w-md rounded-3xl border border-slate-200 shadow-2xl relative transform scale-95 transition-transform duration-300 p-6 sm:p-8" id="cancelModalBox">
+        <button type="button" onclick="closeModal('cancelModal')" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <h3 class="text-xl font-black text-slate-900 mb-1">Cancelar Reporte</h3>
+        <p class="text-sm text-slate-500 mb-6">Explica por qué se elimina este reporte.</p>
+        <form asp-action="CancelReportSupport" method="post" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Motivo</label>
+                <textarea name="reason" rows="3" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"></textarea>
+            </div>
+            <div class="flex items-center justify-end gap-3 pt-2">
+                <button type="button" onclick="closeModal('cancelModal')" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors">Volver</button>
+                <button type="submit" class="btn-alive relative overflow-hidden bg-red-600 hover:bg-red-700 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-colors">Cancelar Reporte</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="toast" class="fixed bottom-6 right-6 z-50 glass-card px-5 py-4 rounded-2xl border border-brand-500/50 text-slate-900 shadow-2xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300">
+    <div class="w-8 h-8 rounded-xl bg-brand-500 text-white flex items-center justify-center font-bold">
+        <i class="fa-solid fa-check"></i>
+    </div>
+    <div>
+        <p id="toastMessage" class="text-xs font-bold text-slate-900"></p>
+        <p class="text-[10px] text-slate-500">Notificación de ServiGo</p>
+    </div>
+</div>
+
+<script src="~/js/landing-common.js" asp-append-version="true"></script>
+<script>
+    @if (TempData["EditProfileSuccess"] is string successMessage)
+    {
+        <text>document.addEventListener('DOMContentLoaded', () => showToast(@Html.Raw(Json.Serialize(successMessage))));</text>
+    }
+    @if (TempData["EditProfileError"] is string errorMessage)
+    {
+        <text>document.addEventListener('DOMContentLoaded', () => showToast(@Html.Raw(Json.Serialize(errorMessage))));</text>
+    }
+</script>

@@ -112,6 +112,65 @@ public class UsersApiClient : IUsersApiClient
         return (await response.Content.ReadFromJsonAsync<UserResponse>(JsonOptions))!;
     }
 
+    public async Task<UserResponse> UpdateAsync(string accessToken, int id, UpdateUserRequest request)
+    {
+        var httpRequest = new HttpRequestMessage(HttpMethod.Put, $"api/users/{id}")
+        {
+            Content = JsonContent.Create(request, options: JsonOptions)
+        };
+        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await _httpClient.SendAsync(httpRequest);
+        await EnsureSuccessAsync(response);
+
+        return (await response.Content.ReadFromJsonAsync<UserResponse>(JsonOptions))!;
+    }
+
+    public async Task<List<AdminUserListItemResponse>> GetAllUsersAsync(string accessToken)
+    {
+        var httpRequest = new HttpRequestMessage(HttpMethod.Get, "api/users");
+        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await _httpClient.SendAsync(httpRequest);
+        await EnsureSuccessAsync(response);
+
+        return (await response.Content.ReadFromJsonAsync<List<AdminUserListItemResponse>>(JsonOptions))!;
+    }
+
+    public async Task DeleteAsync(string accessToken, int id)
+    {
+        var httpRequest = new HttpRequestMessage(HttpMethod.Delete, $"api/users/{id}");
+        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await _httpClient.SendAsync(httpRequest);
+        await EnsureSuccessAsync(response);
+    }
+
+    public async Task<UserResponse> CreateManagerAsync(string accessToken, CompanyCreateManagerRequest request)
+    {
+        var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/users/company-create-manager")
+        {
+            Content = JsonContent.Create(request, options: JsonOptions)
+        };
+        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await _httpClient.SendAsync(httpRequest);
+        await EnsureSuccessAsync(response);
+
+        return (await response.Content.ReadFromJsonAsync<UserResponse>(JsonOptions))!;
+    }
+
+    public async Task<UserResponse> GetMyCompanyAsync(string accessToken)
+    {
+        var httpRequest = new HttpRequestMessage(HttpMethod.Get, "api/users/my-company");
+        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await _httpClient.SendAsync(httpRequest);
+        await EnsureSuccessAsync(response);
+
+        return (await response.Content.ReadFromJsonAsync<UserResponse>(JsonOptions))!;
+    }
+
     private static async Task EnsureSuccessAsync(HttpResponseMessage response)
     {
         if (response.IsSuccessStatusCode)

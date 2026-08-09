@@ -18,8 +18,8 @@ public static class RoleHierarchy
 {
     private static readonly Dictionary<UserRole, UserRole[]> CreatableRolesByActor = new()
     {
-        [UserRole.MasterAdmin] = [UserRole.Admin, UserRole.Manager, UserRole.Company, UserRole.Professional, UserRole.Client],
-        [UserRole.Admin] = [UserRole.Manager, UserRole.Company, UserRole.Professional, UserRole.Client],
+        [UserRole.MasterAdmin] = [UserRole.Admin, UserRole.Manager, UserRole.Company, UserRole.Support, UserRole.Professional, UserRole.Client],
+        [UserRole.Admin] = [UserRole.Manager, UserRole.Company, UserRole.Support, UserRole.Professional, UserRole.Client],
         [UserRole.Manager] = [UserRole.Company, UserRole.Professional, UserRole.Client]
     };
 
@@ -33,6 +33,7 @@ public static class RoleHierarchy
         UserRole.Company => "Company — requests and manages its own workers",
         UserRole.Client => "Client — needs services done",
         UserRole.Professional => "Professional — offers services",
+        UserRole.Support => "Support — handles disputes and reports",
         _ => role.ToString()
     };
 }

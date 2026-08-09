@@ -56,6 +56,35 @@ public class ContactApiClient : IContactApiClient
         await EnsureSuccessAsync(response);
     }
 
+    public async Task SendMessageAsync(string title, string message, string name, string email, bool isFromCompany, string? companyName, IFormFile? image)
+    {
+        using var content = new MultipartFormDataContent
+        {
+            { new StringContent(title), "Title" },
+            { new StringContent(message), "Message" },
+            { new StringContent(name), "Name" },
+            { new StringContent(email), "Email" },
+            { new StringContent(isFromCompany.ToString()), "IsFromCompany" }
+        };
+
+        if (!string.IsNullOrWhiteSpace(companyName))
+        {
+            content.Add(new StringContent(companyName), "CompanyName");
+        }
+
+        // The stream is only read during SendAsync below; disposing `content` at the end of
+        // this method (via the outer `using`) disposes this StreamContent along with it.
+        if (image is not null)
+        {
+            var fileContent = new StreamContent(image.OpenReadStream());
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(image.ContentType);
+            content.Add(fileContent, "Image", image.FileName);
+        }
+
+        var response = await _httpClient.PostAsync("api/contact/message", content);
+        await EnsureSuccessAsync(response);
+    }
+
     private static async Task EnsureSuccessAsync(HttpResponseMessage response)
     {
         if (response.IsSuccessStatusCode)

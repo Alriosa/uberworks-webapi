@@ -1,19 +1,287 @@
+@* =====================================================================================
+   FILE SUMMARY
+   What it does: Manager's dashboard — the landing page after login for Role=Manager (see
+                 DashboardController.LandingPage). Exactly the same data/actions as
+                 Company.cshtml (same company's Model.Workers/Model.Events — see
+                 IProfessionalService.GetMyCompanyWorkersAsync/IEventService.GetMyEventsAsync
+                 resolving "which company" from the Manager's own
+                 User.ManagedByCompanyUserId), with ONE deliberate difference, per explicit
+                 request: no "Crear Evento" button/form — the Events panel here is READ-ONLY
+                 (just the list + accept/decline/pending tally, no create form). Model.CompanyName
+                 comes from GET /api/users/my-company (a Manager isn't itself the company, so
+                 it can't just show its own name like Company.cshtml does).
+                 "Ver Todos mis Profesionales" (invite by contact / remove) and "Crear Manager"
+                 (linked to the SAME company) work identically to Company.cshtml.
+   Entities connected: None — this project has no database entities
+   Tables related: None — Model.Workers/Model.Events reach TBL_PROFESSIONALS/TBL_EVENTS only
+                   indirectly, through the API
+   ===================================================================================== *@
 @model uberworks_webapp.Models.ViewModels.ManagerDashboardViewModel
 @{
-    ViewData["Title"] = "Dashboard";
+    ViewData["Title"] = "Panel de Manager";
+    Layout = "_LandingLayout";
 }
 
-<h1>Welcome back, @Model.DisplayName!</h1>
-<p class="text-muted">Here's your Uberworks dashboard.</p>
+<partial name="_LandingHeader" />
 
-<div class="row g-3 mt-2">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Register users</h5>
-                <p class="card-text">Create Company, Professional, or Client accounts.</p>
-                <a asp-controller="Admin" asp-action="CreateUser" class="btn btn-primary">Register a user</a>
+<main class="relative min-h-screen bg-slate-50 pt-28 pb-8 px-4 sm:px-6 lg:px-8 z-10">
+    <div class="max-w-6xl mx-auto space-y-6">
+
+        <div class="glass-card rounded-3xl border border-slate-200 p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-user-tie"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black text-slate-900">@Model.CompanyName</h1>
+                    <p class="text-sm text-slate-500 mt-0.5">Gestionado por @Model.DisplayName — @Model.Workers.Count.ToString("N0") profesionales enlazados</p>
+                </div>
             </div>
+            <div class="flex flex-col gap-2 self-start sm:self-auto">
+                <button onclick="location.reload()" class="btn-alive relative overflow-hidden inline-flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-colors">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>Actualizar</span>
+                </button>
+                <form asp-controller="Account" asp-action="Logout" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn-alive relative overflow-hidden w-full inline-flex items-center justify-center gap-2 bg-slate-900 text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-slate-800 transition-colors">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                        <span>Log out</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            <button onclick="openModal('eventsModal')" class="glass-card text-left rounded-3xl border border-slate-200 p-6 relative overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
+                <div class="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-emerald-50"></div>
+                <div class="relative flex items-start justify-between mb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-calendar-days"></i>
+                    </div>
+                    <span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2.5 py-1 rounded-full">@Model.Events.Count.ToString("N0") CREADOS</span>
+                </div>
+                <h3 class="relative text-xl font-black text-slate-900 mb-1">Ver Eventos</h3>
+                <p class="relative text-sm text-slate-500 mb-4 max-w-md">Consulta los eventos de tu empresa y quién ha confirmado — solo la Compañía puede crear nuevos.</p>
+                <span class="relative text-emerald-600 font-bold text-sm inline-flex items-center gap-1.5">Ver Lista <i class="fa-solid fa-arrow-right text-xs"></i></span>
+            </button>
+
+            <button onclick="openModal('workersModal')" class="glass-card text-left rounded-3xl border border-slate-200 p-6 relative overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
+                <div class="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-blue-50"></div>
+                <div class="relative flex items-start justify-between mb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-people-group"></i>
+                    </div>
+                    <span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2.5 py-1 rounded-full">@Model.Workers.Count.ToString("N0") ENLAZADOS</span>
+                </div>
+                <h3 class="relative text-xl font-black text-slate-900 mb-1">Ver Todos mis Profesionales</h3>
+                <p class="relative text-sm text-slate-500 mb-4 max-w-md">Invita profesionales existentes por teléfono, correo o username, o quítalos del equipo.</p>
+                <span class="relative text-blue-600 font-bold text-sm inline-flex items-center gap-1.5">Gestionar Equipo <i class="fa-solid fa-arrow-right text-xs"></i></span>
+            </button>
+
+            <button onclick="openModal('createManagerModal')" class="glass-card text-left rounded-3xl border border-slate-200 p-6 relative overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
+                <div class="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-amber-50"></div>
+                <div class="relative flex items-start justify-between mb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-user-plus"></i>
+                    </div>
+                </div>
+                <h3 class="relative text-xl font-black text-slate-900 mb-1">Crear Manager</h3>
+                <p class="relative text-sm text-slate-500 mb-4 max-w-md">Registra otro administrador para la misma empresa.</p>
+                <span class="relative text-amber-600 font-bold text-sm inline-flex items-center gap-1.5">Crear Manager <i class="fa-solid fa-arrow-right text-xs"></i></span>
+            </button>
+
+        </div>
+    </div>
+</main>
+
+<partial name="_LandingFooter" />
+
+@* ===== Events modal — READ-ONLY (no create form — the one difference from Company.cshtml) ===== *@
+<div id="eventsModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-card w-full max-w-3xl max-h-[85vh] rounded-3xl border border-slate-200 shadow-2xl relative transform scale-95 transition-transform duration-300 flex flex-col" id="eventsModalBox">
+        <div class="flex items-start justify-between p-6 pb-4 border-b border-slate-100">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-calendar-days"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-black text-slate-900">Eventos de @Model.CompanyName</h3>
+                    <p class="text-xs text-slate-500">Solo la Compañía puede crear eventos nuevos</p>
+                </div>
+            </div>
+            <button onclick="closeModal('eventsModal')" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="overflow-y-auto p-6 pt-4">
+            @if (Model.Events.Count == 0)
+            {
+                <p class="text-sm text-slate-400 py-4 text-center">Todavía no hay eventos creados.</p>
+            }
+            else
+            {
+                <div class="space-y-3">
+                    @foreach (var ev in Model.Events)
+                    {
+                        <div class="rounded-2xl border border-slate-200 p-4">
+                            <div class="flex items-start justify-between gap-3 mb-2">
+                                <div>
+                                    <h5 class="text-sm font-black text-slate-900">@ev.Title</h5>
+                                    <p class="text-xs text-slate-500 mt-0.5"><i class="fa-solid fa-location-dot mr-1"></i>@ev.Location — @ev.EventDate.ToString("dd/MM/yyyy HH:mm")</p>
+                                </div>
+                                <span class="bg-slate-100 text-slate-600 text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0">@ev.ProfessionalsNeededCount necesarios</span>
+                            </div>
+                            <p class="text-xs text-slate-600 mb-3">@ev.Description</p>
+                            <div class="flex items-center gap-2 text-[11px] font-bold">
+                                <span class="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full">@ev.AcceptedCount Aceptaron</span>
+                                <span class="bg-red-50 text-red-600 px-2 py-0.5 rounded-full">@ev.DeclinedCount Rechazaron</span>
+                                <span class="bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full">@ev.PendingCount Pendientes</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
         </div>
     </div>
 </div>
+
+@* ===== Workers modal — identical to Company.cshtml ===== *@
+<div id="workersModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-card w-full max-w-4xl max-h-[85vh] rounded-3xl border border-slate-200 shadow-2xl relative transform scale-95 transition-transform duration-300 flex flex-col" id="workersModalBox">
+        <div class="flex items-start justify-between p-6 pb-4 border-b border-slate-100">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-people-group"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-black text-slate-900">Profesionales de @Model.CompanyName</h3>
+                    <p class="text-xs text-slate-500">@Model.Workers.Count.ToString("N0") enlazados</p>
+                </div>
+            </div>
+            <button onclick="closeModal('workersModal')" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="overflow-y-auto p-6 pt-4 space-y-4">
+            <form asp-action="LinkWorker" method="post" class="flex flex-col sm:flex-row items-stretch sm:items-end gap-2">
+                @Html.AntiForgeryToken()
+                <div class="flex-1">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Invitar por teléfono, correo o username</label>
+                    <input type="text" name="contact" required placeholder="ej. juanperez o juan@correo.com" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                </div>
+                <button type="submit" class="btn-alive relative overflow-hidden shrink-0 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-colors">
+                    <i class="fa-solid fa-user-plus mr-1"></i> Invitar
+                </button>
+            </form>
+
+            @if (Model.Workers.Count == 0)
+            {
+                <p class="text-sm text-slate-400 py-4 text-center">Todavía no hay profesionales enlazados.</p>
+            }
+            else
+            {
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-left text-[10px] uppercase tracking-wide text-slate-400 border-b border-slate-100">
+                            <th class="py-2 pr-4">Username</th>
+                            <th class="py-2 pr-4">Nombre</th>
+                            <th class="py-2 pr-4">Calificación</th>
+                            <th class="py-2 pr-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var worker in Model.Workers)
+                        {
+                            <tr class="border-b border-slate-50 hover:bg-slate-50/70">
+                                <td class="py-2.5 pr-4 font-bold text-slate-900">@worker.Username</td>
+                                <td class="py-2.5 pr-4 text-slate-700">@worker.FirstName @worker.LastName</td>
+                                <td class="py-2.5 pr-4 text-slate-500">@worker.AverageRating.ToString("0.0") <i class="fa-solid fa-star text-amber-400 text-xs"></i></td>
+                                <td class="py-2.5 pr-4">
+                                    <form asp-action="UnlinkWorker" method="post" onsubmit="return confirm('¿Quitar a @worker.Username del equipo?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="professionalId" value="@worker.Id" />
+                                        <button type="submit" class="text-red-600 hover:text-red-700 text-xs font-bold">
+                                            <i class="fa-solid fa-user-minus"></i> Quitar
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+</div>
+
+@* ===== Create Manager modal — identical to Company.cshtml ===== *@
+<div id="createManagerModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-card w-full max-w-md rounded-3xl border border-slate-200 shadow-2xl relative transform scale-95 transition-transform duration-300 p-6 sm:p-8" id="createManagerModalBox">
+        <button type="button" onclick="closeModal('createManagerModal')" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <h3 class="text-xl font-black text-slate-900 mb-1">Crear Manager</h3>
+        <p class="text-sm text-slate-500 mb-6">Quedará enlazado a @Model.CompanyName.</p>
+        <form asp-action="CreateManager" method="post" class="space-y-3">
+            @Html.AntiForgeryToken()
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Username</label>
+                <input type="text" name="username" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Nombre</label>
+                    <input type="text" name="firstName" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Apellido</label>
+                    <input type="text" name="lastName" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Email</label>
+                <input type="email" name="email" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Teléfono</label>
+                <input type="text" name="phone" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Contraseña</label>
+                <input type="password" name="password" required minlength="8" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+            </div>
+            <div class="flex items-center justify-end gap-3 pt-2">
+                <button type="button" onclick="closeModal('createManagerModal')" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors">Cancelar</button>
+                <button type="submit" class="btn-alive relative overflow-hidden bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-colors">Crear Manager</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="toast" class="fixed bottom-6 right-6 z-50 glass-card px-5 py-4 rounded-2xl border border-brand-500/50 text-slate-900 shadow-2xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300">
+    <div class="w-8 h-8 rounded-xl bg-brand-500 text-white flex items-center justify-center font-bold">
+        <i class="fa-solid fa-check"></i>
+    </div>
+    <div>
+        <p id="toastMessage" class="text-xs font-bold text-slate-900"></p>
+        <p class="text-[10px] text-slate-500">Notificación de ServiGo</p>
+    </div>
+</div>
+
+<script src="~/js/landing-common.js" asp-append-version="true"></script>
+<script>
+    @if (TempData["CompanyActionSuccess"] is string companyActionSuccess)
+    {
+        <text>document.addEventListener('DOMContentLoaded', () => showToast(@Html.Raw(Json.Serialize(companyActionSuccess))));</text>
+    }
+    @if (TempData["CompanyActionError"] is string companyActionError)
+    {
+        <text>document.addEventListener('DOMContentLoaded', () => showToast(@Html.Raw(Json.Serialize(companyActionError))));</text>
+    }
+    @if (TempData["ReopenModal"] is string reopenModal)
+    {
+        <text>document.addEventListener('DOMContentLoaded', () => openModal(@Html.Raw(Json.Serialize(reopenModal))));</text>
+    }
+</script>

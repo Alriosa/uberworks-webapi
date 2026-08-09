@@ -6,11 +6,15 @@
 //               builds a ServiceResponse by calling MapToResponse() with includeExactLocation
 //               set to true/false as appropriate: GetOpenAsync() always false (public
 //               listing), GetMyServicesAsync() always true (the owner sees everything of
-//               theirs), GetByIdAsync() decides dynamically.
+//               theirs), GetByIdAsync() decides dynamically. GetAllForAdminAsync/
+//               UpdateForAdminAsync/DeleteForAdminAsync back the Admin dashboard's job CRUD
+//               panel — DeleteForAdminAsync is a soft delete (Status=Cancelled), never a real
+//               SQL DELETE, since ServiceProfessional/Review/Payment rows reference this Service.
 // Entities connected: Service.cs, WorkType.cs, ServiceProfessional.cs (to know who the
-//                      accepted professional is)
+//                      accepted professional is), User.cs (client username, admin listing only)
 // Tables related: TBL_SERVICES, TBL_WORKTYPES, TBL_SERVICE_PROFESSIONALS
 // =====================================================================================
+using uberworks_webapi.Common.Enums;
 using uberworks_webapi.Common.Exceptions;
 using uberworks_webapi.Models.DTOs.Requests;
 using uberworks_webapi.Models.DTOs.Responses;
@@ -25,15 +29,18 @@ public class ServiceService : IServiceService
     private readonly IServiceRepository _serviceRepository;
     private readonly IWorkTypeRepository _workTypeRepository;
     private readonly IServiceProfessionalRepository _serviceProfessionalRepository;
+    private readonly IUserRepository _userRepository;
 
     public ServiceService(
         IServiceRepository serviceRepository,
         IWorkTypeRepository workTypeRepository,
-        IServiceProfessionalRepository serviceProfessionalRepository)
+        IServiceProfessionalRepository serviceProfessionalRepository,
+        IUserRepository userRepository)
     {
         _serviceRepository = serviceRepository;
         _workTypeRepository = workTypeRepository;
         _serviceProfessionalRepository = serviceProfessionalRepository;
+        _userRepository = userRepository;
     }
 
     public async Task<ServiceResponse> CreateAsync(int clientId, CreateServiceRequest request)
@@ -82,6 +89,68 @@ public class ServiceService : IServiceService
 
         var includeExactLocation = await CanSeeExactLocationAsync(service, callerUserId);
         return MapToResponse(service, includeExactLocation);
+    }
+
+    // Full detail, every status, for the Admin dashboard's job CRUD panel. N+1 lookups
+    // (one GetByIdAsync per Service to get the client's username) are acceptable here — this
+    // is an internal admin listing, not a public/high-traffic endpoint.
+    public async Task<IReadOnlyList<AdminServiceListItemResponse>> GetAllForAdminAsync()
+    {
+        var services = await _serviceRepository.GetAllAsync();
+        var result = new List<AdminServiceListItemResponse>(services.Count);
+
+        foreach (var service in services)
+        {
+            var client = await _userRepository.GetByIdAsync(service.ClientId);
+
+            result.Add(new AdminServiceListItemResponse
+            {
+                Id = service.Id,
+                WorkTypeId = service.WorkTypeId,
+                WorkTypeName = service.WorkType?.Name ?? string.Empty,
+                ClientId = service.ClientId,
+                ClientUsername = client?.Username ?? string.Empty,
+                ClientFullName = client is null ? string.Empty : $"{client.FirstName} {client.LastName}",
+                Description = service.Description,
+                ImageUrl = service.ImageUrl,
+                ProposedPrice = service.ProposedPrice,
+                Status = service.Status,
+                RequestDate = service.RequestDate,
+                Latitude = service.Latitude,
+                Longitude = service.Longitude,
+                ExactAddress = service.ExactAddress,
+                Zone = service.Zone,
+                CompletionPhotoUrl = service.CompletionPhotoUrl,
+                ClientConfirmedCompletionAt = service.ClientConfirmedCompletionAt,
+                ProfessionalConfirmedCompletionAt = service.ProfessionalConfirmedCompletionAt
+            });
+        }
+
+        return result;
+    }
+
+    public async Task<ServiceResponse> UpdateForAdminAsync(int serviceId, UpdateServiceAdminRequest request)
+    {
+        var service = await _serviceRepository.GetByIdAsync(serviceId)
+            ?? throw new NotFoundException($"Service with id {serviceId} was not found.");
+
+        service.Description = request.Description;
+        service.ProposedPrice = request.ProposedPrice;
+        service.Status = request.Status;
+        service.Zone = request.Zone;
+
+        await _serviceRepository.UpdateAsync(service);
+
+        return MapToResponse(service, includeExactLocation: true);
+    }
+
+    public async Task DeleteForAdminAsync(int serviceId)
+    {
+        var service = await _serviceRepository.GetByIdAsync(serviceId)
+            ?? throw new NotFoundException($"Service with id {serviceId} was not found.");
+
+        service.Status = ServiceStatus.Cancelled;
+        await _serviceRepository.UpdateAsync(service);
     }
 
     private async Task<bool> CanSeeExactLocationAsync(Service service, int? callerUserId)

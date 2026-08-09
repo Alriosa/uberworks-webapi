@@ -1,0 +1,32 @@
+@* =====================================================================================
+   FILE SUMMARY
+   What it does: The footer shared by every page that uses _LandingLayout.cshtml (public
+                 pages like LandingPage.cshtml/AllServices.cshtml/Contact.cshtml AND the
+                 internal Tailwind dashboards/profile pages — MasterAdmin/Finances/
+                 Professional/Client/Admin/Company/Manager/Support dashboards,
+                 ProfileProfessional). Pulled into its own partial for the same reason as
+                 _LandingHeader.cshtml: one place to edit instead of copy-pasting a footer
+                 block onto every new Tailwind-styled page. The "Contáctanos" link is the one
+                 piece of real navigation here — everything else is static, no model, no
+                 auth-aware branching needed.
+   Entities connected: None
+   Tables related: None
+   ===================================================================================== *@
+<footer class="relative z-10 border-t border-slate-200 bg-white/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <a asp-controller="Home" asp-action="LandingPage" class="flex items-center gap-2 group">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center text-white font-black text-sm shadow-md shadow-brand-500/20 group-hover:scale-105 transition-transform">
+                <i class="fa-solid fa-bolt"></i>
+            </div>
+            <span class="text-lg font-extrabold tracking-tight text-slate-900 group-hover:text-brand-600 transition-colors">
+                Servi<span class="text-brand-600">Go</span>
+            </span>
+        </a>
+        <a asp-controller="Home" asp-action="Contact" class="text-xs font-bold text-slate-500 hover:text-brand-600 transition-colors">
+            <i class="fa-solid fa-envelope mr-1"></i>Contáctanos
+        </a>
+        <p class="text-xs text-slate-400 text-center sm:text-right">
+            &copy; @DateTime.Now.Year ServiGo — Reparaciones y servicios para tu hogar a un click de distancia.
+        </p>
+    </div>
+</footer>

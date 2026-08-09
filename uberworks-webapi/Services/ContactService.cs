@@ -77,4 +77,49 @@ public class ContactService : IContactService
             targetEntityId: null,
             details: $"Email={request.Email}, IsFromCompany={request.IsFromCompany}, CompanyName={request.CompanyName}, HasAttachment={attachment is not null}");
     }
+
+    public async Task SendContactMessageAsync(ContactUsRequest request)
+    {
+        EmailAttachment? attachment = null;
+
+        if (request.Image is not null)
+        {
+            if (request.Image.Length > MaxAttachmentSizeBytes)
+            {
+                throw new ArgumentException("The attached image is too large (max 10 MB).");
+            }
+
+            using var memoryStream = new MemoryStream();
+            await request.Image.CopyToAsync(memoryStream);
+            attachment = new EmailAttachment(request.Image.FileName, memoryStream.ToArray(), request.Image.ContentType);
+        }
+
+        var notificationEmail = _configuration["MasterAdmin:Email"]
+            ?? throw new InvalidOperationException("MasterAdmin:Email is not configured in appsettings.");
+
+        var companyLine = request.IsFromCompany
+            ? $"<p><strong>Company:</strong> {request.CompanyName}</p>"
+            : "<p><strong>Company:</strong> No (individual)</p>";
+
+        await _emailSender.SendAsync(
+            notificationEmail,
+            $"[Contáctanos] {request.Title}",
+            $"""
+             <p><strong>From:</strong> {request.Name}</p>
+             {companyLine}
+             <p><strong>Reply-to email:</strong> {request.Email}</p>
+             <p><strong>Subject:</strong> {request.Title}</p>
+             <p><strong>Message:</strong></p>
+             <p>{request.Message}</p>
+             """,
+            attachment);
+
+        await _auditLogService.LogUserActionAsync(
+            actorUserId: null,
+            actorUsername: request.Name,
+            action: "CONTACT_MESSAGE_SENT",
+            targetEntityType: null,
+            targetEntityId: null,
+            details: $"Title={request.Title}, Email={request.Email}, IsFromCompany={request.IsFromCompany}, CompanyName={request.CompanyName}, HasAttachment={attachment is not null}");
+    }
 }

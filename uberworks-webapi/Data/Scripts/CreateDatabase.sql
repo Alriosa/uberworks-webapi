@@ -59,8 +59,13 @@ CREATE TABLE [TBL_USERS] (
     -- real password (POST /api/users/set-password) — the WebApp re-shows a "create your
     -- password" modal on every login while this stays 0, even across interrupted attempts.
     [CL_IS_PASSWORD_SET]    BIT               NOT NULL CONSTRAINT [DF_USERS_IS_PASSWORD_SET] DEFAULT (1),
+    -- Only meaningful when CL_ROLE='MANAGER': the Company User this Manager was created by
+    -- and belongs to (see User.ManagedByCompanyUserId). Self-referencing FK onto this same table.
+    [CL_MANAGED_BY_COMPANY_USER_ID] INT NULL,
     CONSTRAINT [PK_TBL_USERS] PRIMARY KEY ([PK_USER_ID]),
-    CONSTRAINT [CK_USERS_ROLE] CHECK ([CL_ROLE] IN (N'MASTER_ADMIN', N'ADMIN', N'CLIENT', N'PROFESSIONAL', N'MANAGER', N'COMPANY'))
+    CONSTRAINT [CK_USERS_ROLE] CHECK ([CL_ROLE] IN (N'MASTER_ADMIN', N'ADMIN', N'CLIENT', N'PROFESSIONAL', N'MANAGER', N'COMPANY', N'SUPPORT')),
+    CONSTRAINT [FK_TBL_USERS_TBL_USERS_CL_MANAGED_BY_COMPANY_USER_ID]
+        FOREIGN KEY ([CL_MANAGED_BY_COMPANY_USER_ID]) REFERENCES [TBL_USERS] ([PK_USER_ID]) ON DELETE NO ACTION
 );
 GO
 
@@ -94,6 +99,10 @@ CREATE TABLE [TBL_PROFESSIONALS] (
     [CL_LOCATION]         NVARCHAR(200)     NOT NULL,
     [CL_AVERAGE_RATING]   DECIMAL(3,2)      NOT NULL CONSTRAINT [DF_PROFESSIONALS_AVERAGE_RATING] DEFAULT (0),
     [CL_COMPANY_USER_ID]  INT               NULL,
+    -- Relative URL to the profile photo (e.g. "/uploads/professional-photos/7-3f2c1e.jpg"),
+    -- set via POST /api/professionals/{id}/photo. Stored on local disk for now — see that
+    -- endpoint's FILE SUMMARY for the plan to move to external storage later.
+    [CL_PHOTO_URL]        NVARCHAR(255)     NULL,
     CONSTRAINT [PK_TBL_PROFESSIONALS] PRIMARY KEY ([PK_PROFESSIONAL_ID]),
     CONSTRAINT [FK_TBL_PROFESSIONALS_TBL_USERS_PK_USER_ID]
         FOREIGN KEY ([PK_USER_ID]) REFERENCES [TBL_USERS] ([PK_USER_ID]) ON DELETE NO ACTION,
@@ -360,6 +369,94 @@ GO
 
 CREATE UNIQUE INDEX [IX_TBL_PASSWORD_RESET_TOKENS_CL_TOKEN_HASH] ON [TBL_PASSWORD_RESET_TOKENS] ([CL_TOKEN_HASH]);
 CREATE INDEX [IX_TBL_PASSWORD_RESET_TOKENS_PK_USER_ID] ON [TBL_PASSWORD_RESET_TOKENS] ([PK_USER_ID]);
+GO
+
+-- -------------------------------------------------------------------------------------
+-- TBL_REPORTS — a dispute/incident report filed against a Service, handled from the
+-- Support dashboard (Views/Dashboard/Support.cshtml). CL_IMAGES_JSON stores a JSON array of
+-- uploaded image URLs (same "local disk for now" pattern as TBL_PROFESSIONALS.CL_PHOTO_URL)
+-- instead of a separate child table, to keep this table self-contained for a first version.
+-- -------------------------------------------------------------------------------------
+CREATE TABLE [TBL_REPORTS] (
+    [PK_REPORT_ID]                INT IDENTITY(1,1) NOT NULL,
+    [CL_TITLE]                    NVARCHAR(200)     NOT NULL,
+    [CL_DESCRIPTION]              NVARCHAR(MAX)     NOT NULL,
+    [PK_SERVICE_ID]               INT               NULL,
+    [CL_CLIENT_USER_ID]           INT               NULL,
+    [CL_PROFESSIONAL_USER_ID]     INT               NULL,
+    [CL_CREATED_BY_USER_ID]       INT               NOT NULL,
+    [CL_INCIDENT_DATE]            DATETIME          NULL,
+    [CL_CREATED_AT]               DATETIME          NOT NULL CONSTRAINT [DF_REPORTS_CREATED_AT] DEFAULT (GETDATE()),
+    [CL_STATUS]                   NVARCHAR(20)      NOT NULL CONSTRAINT [DF_REPORTS_STATUS] DEFAULT (N'OPEN'),
+    [CL_IMAGES_JSON]              NVARCHAR(MAX)     NULL,
+    [CL_RESOLUTION_MESSAGE]       NVARCHAR(MAX)     NULL,
+    [CL_PAYMENT_OUTCOME]          NVARCHAR(30)      NULL,
+    [CL_CANCELLATION_REASON]      NVARCHAR(MAX)     NULL,
+    [CL_RESOLVED_BY_USER_ID]      INT               NULL,
+    [CL_RESOLVED_AT]              DATETIME          NULL,
+    CONSTRAINT [PK_TBL_REPORTS] PRIMARY KEY ([PK_REPORT_ID]),
+    CONSTRAINT [FK_TBL_REPORTS_TBL_SERVICES_PK_SERVICE_ID]
+        FOREIGN KEY ([PK_SERVICE_ID]) REFERENCES [TBL_SERVICES] ([PK_SERVICE_ID]) ON DELETE NO ACTION,
+    CONSTRAINT [FK_TBL_REPORTS_TBL_USERS_CL_CLIENT_USER_ID]
+        FOREIGN KEY ([CL_CLIENT_USER_ID]) REFERENCES [TBL_USERS] ([PK_USER_ID]) ON DELETE NO ACTION,
+    CONSTRAINT [FK_TBL_REPORTS_TBL_USERS_CL_PROFESSIONAL_USER_ID]
+        FOREIGN KEY ([CL_PROFESSIONAL_USER_ID]) REFERENCES [TBL_USERS] ([PK_USER_ID]) ON DELETE NO ACTION,
+    CONSTRAINT [FK_TBL_REPORTS_TBL_USERS_CL_CREATED_BY_USER_ID]
+        FOREIGN KEY ([CL_CREATED_BY_USER_ID]) REFERENCES [TBL_USERS] ([PK_USER_ID]) ON DELETE NO ACTION,
+    CONSTRAINT [FK_TBL_REPORTS_TBL_USERS_CL_RESOLVED_BY_USER_ID]
+        FOREIGN KEY ([CL_RESOLVED_BY_USER_ID]) REFERENCES [TBL_USERS] ([PK_USER_ID]) ON DELETE NO ACTION,
+    CONSTRAINT [CK_REPORTS_STATUS] CHECK ([CL_STATUS] IN (N'OPEN', N'PENDING', N'RESOLVED', N'CANCELLED'))
+);
+GO
+
+CREATE INDEX [IX_TBL_REPORTS_PK_SERVICE_ID] ON [TBL_REPORTS] ([PK_SERVICE_ID]);
+CREATE INDEX [IX_TBL_REPORTS_CL_STATUS] ON [TBL_REPORTS] ([CL_STATUS]);
+GO
+
+-- -------------------------------------------------------------------------------------
+-- TBL_EVENTS — a Company's call for professionals for a specific date/place (e.g. "10
+-- cocineros para un evento el sábado"). Only ever created by a Company (never a Manager).
+-- -------------------------------------------------------------------------------------
+CREATE TABLE [TBL_EVENTS] (
+    [PK_EVENT_ID]                     INT IDENTITY(1,1) NOT NULL,
+    [CL_COMPANY_USER_ID]              INT               NOT NULL,
+    [CL_TITLE]                        NVARCHAR(200)     NOT NULL,
+    [CL_DESCRIPTION]                  NVARCHAR(MAX)     NOT NULL,
+    [CL_NOT_INCLUDED]                 NVARCHAR(MAX)     NULL,
+    [CL_EVENT_DATE]                   DATETIME          NOT NULL,
+    [CL_LOCATION]                     NVARCHAR(300)     NOT NULL,
+    [CL_PROFESSIONALS_NEEDED_COUNT]   INT               NOT NULL,
+    [CL_CREATED_AT]                   DATETIME          NOT NULL CONSTRAINT [DF_EVENTS_CREATED_AT] DEFAULT (GETDATE()),
+    CONSTRAINT [PK_TBL_EVENTS] PRIMARY KEY ([PK_EVENT_ID]),
+    CONSTRAINT [FK_TBL_EVENTS_TBL_USERS_CL_COMPANY_USER_ID]
+        FOREIGN KEY ([CL_COMPANY_USER_ID]) REFERENCES [TBL_USERS] ([PK_USER_ID]) ON DELETE NO ACTION
+);
+GO
+
+CREATE INDEX [IX_TBL_EVENTS_CL_COMPANY_USER_ID] ON [TBL_EVENTS] ([CL_COMPANY_USER_ID]);
+GO
+
+-- -------------------------------------------------------------------------------------
+-- TBL_EVENT_INVITATIONS — one row per professional invited to an Event, auto-generated
+-- when the Event is created (see EventService.CreateAsync) — never created directly.
+-- -------------------------------------------------------------------------------------
+CREATE TABLE [TBL_EVENT_INVITATIONS] (
+    [PK_EVENT_INVITATION_ID]    INT IDENTITY(1,1) NOT NULL,
+    [PK_EVENT_ID]                INT              NOT NULL,
+    [CL_PROFESSIONAL_USER_ID]    INT              NOT NULL,
+    [CL_STATUS]                  NVARCHAR(20)     NOT NULL CONSTRAINT [DF_EVENT_INVITATIONS_STATUS] DEFAULT (N'PENDING'),
+    [CL_CREATED_AT]              DATETIME         NOT NULL CONSTRAINT [DF_EVENT_INVITATIONS_CREATED_AT] DEFAULT (GETDATE()),
+    [CL_RESPONDED_AT]            DATETIME         NULL,
+    CONSTRAINT [PK_TBL_EVENT_INVITATIONS] PRIMARY KEY ([PK_EVENT_INVITATION_ID]),
+    CONSTRAINT [FK_TBL_EVENT_INVITATIONS_TBL_EVENTS_PK_EVENT_ID]
+        FOREIGN KEY ([PK_EVENT_ID]) REFERENCES [TBL_EVENTS] ([PK_EVENT_ID]) ON DELETE NO ACTION,
+    CONSTRAINT [FK_TBL_EVENT_INVITATIONS_TBL_USERS_CL_PROFESSIONAL_USER_ID]
+        FOREIGN KEY ([CL_PROFESSIONAL_USER_ID]) REFERENCES [TBL_USERS] ([PK_USER_ID]) ON DELETE NO ACTION
+);
+GO
+
+CREATE INDEX [IX_TBL_EVENT_INVITATIONS_PK_EVENT_ID] ON [TBL_EVENT_INVITATIONS] ([PK_EVENT_ID]);
+CREATE INDEX [IX_TBL_EVENT_INVITATIONS_CL_PROFESSIONAL_USER_ID] ON [TBL_EVENT_INVITATIONS] ([CL_PROFESSIONAL_USER_ID]);
 GO
 
 -- -------------------------------------------------------------------------------------

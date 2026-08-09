@@ -44,6 +44,7 @@ public class ProfessionalRepository : IProfessionalRepository
             p.CL_LOCATION AS Location,
             p.CL_AVERAGE_RATING AS AverageRating,
             p.CL_COMPANY_USER_ID AS CompanyUserId,
+            p.CL_PHOTO_URL AS PhotoUrl,
             u.PK_USER_ID AS Id,
             u.CL_USERNAME AS Username,
             u.CL_FIRST_NAME AS FirstName,
@@ -113,9 +114,9 @@ public class ProfessionalRepository : IProfessionalRepository
         using var connection = _connectionFactory.CreateConnection();
 
         const string sql = """
-            INSERT INTO TBL_PROFESSIONALS (PK_USER_ID, CL_DESCRIPTION, CL_EXPERIENCE, CL_AVAILABILITY, CL_LOCATION, CL_COMPANY_USER_ID)
+            INSERT INTO TBL_PROFESSIONALS (PK_USER_ID, CL_DESCRIPTION, CL_EXPERIENCE, CL_AVAILABILITY, CL_LOCATION, CL_COMPANY_USER_ID, CL_PHOTO_URL)
             OUTPUT INSERTED.PK_PROFESSIONAL_ID AS Id, INSERTED.CL_AVERAGE_RATING AS AverageRating
-            VALUES (@UserId, @Description, @Experience, @Availability, @Location, @CompanyUserId)
+            VALUES (@UserId, @Description, @Experience, @Availability, @Location, @CompanyUserId, @PhotoUrl)
             """;
 
         var generated = await connection.QuerySingleAsync(sql, new
@@ -125,7 +126,8 @@ public class ProfessionalRepository : IProfessionalRepository
             professional.Experience,
             professional.Availability,
             professional.Location,
-            professional.CompanyUserId
+            professional.CompanyUserId,
+            professional.PhotoUrl
         });
 
         professional.Id = (int)generated.Id;
@@ -142,7 +144,8 @@ public class ProfessionalRepository : IProfessionalRepository
                 CL_EXPERIENCE = @Experience,
                 CL_AVAILABILITY = @Availability,
                 CL_LOCATION = @Location,
-                CL_COMPANY_USER_ID = @CompanyUserId
+                CL_COMPANY_USER_ID = @CompanyUserId,
+                CL_PHOTO_URL = @PhotoUrl
             WHERE PK_PROFESSIONAL_ID = @Id
             """;
 
@@ -153,7 +156,8 @@ public class ProfessionalRepository : IProfessionalRepository
             professional.Experience,
             professional.Availability,
             professional.Location,
-            professional.CompanyUserId
+            professional.CompanyUserId,
+            professional.PhotoUrl
         });
     }
 }

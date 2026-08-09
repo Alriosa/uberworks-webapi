@@ -1,19 +1,339 @@
+@* =====================================================================================
+   FILE SUMMARY
+   What it does: MasterAdmin's dashboard — the landing page after login for the one
+                 MasterAdmin account (see DashboardController.LandingPage). Per explicit user
+                 request, this is a second deliberate Spanish-language exception to the
+                 project's English-UI rule (alongside LandingPage.cshtml/AllServices.cshtml),
+                 built to match mockups the user provided, reusing _LandingLayout.cshtml's
+                 Tailwind/FontAwesome setup (glass-card look, brand colors) instead of the
+                 site's default Bootstrap _Layout.cshtml.
+                 Of the 4 big cards: "Ver Todos los Usuarios" opens a MODAL with REAL data
+                 (Model.Users, from GET /api/users — every non-sensitive User attribute,
+                 since the user wants to see everything first and trim later); "Ver Todos los
+                 Trabajos" and "Ver Todos los Reportes" open modals that are still DECORATIVE
+                 mockups (no Job/Report entity exists yet — matches screenshots the user
+                 supplied); "Finanzas" is REAL NAVIGATION (not a modal) to its own page,
+                 Views/Dashboard/Finances.cshtml, which has its own "Volver al Panel de Admin"
+                 back link — a chart-heavy page didn't belong trapped in the modal layer. The
+                 4 small stat tiles above them are the same "real vs. decorative" split: only
+                 "Usuarios Totales" is real (= Model.Users.Count); Ingresos/Trabajos Activos/
+                 Reportes Pendientes are decorative placeholders. The header's "Log out" button
+                 (posts to AccountController.Logout, which redirects to Home/LandingPage) is
+                 this page's "back" — per the site-wide rule that no page can be a navigation
+                 dead end, since this dashboard has no natural parent page to go "back" to.
+   Entities connected: None — this project has no database entities
+   Tables related: None — Model.Users reaches TBL_USERS only indirectly, through the API
+   ===================================================================================== *@
 @model uberworks_webapp.Models.ViewModels.MasterAdminDashboardViewModel
 @{
-    ViewData["Title"] = "Dashboard";
+    ViewData["Title"] = "Panel de Master Admin";
+    Layout = "_LandingLayout";
 }
 
-<h1>Welcome back, @Model.DisplayName!</h1>
-<p class="text-muted">You are the MasterAdmin — the top of the account-creation pyramid.</p>
+<partial name="_LandingHeader" />
 
-<div class="row g-3 mt-2">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Register users</h5>
-                <p class="card-text">Create Admin, Manager, Company, Professional, or Client accounts.</p>
-                <a asp-controller="Admin" asp-action="CreateUser" class="btn btn-primary">Register a user</a>
+<main class="relative min-h-screen bg-slate-50 pt-28 pb-8 px-4 sm:px-6 lg:px-8 z-10">
+    <div class="max-w-7xl mx-auto space-y-6">
+
+        <div class="glass-card rounded-3xl border border-slate-200 p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-slate-900 text-white flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-user-shield"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-xl font-black text-slate-900">Panel de Master Admin</h1>
+                        <span class="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-1 rounded-full">SUPER USER</span>
+                    </div>
+                    <p class="text-sm text-slate-500 mt-0.5">Control central de usuarios, servicios, reportes e infraestructura</p>
+                </div>
             </div>
+            <div class="flex flex-col gap-2 self-start sm:self-auto">
+                <button onclick="location.reload()" class="btn-alive relative overflow-hidden inline-flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-colors">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>Actualizar</span>
+                </button>
+                @* Real navigation out of this page, per the "nothing can be a dead end"
+                   rule — this is the MasterAdmin dashboard's equivalent of a "back" button:
+                   it always leads back to the public LandingPage (see
+                   AccountController.Logout), never leaves the user stranded. *@
+                <form asp-controller="Account" asp-action="Logout" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn-alive relative overflow-hidden w-full inline-flex items-center justify-center gap-2 bg-slate-900 text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-slate-800 transition-colors">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                        <span>Log out</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="glass-card rounded-2xl border border-slate-200 p-4 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <i class="fa-solid fa-sack-dollar"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Ingresos Hoy</p>
+                    <p class="text-lg font-black text-slate-900">$1,450.00</p>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl border border-slate-200 p-4 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                    <i class="fa-solid fa-briefcase"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Trabajos Activos</p>
+                    <p class="text-lg font-black text-slate-900">38 En curso</p>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl border border-slate-200 p-4 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Usuarios Totales</p>
+                    <p class="text-lg font-black text-slate-900">@Model.Users.Count.ToString("N0")</p>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl border border-slate-200 p-4 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Reportes Pendientes</p>
+                    <p class="text-lg font-black text-slate-900">3 Casos</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            <button onclick="openModal('usersModal')" class="glass-card text-left rounded-3xl border border-slate-200 p-6 relative overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
+                <div class="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-amber-50"></div>
+                <div class="relative flex items-start justify-between mb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-users-gear"></i>
+                    </div>
+                    <span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2.5 py-1 rounded-full">@Model.Users.Count.ToString("N0") REGISTRADOS</span>
+                </div>
+                <h3 class="relative text-xl font-black text-slate-900 mb-1">Ver Todos los Usuarios</h3>
+                <p class="relative text-sm text-slate-500 mb-4 max-w-md">Gestión completa de Clientes, Carpinteros, Plomeros, Limpiadores y Choferes. Verificaciones y bloqueos.</p>
+                <span class="relative text-amber-600 font-bold text-sm inline-flex items-center gap-1.5">Gestionar Usuarios <i class="fa-solid fa-arrow-right text-xs"></i></span>
+            </button>
+
+            <button onclick="openModal('jobsModal')" class="glass-card text-left rounded-3xl border border-slate-200 p-6 relative overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
+                <div class="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-blue-50"></div>
+                <div class="relative flex items-start justify-between mb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2.5 py-1 rounded-full">38 EN VIVO</span>
+                </div>
+                <h3 class="relative text-xl font-black text-slate-900 mb-1">Ver Todos los Trabajos</h3>
+                <p class="relative text-sm text-slate-500 mb-4 max-w-md">Monitoreo en tiempo real de servicios pedidos, solicitudes pendientes, asignaciones y cancelaciones.</p>
+                <span class="relative text-blue-600 font-bold text-sm inline-flex items-center gap-1.5">Ver Lista de Trabajos <i class="fa-solid fa-arrow-right text-xs"></i></span>
+            </button>
+
+            <button onclick="openModal('reportsModal')" class="glass-card text-left rounded-3xl border border-slate-200 p-6 relative overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
+                <div class="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-red-50"></div>
+                <div class="relative flex items-start justify-between mb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2.5 py-1 rounded-full">3 ALERTAS</span>
+                </div>
+                <h3 class="relative text-xl font-black text-slate-900 mb-1">Ver Todos los Reportes</h3>
+                <p class="relative text-sm text-slate-500 mb-4 max-w-md">Reclamos de clientes, disputas de pago, reportes de mala conducta e historial analítico semanal.</p>
+                <span class="relative text-red-600 font-bold text-sm inline-flex items-center gap-1.5">Revisar Incidencias <i class="fa-solid fa-arrow-right text-xs"></i></span>
+            </button>
+
+            @* Real navigation to its own page (Views/Dashboard/Finances.cshtml) — NOT a modal,
+               per explicit request, since a chart-heavy page deserves its own URL/back button
+               rather than being trapped inside the dashboard's modal layer. *@
+            <a asp-controller="Dashboard" asp-action="Finances" class="glass-card text-left rounded-3xl border border-slate-200 p-6 relative overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300 block">
+                <div class="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-purple-50"></div>
+                <div class="relative flex items-start justify-between mb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-chart-column"></i>
+                    </div>
+                    <span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2.5 py-1 rounded-full">INGRESOS</span>
+                </div>
+                <h3 class="relative text-xl font-black text-slate-900 mb-1">Finanzas</h3>
+                <p class="relative text-sm text-slate-500 mb-4 max-w-md">Ganancias por día y por mes, comisiones del sistema y métodos de cobro.</p>
+                <span class="relative text-purple-600 font-bold text-sm inline-flex items-center gap-1.5">Ver Finanzas <i class="fa-solid fa-arrow-right text-xs"></i></span>
+            </a>
+
+        </div>
+    </div>
+</main>
+
+<partial name="_LandingFooter" />
+
+@* ===== Users modal — REAL data (Model.Users), every attribute ===== *@
+<div id="usersModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-card w-full max-w-6xl max-h-[85vh] rounded-3xl border border-slate-200 shadow-2xl relative transform scale-95 transition-transform duration-300 flex flex-col" id="usersModalBox">
+        <div class="flex items-start justify-between p-6 pb-4 border-b border-slate-100">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-users-gear"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-black text-slate-900">Directorio General de Usuarios</h3>
+                    <p class="text-xs text-slate-500">@Model.Users.Count.ToString("N0") usuarios registrados — todos los atributos, sin filtrar todavía</p>
+                </div>
+            </div>
+            <button onclick="closeModal('usersModal')" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="overflow-auto p-6 pt-4">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left text-[10px] uppercase tracking-wide text-slate-400 border-b border-slate-100">
+                        <th class="py-2 pr-4">ID</th>
+                        <th class="py-2 pr-4">Username</th>
+                        <th class="py-2 pr-4">Nombre</th>
+                        <th class="py-2 pr-4">Apellido</th>
+                        <th class="py-2 pr-4">Email</th>
+                        <th class="py-2 pr-4">Teléfono</th>
+                        <th class="py-2 pr-4">Rol</th>
+                        <th class="py-2 pr-4">Estado</th>
+                        <th class="py-2 pr-4">Registrado</th>
+                        <th class="py-2 pr-4">Facebook ID</th>
+                        <th class="py-2 pr-4">Password Creado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model.Users)
+                    {
+                        <tr class="border-b border-slate-50 hover:bg-slate-50/70">
+                            <td class="py-2.5 pr-4 text-slate-500">#@user.Id</td>
+                            <td class="py-2.5 pr-4 font-bold text-slate-900">@user.Username</td>
+                            <td class="py-2.5 pr-4 text-slate-700">@user.FirstName</td>
+                            <td class="py-2.5 pr-4 text-slate-700">@user.LastName</td>
+                            <td class="py-2.5 pr-4 text-slate-500">@user.Email</td>
+                            <td class="py-2.5 pr-4 text-slate-500">@(user.Phone ?? "—")</td>
+                            <td class="py-2.5 pr-4">
+                                <span class="bg-slate-100 text-slate-600 text-[11px] font-bold px-2 py-0.5 rounded-full">@user.Role</span>
+                            </td>
+                            <td class="py-2.5 pr-4">
+                                <span class="bg-emerald-50 text-emerald-600 text-[11px] font-bold px-2 py-0.5 rounded-full">@user.Status</span>
+                            </td>
+                            <td class="py-2.5 pr-4 text-slate-500">@user.RegistrationDate.ToString("yyyy-MM-dd")</td>
+                            <td class="py-2.5 pr-4 text-slate-500">@(user.FacebookId ?? "—")</td>
+                            <td class="py-2.5 pr-4">
+                                @if (user.IsPasswordSet)
+                                {
+                                    <span class="text-emerald-600"><i class="fa-solid fa-check"></i></span>
+                                }
+                                else
+                                {
+                                    <span class="text-amber-600"><i class="fa-solid fa-clock"></i></span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
+
+@* ===== Jobs modal — decorative mockup (no Job entity yet) ===== *@
+<div id="jobsModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-card w-full max-w-3xl rounded-3xl border border-slate-200 shadow-2xl relative transform scale-95 transition-transform duration-300" id="jobsModalBox">
+        <div class="flex items-start justify-between p-6 pb-4 border-b border-slate-100">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-list-check"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-black text-slate-900">Listado Central de Trabajos</h3>
+                    <p class="text-xs text-slate-500">Monitoreo de solicitudes de carpintería, mudanzas y reparaciones</p>
+                </div>
+            </div>
+            <button onclick="closeModal('jobsModal')" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="p-6 pt-4">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left text-[10px] uppercase tracking-wide text-slate-400 border-b border-slate-100">
+                        <th class="py-2 pr-4">ID Servicio</th>
+                        <th class="py-2 pr-4">Categoría</th>
+                        <th class="py-2 pr-4">Cliente</th>
+                        <th class="py-2 pr-4">Estado</th>
+                        <th class="py-2 pr-4">Monto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="border-b border-slate-50">
+                        <td class="py-2.5 pr-4 font-bold text-slate-900">#JOB-8821</td>
+                        <td class="py-2.5 pr-4 text-slate-700">Carpintería &amp; Muebles</td>
+                        <td class="py-2.5 pr-4 text-slate-500">María López</td>
+                        <td class="py-2.5 pr-4"><span class="bg-amber-50 text-amber-600 text-[11px] font-bold px-2 py-0.5 rounded-full">En Camino</span></td>
+                        <td class="py-2.5 pr-4 text-slate-900 font-bold">$45.00</td>
+                    </tr>
+                    <tr class="border-b border-slate-50">
+                        <td class="py-2.5 pr-4 font-bold text-slate-900">#JOB-8820</td>
+                        <td class="py-2.5 pr-4 text-slate-700">Rescate Post-Fiesta</td>
+                        <td class="py-2.5 pr-4 text-slate-500">Roberto Díaz</td>
+                        <td class="py-2.5 pr-4"><span class="bg-emerald-50 text-emerald-600 text-[11px] font-bold px-2 py-0.5 rounded-full">Completado</span></td>
+                        <td class="py-2.5 pr-4 text-slate-900 font-bold">$80.00</td>
+                    </tr>
+                    <tr>
+                        <td class="py-2.5 pr-4 font-bold text-slate-900">#JOB-8819</td>
+                        <td class="py-2.5 pr-4 text-slate-700">Transporte de Carga</td>
+                        <td class="py-2.5 pr-4 text-slate-500">Fernando Solís</td>
+                        <td class="py-2.5 pr-4"><span class="bg-blue-50 text-blue-600 text-[11px] font-bold px-2 py-0.5 rounded-full">Asignando</span></td>
+                        <td class="py-2.5 pr-4 text-slate-900 font-bold">$60.00</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p class="text-[11px] text-slate-400 mt-4">Datos de muestra — todavía no existe un sistema real de trabajos/servicios pedidos.</p>
+        </div>
+    </div>
+</div>
+
+@* ===== Reports modal — decorative mockup (no Report entity yet) ===== *@
+<div id="reportsModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xl z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-card w-full max-w-2xl rounded-3xl border border-slate-200 shadow-2xl relative transform scale-95 transition-transform duration-300" id="reportsModalBox">
+        <div class="flex items-start justify-between p-6 pb-4 border-b border-slate-100">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-black text-slate-900">Incidencias y Reportes</h3>
+                    <p class="text-xs text-slate-500">Atención a reclamos y mediación de disputas</p>
+                </div>
+            </div>
+            <button onclick="closeModal('reportsModal')" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="p-6 pt-4 space-y-3">
+            <div class="flex items-center justify-between gap-4 rounded-2xl bg-red-50 border border-red-100 p-4">
+                <div>
+                    <h4 class="text-sm font-black text-slate-900">Reclamo #REP-102 — Retraso de llegada</h4>
+                    <p class="text-xs text-slate-500 mt-0.5">Cliente reporta que el transporte llegó 40 minutos tarde.</p>
+                </div>
+                <button class="btn-alive relative overflow-hidden shrink-0 bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors">Resolver</button>
+            </div>
+            <div class="flex items-center justify-between gap-4 rounded-2xl bg-amber-50 border border-amber-100 p-4">
+                <div>
+                    <h4 class="text-sm font-black text-slate-900">Reclamo #REP-099 — Cobro adicional inapropiado</h4>
+                    <p class="text-xs text-slate-500 mt-0.5">Disputa sobre costo de repuestos de lavadora.</p>
+                </div>
+                <button class="btn-alive relative overflow-hidden shrink-0 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors">Investigar</button>
+            </div>
+            <p class="text-[11px] text-slate-400 pt-1">Datos de muestra — todavía no existe un sistema real de reclamos/reportes.</p>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/landing-common.js" asp-append-version="true"></script>

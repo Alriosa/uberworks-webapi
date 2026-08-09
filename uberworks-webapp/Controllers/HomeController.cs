@@ -9,7 +9,10 @@
 //               which forwards the form (including the optional file attachment) to the API
 //               via IContactApiClient — this is a REAL email send, not decorative, so failures
 //               from the API (e.g. attachment too large) are surfaced back as a TempData error
-//               instead of silently succeeding. Privacy/Error are the untouched framework
+//               instead of silently succeeding. Contact backs the general "Contáctanos" page
+//               (linked from _LandingFooter.cshtml, distinct from the AllServices-specific
+//               suggestion form) — same real-email-send pattern via
+//               IContactApiClient.SendMessageAsync. Privacy/Error are the untouched framework
 //               template pages.
 // Entities connected: None
 // Tables related: None
@@ -70,6 +73,42 @@ public class HomeController : Controller
         }
 
         return RedirectToAction(nameof(AllServices));
+    }
+
+    public IActionResult Contact()
+    {
+        return View(new ContactViewModel());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Contact(ContactViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            TempData["ContactError"] = "Please fill in a title, your name, a valid email, and a message.";
+            return RedirectToAction(nameof(Contact));
+        }
+
+        try
+        {
+            await _contactApiClient.SendMessageAsync(
+                model.Title,
+                model.Message,
+                model.Name,
+                model.Email,
+                model.IsFromCompany,
+                model.CompanyName,
+                model.Image);
+
+            TempData["ContactSuccess"] = "¡Gracias! Recibimos tu mensaje y te responderemos pronto.";
+        }
+        catch (ApiException ex)
+        {
+            TempData["ContactError"] = ex.Message;
+        }
+
+        return RedirectToAction(nameof(Contact));
     }
 
     public IActionResult Privacy()

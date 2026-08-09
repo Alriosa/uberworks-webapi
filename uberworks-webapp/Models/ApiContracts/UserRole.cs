@@ -8,8 +8,8 @@
 //               file exists because WebApp talks to the API over plain HTTP/JSON (see the
 //               architecture decision: WebApp is a client like Mobile, not a shared
 //               codebase with the API), so it needs its own copy, not a project reference.
-//               Manager and Company were appended at the end, never inserted between
-//               existing values, for the same reason.
+//               Manager, Company, and Support were appended at the end, never inserted
+//               between existing values, for the same reason.
 // Entities connected: None — this project has no database entities, only API contracts
 // Tables related: None
 // =====================================================================================
@@ -22,5 +22,6 @@ public enum UserRole
     Client,
     Professional,
     Manager,
-    Company
+    Company,
+    Support
 }
